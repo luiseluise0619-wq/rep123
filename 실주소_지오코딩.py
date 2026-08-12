@@ -42,7 +42,7 @@ KAKAO_REST_KEY = r''
 VWORLD_KEY     = r''
 NOMINATIM_UA   = r'addr-map-geocoder/1.0 (contact: your_email@example.com)'
 
-MAX_RETRY = 4               # 네트워크 오류 시 재시도 횟수
+MAX_RETRY = 3               # 네트워크 오류 시 재시도 횟수
 CACHE_EVERY = 500           # 이 건수마다 캐시 파일 저장(중단 대비)
 RETRY_FAILED = True         # 실패(null)한 주소도 다시 시도 (여러 번 돌리면 점점 채워짐)
 TEST_LIMIT = 0              # 0 이면 전체, N>0 이면 앞에서 N건만(키 확인용)
@@ -94,7 +94,7 @@ _spec.loader.exec_module(core)
 # =============================================================================
 def _http_get_json(url, headers=None):
     req = urllib.request.Request(url, headers=headers or {})
-    with urllib.request.urlopen(req, timeout=15) as resp:
+    with urllib.request.urlopen(req, timeout=6) as resp:   # 굼뜬 응답은 빨리 포기
         return json.loads(resp.read().decode('utf-8'))
 
 
@@ -197,7 +197,7 @@ def geocode_one(addr):
             except NET_ERRORS:
                 if attempt == MAX_RETRY:
                     break             # 이 엔진 포기 → 다음 엔진으로
-                time.sleep(2 ** attempt)
+                time.sleep(0.4 * attempt)   # 0.4s, 0.8s, 1.2s (짧게)
     return None
 
 
