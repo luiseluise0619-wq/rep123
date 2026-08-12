@@ -29,6 +29,8 @@ import importlib.util
 import urllib.parse
 import urllib.request
 import urllib.error
+import http.client
+import socket
 
 # =============================================================================
 # CONFIG  (여기만 수정)
@@ -124,12 +126,22 @@ def geocode_nominatim(addr):
 GEOCODERS = {'KAKAO': geocode_kakao, 'VWORLD': geocode_vworld, 'NOMINATIM': geocode_nominatim}
 
 
+# 일시적 네트워크 오류(연결 끊김·타임아웃 등)는 모두 재시도 대상
+NET_ERRORS = (
+    urllib.error.URLError,          # DNS/연결 실패 등
+    http.client.HTTPException,      # RemoteDisconnected, BadStatusLine, IncompleteRead 등
+    OSError,                        # ConnectionResetError 등 소켓 계열
+    socket.timeout, TimeoutError,
+    ValueError, KeyError,
+)
+
+
 def geocode_one(addr):
     fn = GEOCODERS[BACKEND]
     for attempt in range(1, MAX_RETRY + 1):
         try:
             return fn(addr)
-        except (urllib.error.URLError, TimeoutError, ValueError, KeyError) as e:
+        except NET_ERRORS as e:
             if attempt == MAX_RETRY:
                 print('    ! 실패(%s): %s' % (type(e).__name__, addr[:30]))
                 return None
