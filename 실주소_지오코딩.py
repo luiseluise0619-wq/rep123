@@ -45,6 +45,10 @@ MAX_RETRY = 3               # 네트워크 오류 시 재시도 횟수
 CACHE_EVERY = 200           # 이 건수마다 캐시 파일 저장(중단 대비)
 RETRY_FAILED = False        # True 면 이전에 실패(null)한 주소도 다시 시도
 
+# 처음엔 TEST_LIMIT = 10 으로 두고 실행 → 키/성공률 확인.
+# 정상 확인되면 0(=전체) 으로 바꿔 다시 실행.
+TEST_LIMIT = 10             # 0 이면 전체, N>0 이면 앞에서 N건만
+
 # =============================================================================
 # 경로 (윈도우 역슬래시 방지 r'')
 # =============================================================================
@@ -175,7 +179,13 @@ def main():
     cache = load_cache()                          # {정리주소: [lat,lng] | null}
     todo = [c for c in unique
             if c not in cache or (RETRY_FAILED and cache.get(c) is None)]
-    print('이번에 지오코딩할 주소: %d개 (캐시 %d개 재사용)' % (len(todo), len(unique) - len(todo)))
+
+    test_mode = TEST_LIMIT and TEST_LIMIT > 0
+    if test_mode:
+        todo = todo[:TEST_LIMIT]
+        print('★ 테스트 모드: 앞 %d건만 시도 (정상 확인되면 TEST_LIMIT=0 으로 바꿔 전체 실행)' % len(todo))
+    else:
+        print('이번에 지오코딩할 주소: %d개 (캐시 %d개 재사용)' % (len(todo), len(unique) - len(todo)))
 
     done = 0
     ok = 0
@@ -184,13 +194,22 @@ def main():
         cache[c] = [res[0], res[1]] if res else None
         if res:
             ok += 1
+            if test_mode:
+                print('  ✓ %-40s → 위도 %.6f, 경도 %.6f' % (c[:40], res[0], res[1]))
+        elif test_mode:
+            print('  ✗ %-40s → 실패(매칭 없음)' % c[:40])
         done += 1
-        if done % CACHE_EVERY == 0:
+        if not test_mode and done % CACHE_EVERY == 0:
             save_cache(cache)
             print('  ... %d/%d 진행 (성공 %d)' % (done, len(todo), ok))
         time.sleep(SLEEP_SEC)
     save_cache(cache)
     print('지오코딩 완료: 신규 성공 %d / 시도 %d' % (ok, len(todo)))
+
+    if test_mode:
+        print('\n★ 테스트 끝. 성공률이 괜찮으면 파일 상단 TEST_LIMIT = 0 으로 바꾸고 다시 실행하세요.')
+        print('  (지도 재생성은 전체 실행 때 자동으로 됩니다.)')
+        return
 
     # 원본주소 → 실좌표 매핑 (정리주소 경유)
     coord_lookup = {}
