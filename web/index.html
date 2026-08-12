@@ -4,20 +4,23 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0"/>
 <title>지역별 주소 지도 (구·동 드릴다운)</title>
+
+<!-- 지도 라이브러리 (로컬 동봉 · API 키 불필요) -->
+<link rel="stylesheet" href="./lib/leaflet.css"/>
+<link rel="stylesheet" href="./lib/MarkerCluster.css"/>
+<link rel="stylesheet" href="./lib/MarkerCluster.Default.css"/>
+<script src="./lib/leaflet.js"></script>
+<script src="./lib/leaflet.markercluster.js"></script>
+
 <style>
   html, body { margin:0; height:100%; font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif; }
   #map { position:absolute; inset:0; }
-
-  /* 상단 바 */
   .topbar {
     position:absolute; top:0; left:0; right:0; z-index:1000; height:48px;
     background:rgba(26,115,232,.95); color:#fff; display:flex; align-items:center;
-    padding:0 12px; box-shadow:0 2px 6px rgba(0,0,0,.3); font-weight:bold; font-size:15px;
-    gap:10px;
+    padding:0 12px; box-shadow:0 2px 6px rgba(0,0,0,.3); font-weight:bold; font-size:15px; gap:10px;
   }
   .topbar .cnt { margin-left:auto; font-weight:normal; font-size:12px; opacity:.9; }
-
-  /* 하단 시트(드릴다운 패널) */
   #panel {
     position:absolute; left:0; right:0; bottom:0; z-index:1001;
     background:#fff; border-radius:16px 16px 0 0; box-shadow:0 -3px 14px rgba(0,0,0,.25);
@@ -26,7 +29,7 @@
   }
   #panel.open { transform:translateY(0); }
   .panel-handle {
-    height:46px; flex:0 0 auto; display:flex; align-items:center; justify-content:center;
+    position:relative; height:46px; flex:0 0 auto; display:flex; align-items:center; justify-content:center;
     cursor:pointer; font-weight:bold; color:#1a73e8; border-bottom:1px solid #eee; gap:8px;
   }
   .panel-handle .bar { position:absolute; top:8px; left:50%; transform:translateX(-50%);
@@ -38,10 +41,8 @@
   #crumb b { color:#1a73e8; cursor:pointer; }
   #crumb .sep { color:#aaa; margin:0 6px; }
   #list { overflow-y:auto; -webkit-overflow-scrolling:touch; padding:6px 0 14px; }
-  .row {
-    display:flex; align-items:center; gap:8px; padding:11px 14px; cursor:pointer;
-    border-bottom:1px solid #f2f2f2; font-size:15px;
-  }
+  .row { display:flex; align-items:center; gap:8px; padding:11px 14px; cursor:pointer;
+    border-bottom:1px solid #f2f2f2; font-size:15px; }
   .row:active { background:#eef4ff; }
   .row .name { flex:1; }
   .row .badge { font-size:12px; color:#888; background:#f0f0f0; border-radius:10px; padding:2px 8px; }
@@ -49,40 +50,26 @@
   .addr-row { flex-direction:column; align-items:stretch; gap:3px; }
   .addr-row .a { font-size:14px; color:#222; word-break:keep-all; }
   .addr-row .sub { font-size:12px; color:#777; }
-  .back {
-    padding:10px 14px; color:#1a73e8; font-weight:bold; cursor:pointer;
-    border-bottom:1px solid #eee; font-size:14px;
-  }
-
-  /* GPS 버튼 */
+  .back { padding:10px 14px; color:#1a73e8; font-weight:bold; cursor:pointer;
+    border-bottom:1px solid #eee; font-size:14px; }
   .gps-btn {
     position:absolute; right:14px; bottom:70px; z-index:1000;
     width:52px; height:52px; border:none; border-radius:50%;
-    background:#fff; box-shadow:0 3px 8px rgba(0,0,0,.35);
-    font-size:24px; cursor:pointer;
+    background:#fff; box-shadow:0 3px 8px rgba(0,0,0,.35); font-size:24px; cursor:pointer;
   }
   .gps-btn:active { transform:scale(.94); }
-
-  /* 로딩/에러 오버레이 */
-  #overlay {
-    position:absolute; inset:0; z-index:2000; background:rgba(255,255,255,.96);
-    display:flex; align-items:center; justify-content:center; text-align:center;
-    padding:24px; font-size:15px; color:#333; line-height:1.6;
-  }
-  #overlay code { background:#f1f1f1; padding:2px 6px; border-radius:4px; }
-  .iw .a { font-size:14px; font-weight:bold; margin-bottom:6px; word-break:keep-all; color:#111; }
-  .iw .sub { font-size:12px; color:#666; margin-bottom:3px; }
-  .iw a.nav {
-    display:block; text-align:center; margin-top:8px; background:#1a73e8; color:#fff;
-    padding:8px 10px; border-radius:8px; text-decoration:none; font-weight:bold; font-size:14px;
-  }
+  .addr-dot { width:12px; height:12px; background:#1a73e8; border:2px solid #fff;
+    border-radius:50%; box-shadow:0 1px 2px rgba(0,0,0,.4); }
+  .my-dot { width:18px; height:18px; background:#e53935; border:3px solid #fff;
+    border-radius:50%; box-shadow:0 0 6px rgba(229,57,53,.9); }
+  .popup-addr { font-size:14px; font-weight:bold; margin-bottom:6px; word-break:keep-all; color:#111; }
+  .popup-sub { font-size:12px; color:#666; margin-bottom:3px; }
+  .nav-btn { display:block; text-align:center; margin-top:8px; background:#1a73e8; color:#fff;
+    padding:8px 10px; border-radius:8px; text-decoration:none; font-weight:bold; font-size:14px; }
 </style>
 </head>
 <body>
-<div class="topbar">
-  🗺️ 지역별 주소 지도
-  <span class="cnt" id="totalCnt"></span>
-</div>
+<div class="topbar">🗺️ 지역별 주소 지도 <span class="cnt" id="totalCnt"></span></div>
 <div id="map"></div>
 <button class="gps-btn" id="gpsBtn" title="내 위치">🎯</button>
 
@@ -92,178 +79,104 @@
   <div id="list"></div>
 </div>
 
-<div id="overlay">지도를 불러오는 중…</div>
-
-<!-- 데이터 + 설정 -->
 <script src="./addresses.js"></script>
-<script src="./config.js"></script>
-<!-- 마커 클러스터러 (로컬 동봉 · CDN 불필요) -->
-<script src="./markerclusterer.min.js"></script>
-
 <script>
-// =============================================================
-// 전역 상태
-// =============================================================
 var DATA = window.ADDR_DATA || {};
-var map, infoWindow, clusterer, myMarker = null, watchId = null;
-var allMarkers = [];
+var map, cluster, myMarker = null, watchId = null;
 var panel = document.getElementById('panel');
 var listEl = document.getElementById('list');
 var crumbEl = document.getElementById('crumb');
-// 현재 드릴다운 위치
 var sel = { sido:null, gugun:null, dong:null };
 
 function esc(s){ return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function countDong(arr){ return arr.length; }
 function countGugun(g){ var n=0; for(var d in g) n+=g[d].length; return n; }
 function countSido(s){ var n=0; for(var g in s) n+=countGugun(s[g]); return n; }
 function totalCount(){ var n=0; for(var s in DATA) n+=countSido(DATA[s]); return n; }
+function collectGugun(g){ var out=[]; for(var d in g) out=out.concat(g[d]); return out; }
+function collectSido(s){ var out=[]; for(var g in s) out=out.concat(collectGugun(s[g])); return out; }
 
-// =============================================================
-// 구글맵 로더
-// =============================================================
-function loadGoogleMaps(){
-  var key = window.GOOGLE_MAPS_API_KEY;
-  if(!key || key.indexOf('여기에')===0 || key==='YOUR_GOOGLE_MAPS_API_KEY'){
-    document.getElementById('overlay').innerHTML =
-      '구글 지도 API 키가 필요합니다.<br><br>' +
-      '<code>web/config.js</code> 파일을 열어<br>' +
-      '<code>window.GOOGLE_MAPS_API_KEY = "발급받은_키";</code><br>로 바꿔주세요.<br><br>' +
-      '키 발급: Google Cloud Console → Maps JavaScript API 사용 설정';
-    return;
-  }
-  var s = document.createElement('script');
-  s.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(key) +
-          '&callback=initMap&loading=async';
-  s.async = true;
-  s.onerror = function(){
-    document.getElementById('overlay').textContent = '구글 지도 로드 실패 — API 키/네트워크를 확인하세요.';
-  };
-  document.head.appendChild(s);
-}
+var dotIcon = L.divIcon({ className:'', html:'<div class="addr-dot"></div>', iconSize:[12,12], iconAnchor:[6,6] });
+var redIcon = L.divIcon({ className:'', html:'<div class="my-dot"></div>', iconSize:[18,18], iconAnchor:[9,9] });
 
-// =============================================================
-// 지도 초기화 + 마커 구성
-// =============================================================
 function initMap(){
-  map = new google.maps.Map(document.getElementById('map'), {
-    center: { lat:36.5, lng:127.8 }, zoom:7,
-    mapTypeControl:false, streetViewControl:false, fullscreenControl:false,
-    gestureHandling:'greedy'
-  });
-  infoWindow = new google.maps.InfoWindow();
+  map = L.map('map', { zoomControl:true, preferCanvas:true }).setView([36.5,127.8], 7);
+  // API 키가 필요 없는 구글 지도 타일
+  L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+    subdomains:['0','1','2','3'], maxZoom:20, attribution:'&copy; Google Maps'
+  }).addTo(map);
 
-  // 모든 주소 마커 생성 (클러스터러가 렌더링 최적화)
-  for(var sido in DATA){
-    for(var gugun in DATA[sido]){
-      for(var dong in DATA[sido][gugun]){
-        var arr = DATA[sido][gugun][dong];
-        for(var i=0;i<arr.length;i++){
-          var p = arr[i];
-          if(p[0]==null) continue;              // 좌표 없는 항목 건너뜀
-          var mk = new google.maps.Marker({ position:{lat:p[0], lng:p[1]} });
-          mk.rec = p;
-          mk.addListener('click', function(){ openInfo(this, this.rec); });
-          allMarkers.push(mk);
-        }
-      }
+  cluster = L.markerClusterGroup({ chunkedLoading:true, chunkInterval:200, chunkDelay:20,
+    maxClusterRadius:60, disableClusteringAtZoom:17, removeOutsideVisibleBounds:true });
+
+  var markers = [];
+  for(var sido in DATA) for(var gugun in DATA[sido]) for(var dong in DATA[sido][gugun]){
+    var arr = DATA[sido][gugun][dong];
+    for(var i=0;i<arr.length;i++){
+      var p = arr[i];
+      if(p[0]==null) continue;
+      var m = L.marker([p[0],p[1]], {icon:dotIcon});
+      m._d = p;
+      m.on('click', function(e){ openPopup(e.target, e.target._d); });
+      markers.push(m);
     }
   }
+  cluster.addLayers(markers);
+  map.addLayer(cluster);
 
-  clusterer = new markerClusterer.MarkerClusterer({ map:map, markers:allMarkers });
-
-  document.getElementById('overlay').style.display = 'none';
   document.getElementById('totalCnt').textContent = totalCount().toLocaleString() + '건';
   renderSido();
 }
 
-function openInfo(marker, rec){
-  var addr = esc(rec[2]), tel = rec[3], biz = rec[4];
+function openPopup(marker, rec){
   var nav = 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(rec[2]);
-  var html = '<div class="iw"><div class="a">' + addr + '</div>' +
-    (tel ? '<div class="sub">☎ ' + esc(tel) + '</div>' : '') +
-    (biz ? '<div class="sub">🏢 ' + esc(biz) + '</div>' : '') +
-    '<a class="nav" href="' + nav + '" target="_blank" rel="noopener">🚗 구글 길안내</a></div>';
-  infoWindow.setContent(html);
-  infoWindow.open(map, marker);
-  map.panTo(marker.getPosition());
+  var html = '<div class="popup-addr">' + esc(rec[2]) + '</div>' +
+    (rec[3] ? '<div class="popup-sub">☎ ' + esc(rec[3]) + '</div>' : '') +
+    (rec[4] ? '<div class="popup-sub">🏢 ' + esc(rec[4]) + '</div>' : '') +
+    '<a class="nav-btn" href="' + nav + '" target="_blank" rel="noopener">🚗 구글 길안내</a>';
+  marker.bindPopup(html, {maxWidth:260}).openPopup();
 }
 
-// 특정 범위(주소 배열)로 지도 이동
 function fitToRecords(records){
-  var b = new google.maps.LatLngBounds(); var has=false;
-  records.forEach(function(p){ if(p[0]!=null){ b.extend({lat:p[0], lng:p[1]}); has=true; } });
-  if(has){ map.fitBounds(b); if(records.length<=1) map.setZoom(16); }
+  var pts = records.filter(function(p){ return p[0]!=null; }).map(function(p){ return [p[0],p[1]]; });
+  if(!pts.length) return;
+  if(pts.length===1){ map.setView(pts[0], 16); }
+  else { map.fitBounds(L.latLngBounds(pts), {padding:[40,40]}); }
 }
-function collectGugun(g){ var out=[]; for(var d in g) out=out.concat(g[d]); return out; }
 
-// =============================================================
-// 드릴다운 렌더링
-// =============================================================
+// ── 드릴다운 ──
 function setCrumb(){
-  var html = '<b onclick="renderSido()">전체</b>';
-  if(sel.sido){ html += '<span class="sep">›</span><b onclick="renderGugun()">'+esc(sel.sido)+'</b>'; }
-  if(sel.gugun){ html += '<span class="sep">›</span><b onclick="renderDong()">'+esc(sel.gugun)+'</b>'; }
-  if(sel.dong){ html += '<span class="sep">›</span><b>'+esc(sel.dong)+'</b>'; }
-  crumbEl.innerHTML = html;
+  var h='<b onclick="renderSido()">전체</b>';
+  if(sel.sido) h+='<span class="sep">›</span><b onclick="renderGugun()">'+esc(sel.sido)+'</b>';
+  if(sel.gugun) h+='<span class="sep">›</span><b onclick="renderDong()">'+esc(sel.gugun)+'</b>';
+  if(sel.dong) h+='<span class="sep">›</span><b>'+esc(sel.dong)+'</b>';
+  crumbEl.innerHTML=h;
 }
 function clearList(){ listEl.innerHTML=''; }
-function addBack(fn){
-  var b=document.createElement('div'); b.className='back'; b.textContent='‹ 뒤로';
-  b.onclick=fn; listEl.appendChild(b);
-}
-function addRow(name, count, onClick, isAddr){
-  var r=document.createElement('div'); r.className='row'+(isAddr?' addr-row':'');
-  r.innerHTML = name;
-  if(count!=null) r.innerHTML += '<span class="badge">'+count.toLocaleString()+'</span>';
-  if(!isAddr) r.innerHTML += '<span class="chev">›</span>';
+function addBack(fn){ var b=document.createElement('div'); b.className='back'; b.textContent='‹ 뒤로'; b.onclick=fn; listEl.appendChild(b); }
+function navRow(label, count, onClick){
+  var r=document.createElement('div'); r.className='row';
+  r.innerHTML='<span class="name">'+esc(label)+'</span><span class="badge">'+count.toLocaleString()+'</span><span class="chev">›</span>';
   r.onclick=onClick; listEl.appendChild(r);
 }
-
-// 시도 목록
 function renderSido(){
   sel={sido:null,gugun:null,dong:null}; setCrumb(); clearList();
-  var keys=Object.keys(DATA).sort();
-  keys.forEach(function(s){
-    var r=document.createElement('div'); r.className='row';
-    r.innerHTML='<span class="name">'+esc(s)+'</span><span class="badge">'+countSido(DATA[s]).toLocaleString()+'</span><span class="chev">›</span>';
-    r.onclick=function(){ sel.sido=s; renderGugun(); };
-    listEl.appendChild(r);
-  });
+  Object.keys(DATA).sort().forEach(function(s){ navRow(s, countSido(DATA[s]), function(){ sel.sido=s; renderGugun(); fitToRecords(collectSido(DATA[s])); }); });
   panel.classList.add('open');
 }
-// 구군 목록
 function renderGugun(){
-  sel.gugun=null; sel.dong=null; setCrumb(); clearList();
-  addBack(renderSido);
-  var g=DATA[sel.sido]; var keys=Object.keys(g).sort();
-  keys.forEach(function(k){
-    var r=document.createElement('div'); r.className='row';
-    r.innerHTML='<span class="name">'+esc(k)+'</span><span class="badge">'+countGugun(g[k]).toLocaleString()+'</span><span class="chev">›</span>';
-    r.onclick=function(){ sel.gugun=k; renderDong(); fitToRecords(collectGugun(g[k])); };
-    listEl.appendChild(r);
-  });
-  fitToRecords(collectGugun2(g));
+  sel.gugun=null; sel.dong=null; setCrumb(); clearList(); addBack(renderSido);
+  var g=DATA[sel.sido];
+  Object.keys(g).sort().forEach(function(k){ navRow(k, countGugun(g[k]), function(){ sel.gugun=k; renderDong(); fitToRecords(collectGugun(g[k])); }); });
+  fitToRecords(collectSido(g));
 }
-function collectGugun2(sidoObj){ var out=[]; for(var k in sidoObj) out=out.concat(collectGugun(sidoObj[k])); return out; }
-
-// 동 목록
 function renderDong(){
-  sel.dong=null; setCrumb(); clearList();
-  addBack(renderGugun);
-  var g=DATA[sel.sido][sel.gugun]; var keys=Object.keys(g).sort();
-  keys.forEach(function(k){
-    var r=document.createElement('div'); r.className='row';
-    r.innerHTML='<span class="name">'+esc(k)+'</span><span class="badge">'+g[k].length.toLocaleString()+'</span><span class="chev">›</span>';
-    r.onclick=function(){ sel.dong=k; renderAddr(); fitToRecords(g[k]); };
-    listEl.appendChild(r);
-  });
+  sel.dong=null; setCrumb(); clearList(); addBack(renderGugun);
+  var g=DATA[sel.sido][sel.gugun];
+  Object.keys(g).sort().forEach(function(k){ navRow(k, g[k].length, function(){ sel.dong=k; renderAddr(); fitToRecords(g[k]); }); });
   fitToRecords(collectGugun(g));
 }
-// 주소 목록
 function renderAddr(){
-  setCrumb(); clearList();
-  addBack(renderDong);
+  setCrumb(); clearList(); addBack(renderDong);
   var arr=DATA[sel.sido][sel.gugun][sel.dong];
   arr.forEach(function(p){
     var r=document.createElement('div'); r.className='row addr-row';
@@ -271,11 +184,10 @@ function renderAddr(){
     r.innerHTML='<div class="a">'+esc(p[2])+'</div>'+(sub.length?'<div class="sub">'+sub.join('&nbsp;&nbsp;')+'</div>':'');
     r.onclick=function(){
       if(p[0]==null){ alert('이 주소는 좌표가 없습니다.'); return; }
-      // 해당 위치로 이동 + 정보창 (임시 마커)
-      map.panTo({lat:p[0], lng:p[1]}); map.setZoom(17);
-      var tmp=new google.maps.Marker({position:{lat:p[0],lng:p[1]}, map:map});
-      tmp.rec=p; openInfo(tmp, p);
-      google.maps.event.addListenerOnce(infoWindow,'closeclick',function(){ tmp.setMap(null); });
+      map.setView([p[0],p[1]], 17);
+      var tmp=L.marker([p[0],p[1]], {icon:dotIcon}).addTo(map);
+      openPopup(tmp, p);
+      tmp.on('popupclose', function(){ map.removeLayer(tmp); });
       panel.classList.remove('open');
     };
     listEl.appendChild(r);
@@ -283,31 +195,23 @@ function renderAddr(){
   fitToRecords(arr);
 }
 
-// =============================================================
-// 패널 토글 · GPS
-// =============================================================
+// ── 패널 · GPS ──
 document.getElementById('panelHandle').onclick=function(){ panel.classList.toggle('open'); };
-
 document.getElementById('gpsBtn').addEventListener('click', function(){
   if(!navigator.geolocation){ alert('위치 기능을 지원하지 않습니다.'); return; }
   if(watchId!==null){ navigator.geolocation.clearWatch(watchId); }
   var btn=this; btn.textContent='⏳';
   watchId=navigator.geolocation.watchPosition(function(pos){
     btn.textContent='🎯';
-    var ll={lat:pos.coords.latitude, lng:pos.coords.longitude};
-    if(myMarker){ myMarker.setPosition(ll); }
-    else {
-      myMarker=new google.maps.Marker({ position:ll, map:map, title:'내 위치',
-        icon:{ path:google.maps.SymbolPath.CIRCLE, scale:9, fillColor:'#e53935',
-               fillOpacity:1, strokeColor:'#fff', strokeWeight:3 }, zIndex:9999 });
-    }
-    map.panTo(ll); map.setZoom(16);
+    var ll=[pos.coords.latitude, pos.coords.longitude];
+    if(myMarker){ myMarker.setLatLng(ll); }
+    else { myMarker=L.marker(ll, {icon:redIcon, zIndexOffset:1000}).addTo(map).bindPopup('📍 현재 내 위치'); }
+    map.setView(ll, 16);
   }, function(err){ btn.textContent='🎯'; alert('위치를 가져올 수 없습니다: '+err.message); },
   { enableHighAccuracy:true, maximumAge:5000, timeout:10000 });
 });
 
-// 시작
-loadGoogleMaps();
+initMap();
 </script>
 </body>
 </html>

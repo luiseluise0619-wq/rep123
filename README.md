@@ -109,16 +109,16 @@ python 실주소_지오코딩.py
 - 결과 `주소_연락처_병합.xlsx`(A=주소, D=전화, E=사업자) → 이어서 메인 스크립트 실행 시 **G·H열** 정리
 - 핵심 함수 `attach_contacts(addresses, tels, bizs)` 로 코드에서도 바로 사용 가능
 
-## 웹 지도 (Vercel · 구글맵 API · 구/동/주소 드릴다운) — `web/`
+## 웹 지도 (Vercel · 구/동/주소 드릴다운) — `web/`
 
 `시도 → 구 → 동 → 주소`를 눌러가며 목록을 좌르륵 보고, 주소를 누르면 지도 이동 + 길안내.
-배경은 **구글 지도 JavaScript API**(키 필요, Vercel 배포용). 만드는 법:
+**API 키·카드 불필요** — 키 없는 구글 타일 + 동봉된 Leaflet(`web/lib/`)로 그냥 올리면 작동.
 
 ```bash
 python 웹데이터_생성.py     # web/addresses.js 생성
-# web/config.js 에 구글맵 API 키 입력 후 Vercel 에 web 폴더 배포
+# Vercel 에서 Root Directory 를 web 으로 지정해 배포 (그게 전부)
 ```
-자세한 배포 절차는 [`web/README.md`](web/README.md) 참고.
+자세한 배포 절차·문제해결은 [`web/README.md`](web/README.md) 참고.
 
 ## 파일 구성
 
