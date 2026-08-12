@@ -1,0 +1,4 @@
+이 폴더의 라이브러리는 오프라인 자립형(HTML 단일 실행)을 위해 포함되었습니다.
+- Leaflet 1.9.4  (BSD-2-Clause)  https://leafletjs.com
+- Leaflet.markercluster 1.5.3 (MIT)  https://github.com/Leaflet/Leaflet.markercluster
+leaflet.css 의 마커/레이어 이미지는 data URI로 인라인 처리되었습니다.
