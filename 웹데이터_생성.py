@@ -51,11 +51,12 @@ def main():
         dong  = r['동네'] or NO_DONG
 
         real = cache.get(core.clean_address_for_geocoding(r['주소'])) if cache else None
+        is_real = 1 if real else 0
         loc = real or core.locate(r['시도'], r['구군'], r['주소'])
         lat, lng = (round(loc[0], 6), round(loc[1], 6)) if loc else (None, None)
 
         node = tree.setdefault(sido, {}).setdefault(gugun, {}).setdefault(dong, [])
-        node.append([lat, lng, r['주소'], r.get('사업장수', 1)])
+        node.append([lat, lng, r['주소'], r.get('사업장수', 1), is_real])
         n_pt += 1
 
     data_json = json.dumps(tree, ensure_ascii=False, separators=(',', ':'))

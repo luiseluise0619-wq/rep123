@@ -481,11 +481,19 @@ __HEAD_ASSETS__
     width:12px; height:12px; background:#1a73e8; border:2px solid #fff;
     border-radius:50%; box-shadow:0 1px 2px rgba(0,0,0,.4);
   }
+  .addr-dot.approx { background:#f39c12; }   /* 근사좌표(변환 실패) = 주황 */
+  .legend { position:absolute; left:10px; bottom:14px; z-index:1000;
+    background:rgba(255,255,255,.92); padding:6px 10px; border-radius:8px;
+    box-shadow:0 2px 6px rgba(0,0,0,.3); font-size:12px; color:#333; }
+  .legend b { font-weight:bold; }
+  .dotb { display:inline-block; width:10px; height:10px; border-radius:50%; vertical-align:middle; margin-right:3px; }
 </style>
 </head>
 <body>
 <div id="map"></div>
 <div class="info-badge">📍 주소 __COUNT__건 · 마커를 눌러 길안내</div>
+<div class="legend" id="legend"><span class="dotb" style="background:#1a73e8"></span>실좌표 <b id="nReal">-</b>
+  &nbsp; <span class="dotb" style="background:#f39c12"></span>근사 <b id="nApprox">-</b></div>
 <button class="gps-btn" id="gpsBtn" title="내 위치 찾기">🎯</button>
 
 <script>
@@ -514,12 +522,16 @@ var cluster = L.markerClusterGroup({
 
 function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-var dotIcon = L.divIcon({ className:'', html:'<div class="addr-dot"></div>', iconSize:[12,12], iconAnchor:[6,6] });
+var dotReal   = L.divIcon({ className:'', html:'<div class="addr-dot"></div>', iconSize:[12,12], iconAnchor:[6,6] });
+var dotApprox = L.divIcon({ className:'', html:'<div class="addr-dot approx"></div>', iconSize:[12,12], iconAnchor:[6,6] });
 
+var nReal=0, nApprox=0;
 var markers = [];
 for (var i=0; i<POINTS.length; i++){
   var p = POINTS[i];
-  var m = L.marker([p[0], p[1]], {icon:dotIcon});
+  var real = p[4] ? true : false;
+  if(real) nReal++; else nApprox++;
+  var m = L.marker([p[0], p[1]], {icon: real ? dotReal : dotApprox});
   m._d = p;                       // 팝업 내용은 클릭 시 생성(메모리 절약)
   m.on('click', function(e){
     var d = e.target._d;
@@ -539,6 +551,8 @@ for (var i=0; i<POINTS.length; i++){
 }
 cluster.addLayers(markers);
 map.addLayer(cluster);
+document.getElementById('nReal').textContent = nReal.toLocaleString();
+document.getElementById('nApprox').textContent = nApprox.toLocaleString();
 
 // ── 실시간 GPS 내 위치 추적 (빨간 마커) ─────────────────────────
 var myMarker = null, watchId = null;
@@ -616,16 +630,18 @@ def save_map_html(records, path, coord_lookup=None):
     exact = 0
     for rec in records:
         loc = None
+        is_real = 0
         if coord_lookup:
             loc = coord_lookup.get(rec['주소'])
             if loc:
                 exact += 1
+                is_real = 1
         if loc is None:
             loc = locate(rec['시도'], rec['구군'], rec['주소'])  # 근사좌표 폴백
         if loc is None:
             skipped += 1
             continue
-        points.append([round(loc[0], 6), round(loc[1], 6), rec['주소'], rec.get('사업장수', 1)])
+        points.append([round(loc[0], 6), round(loc[1], 6), rec['주소'], rec.get('사업장수', 1), is_real])
     if coord_lookup:
         print('      · 실제좌표 %d건 / 근사좌표 폴백 %d건' % (exact, len(points) - exact))
 

@@ -60,6 +60,11 @@
   .gps-btn:active { transform:scale(.94); }
   .addr-dot { width:12px; height:12px; background:#1a73e8; border:2px solid #fff;
     border-radius:50%; box-shadow:0 1px 2px rgba(0,0,0,.4); }
+  .addr-dot.approx { background:#f39c12; }
+  .legend { position:absolute; left:10px; bottom:80px; z-index:1000;
+    background:rgba(255,255,255,.93); padding:6px 10px; border-radius:8px;
+    box-shadow:0 2px 6px rgba(0,0,0,.3); font-size:12px; color:#333; }
+  .dotb { display:inline-block; width:10px; height:10px; border-radius:50%; vertical-align:middle; margin-right:3px; }
   .my-dot { width:18px; height:18px; background:#e53935; border:3px solid #fff;
     border-radius:50%; box-shadow:0 0 6px rgba(229,57,53,.9); }
   .popup-addr { font-size:14px; font-weight:bold; margin-bottom:6px; word-break:keep-all; color:#111; }
@@ -71,6 +76,8 @@
 <body>
 <div class="topbar">🗺️ 지역별 주소 지도 <span class="cnt" id="totalCnt"></span></div>
 <div id="map"></div>
+<div class="legend"><span class="dotb" style="background:#1a73e8"></span>실좌표 <b id="nReal">-</b>
+  &nbsp; <span class="dotb" style="background:#f39c12"></span>근사 <b id="nApprox">-</b></div>
 <button class="gps-btn" id="gpsBtn" title="내 위치">🎯</button>
 
 <div id="panel">
@@ -96,6 +103,7 @@ function collectGugun(g){ var out=[]; for(var d in g) out=out.concat(g[d]); retu
 function collectSido(s){ var out=[]; for(var g in s) out=out.concat(collectGugun(s[g])); return out; }
 
 var dotIcon = L.divIcon({ className:'', html:'<div class="addr-dot"></div>', iconSize:[12,12], iconAnchor:[6,6] });
+var dotApprox = L.divIcon({ className:'', html:'<div class="addr-dot approx"></div>', iconSize:[12,12], iconAnchor:[6,6] });
 var redIcon = L.divIcon({ className:'', html:'<div class="my-dot"></div>', iconSize:[18,18], iconAnchor:[9,9] });
 
 function initMap(){
@@ -110,12 +118,15 @@ function initMap(){
 
   // 모든 마커를 미리 만들어 두고(시도/구/동 태그 부착), 선택 범위만 지도에 표시
   window.allMarkers = [];
+  var nReal=0, nApprox=0;
   for(var sido in DATA) for(var gugun in DATA[sido]) for(var dong in DATA[sido][gugun]){
     var arr = DATA[sido][gugun][dong];
     for(var i=0;i<arr.length;i++){
       var p = arr[i];
       if(p[0]==null) continue;
-      var m = L.marker([p[0],p[1]], {icon:dotIcon});
+      var real = p[4] ? true : false;
+      if(real) nReal++; else nApprox++;
+      var m = L.marker([p[0],p[1]], {icon: real ? dotIcon : dotApprox});
       m._d = p; m._s = sido; m._g = gugun; m._n = dong;
       m.on('click', function(e){ openPopup(e.target, e.target._d); });
       allMarkers.push(m);
@@ -125,6 +136,8 @@ function initMap(){
   showMarkers(null);   // 처음엔 전체 표시
 
   document.getElementById('totalCnt').textContent = totalCount().toLocaleString() + '건';
+  document.getElementById('nReal').textContent = nReal.toLocaleString();
+  document.getElementById('nApprox').textContent = nApprox.toLocaleString();
   renderSido();
 }
 
