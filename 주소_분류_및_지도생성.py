@@ -74,11 +74,17 @@ SIDO_SET = {
 # 구군(기초자치단체): '○○시 / ○○군 / ○○구' 형태의 순수 한글 토큰
 RE_GUGUN = re.compile(r'^[가-힣]+(?:시|군|구)$')
 
-# 동네: 괄호 안 법정동을 최우선으로 추출  예) "...19, 1층(호암동)" → 호암동
-RE_PAREN_DONG = re.compile(r'\(\s*([가-힣]+(?:동|로|길|리|읍|면))\s*(?:[,)]|$)')
+# 동네 접미사: 동·로(대로 포함)·길·리·읍·면·가
+#   ‘가’(예: 북문로3가)와 중간 숫자(예: 나성북1로, 효자동1가)까지 포함해
+#   기타로 빠지는 주소가 없도록 폭넓게 인식한다. (단, 첫 글자는 반드시 한글)
+DONG_SUFFIX = r'(?:동|로|길|리|읍|면|가)'
 
-# 동네: 순수 한글로 된 동·로·길·리·읍·면 토큰  (숫자가 섞인 '호암5길' 등은 제외)
-RE_PURE_DONG = re.compile(r'^[가-힣]+(?:동|로|길|리|읍|면)$')
+# 동네: 괄호 안 법정동을 최우선으로 추출  예) "...27(남문로1가)" → 남문로1가
+RE_PAREN_DONG = re.compile(r'\(\s*([가-힣][가-힣0-9]*' + DONG_SUFFIX + r')\s*(?:[,)]|$)')
+
+# 동네: 한글로 시작하는 동·로·길·리·읍·면·가 토큰
+#   (숫자로만 된 건물번호 '102동', 'S001동' 등은 첫 글자가 한글이 아니므로 제외)
+RE_PURE_DONG = re.compile(r'^[가-힣][가-힣0-9]*' + DONG_SUFFIX + r'$')
 
 
 def classify_address(raw):
@@ -577,17 +583,30 @@ def build_head_assets():
     return CDN_ASSETS
 
 
-def save_map_html(records, path):
-    """분류된 좌표를 담은 독립 실행형 모바일 지도 HTML을 생성."""
+def save_map_html(records, path, coord_lookup=None):
+    """분류된 좌표를 담은 독립 실행형 모바일 지도 HTML을 생성.
+
+    coord_lookup : {주소문자열: (위도, 경도)}  실제 지오코딩 좌표.
+                   해당 주소가 있으면 근사좌표 대신 실제 좌표를 사용한다.
+    """
     print('[4/4] 모바일 지도 HTML 생성 중 :', path)
     points = []
     skipped = 0
+    exact = 0
     for rec in records:
-        loc = locate(rec['시도'], rec['구군'], rec['주소'])
+        loc = None
+        if coord_lookup:
+            loc = coord_lookup.get(rec['주소'])
+            if loc:
+                exact += 1
+        if loc is None:
+            loc = locate(rec['시도'], rec['구군'], rec['주소'])  # 근사좌표 폴백
         if loc is None:
             skipped += 1
             continue
-        points.append([loc[0], loc[1], rec['주소'], rec['전화']])
+        points.append([round(loc[0], 6), round(loc[1], 6), rec['주소'], rec['전화']])
+    if coord_lookup:
+        print('      · 실제좌표 %d건 / 근사좌표 폴백 %d건' % (exact, len(points) - exact))
 
     # ensure_ascii=False 로 한글을 그대로 담고 UTF-8 로 저장
     data_json = json.dumps(points, ensure_ascii=False, separators=(',', ':'))
@@ -605,13 +624,8 @@ def save_map_html(records, path):
 # =============================================================================
 # 6. 메인
 # =============================================================================
-def main():
-    if not os.path.exists(INPUT_XLSX):
-        raise FileNotFoundError('입력 엑셀을 찾을 수 없습니다: %s' % INPUT_XLSX)
-
-    rows = read_rows(INPUT_XLSX)
-
-    print('[2/4] 주소 분류 중 ...')
+def build_records(rows):
+    """(주소, 전화, 사업자) 목록 → 분류된 레코드 목록."""
     records = []
     ok = 0
     for addr, tel, biz in rows:
@@ -623,6 +637,17 @@ def main():
             '주소': addr, '시도': sido, '구군': gugun, '동네': dong,
             '상세': detail, '상태': status, '전화': tel, '사업자': biz,
         })
+    return records, ok
+
+
+def main():
+    if not os.path.exists(INPUT_XLSX):
+        raise FileNotFoundError('입력 엑셀을 찾을 수 없습니다: %s' % INPUT_XLSX)
+
+    rows = read_rows(INPUT_XLSX)
+
+    print('[2/4] 주소 분류 중 ...')
+    records, ok = build_records(rows)
     print('      → 정상 %d건 / 기타 %d건' % (ok, len(records) - ok))
 
     save_classified_xlsx(records, OUTPUT_XLSX)
