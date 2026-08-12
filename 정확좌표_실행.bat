@@ -2,9 +2,11 @@
 chcp 65001 >nul
 cd /d "%~dp0"
 echo ==================================================
-echo   Address -> exact coordinates (VWorld)
-echo   1) Put your key in  vworld_key.txt
-echo   2) This runs automatically. Please wait ~20 min.
+echo   Address -> exact coordinates
+echo   Put your key in ONE of these (then save):
+echo     kakao_key.txt   (Kakao REST API key - recommended)
+echo     vworld_key.txt  (VWorld key)
+echo   Then this runs automatically.
 echo ==================================================
 echo.
 python run_geocode.py

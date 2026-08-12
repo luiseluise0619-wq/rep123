@@ -34,23 +34,18 @@ import socket
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # =============================================================================
-# CONFIG  (여기만 수정)
+# CONFIG
 # =============================================================================
-BACKEND = 'VWORLD'          # 'VWORLD' | 'KAKAO' | 'NOMINATIM'
-
-KAKAO_REST_KEY = r''        # 예) r'abcd1234...'   (BACKEND='KAKAO' 일 때)
-VWORLD_KEY     = r''        # 예) r'XXXX-XXXX-...' (BACKEND='VWORLD' 일 때)
+# 백엔드는 아래에서 '키 파일'을 보고 자동 선택됩니다(편집 불필요):
+#   kakao_key.txt 에 키가 있으면 → KAKAO,  없고 vworld_key.txt 에 있으면 → VWORLD
+KAKAO_REST_KEY = r''
+VWORLD_KEY     = r''
 NOMINATIM_UA   = r'addr-map-geocoder/1.0 (contact: your_email@example.com)'
 
-# 동시 처리 개수(병렬). VWorld는 3~4가 안정적(너무 크면 서버가 연결을 끊음).
-#   NOMINATIM 은 정책상 반드시 1.
-WORKERS = {'VWORLD': 3, 'KAKAO': 8, 'NOMINATIM': 1}[BACKEND]
 MAX_RETRY = 4               # 네트워크 오류 시 재시도 횟수
 CACHE_EVERY = 500           # 이 건수마다 캐시 파일 저장(중단 대비)
 RETRY_FAILED = True         # 실패(null)한 주소도 다시 시도 (여러 번 돌리면 점점 채워짐)
-
-# 0 = 전체 실행. 처음 키 확인만 하려면 10 정도로.
-TEST_LIMIT = 0              # 0 이면 전체, N>0 이면 앞에서 N건만
+TEST_LIMIT = 0              # 0 이면 전체, N>0 이면 앞에서 N건만(키 확인용)
 
 # =============================================================================
 # 경로 (윈도우 역슬래시 방지 r'')
@@ -60,12 +55,32 @@ INPUT_XLSX  = os.path.join(BASE_DIR, r'exceldata1.xlsx')
 CACHE_PATH  = os.path.join(BASE_DIR, r'geocode_cache.json')
 OUTPUT_HTML = os.path.join(BASE_DIR, r'모바일_구글지도.html')
 
-# 키를 .py 안에 안 넣어도, 같은 폴더의 'vworld_key.txt' 에 붙여넣으면 자동으로 읽음
+
+def _read_key(fname):
+    p = os.path.join(BASE_DIR, fname)
+    if os.path.exists(p):
+        with open(p, 'r', encoding='utf-8') as f:
+            v = f.read().strip()
+        if v and not v.startswith('여기에'):
+            return v
+    return ''
+
+
+# 키 파일에 붙여넣기만 하면 됨(.py 편집 불필요). 카카오가 있으면 카카오 우선.
+if not KAKAO_REST_KEY:
+    KAKAO_REST_KEY = _read_key('kakao_key.txt')
 if not VWORLD_KEY:
-    _kf = os.path.join(BASE_DIR, r'vworld_key.txt')
-    if os.path.exists(_kf):
-        with open(_kf, 'r', encoding='utf-8') as _f:
-            VWORLD_KEY = _f.read().strip()
+    VWORLD_KEY = _read_key('vworld_key.txt')
+
+if KAKAO_REST_KEY:
+    BACKEND = 'KAKAO'
+elif VWORLD_KEY:
+    BACKEND = 'VWORLD'
+else:
+    BACKEND = 'VWORLD'      # 키 없으면 안내 후 종료
+
+# 동시 처리 개수(병렬). 카카오는 잘 안 끊겨 8, VWorld는 3(과하면 서버가 끊음).
+WORKERS = {'VWORLD': 3, 'KAKAO': 8, 'NOMINATIM': 1}[BACKEND]
 
 # 같은 폴더의 메인 모듈(한글 파일명)을 동적 import 하여 분류·지도 로직 재사용
 _spec = importlib.util.spec_from_file_location(
@@ -177,12 +192,11 @@ def save_cache(cache):
 # 메인
 # =============================================================================
 def main():
-    if BACKEND == 'KAKAO' and not KAKAO_REST_KEY:
-        raise SystemExit('KAKAO_REST_KEY 를 입력하세요.')
-    if BACKEND == 'VWORLD' and (not VWORLD_KEY or VWORLD_KEY.startswith('여기에')):
+    if not KAKAO_REST_KEY and not VWORLD_KEY:
         raise SystemExit(
-            'VWorld 키가 없습니다.\n'
-            '  → vworld_key.txt 파일을 열어 발급받은 인증키를 붙여넣고 저장하세요.')
+            '키가 없습니다. 둘 중 하나에 키를 붙여넣고 저장하세요:\n'
+            '  · kakao_key.txt  (카카오 REST API 키 · 권장)\n'
+            '  · vworld_key.txt (VWorld 인증키)')
 
     print('== 지오코딩 백엔드:', BACKEND, '==')
     rows = core.read_rows(INPUT_XLSX)
