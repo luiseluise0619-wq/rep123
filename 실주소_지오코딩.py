@@ -103,14 +103,22 @@ def _http_get_json(url, headers=None):
 #   세 백엔드 모두 WGS84(EPSG:4326)로 좌표를 받으므로 좌표계 변환이 필요 없음
 # =============================================================================
 def geocode_kakao(addr):
+    hdr = {'Authorization': 'KakaoAK ' + KAKAO_REST_KEY}
+    # 1) 주소 검색 (정확)
     url = 'https://dapi.kakao.com/v2/local/search/address.json?query=' + \
           urllib.parse.quote(addr)
-    data = _http_get_json(url, {'Authorization': 'KakaoAK ' + KAKAO_REST_KEY})
-    docs = data.get('documents') or []
-    if not docs:
-        return None
-    d = docs[0]
-    return float(d['y']), float(d['x'])          # y=위도, x=경도
+    docs = (_http_get_json(url, hdr).get('documents') or [])
+    if docs:
+        d = docs[0]
+        return float(d['y']), float(d['x'])      # y=위도, x=경도
+    # 2) 키워드 검색 폴백 (주소 검색 실패 시)
+    url2 = 'https://dapi.kakao.com/v2/local/search/keyword.json?query=' + \
+           urllib.parse.quote(addr)
+    docs2 = (_http_get_json(url2, hdr).get('documents') or [])
+    if docs2:
+        d = docs2[0]
+        return float(d['y']), float(d['x'])
+    return None
 
 
 def _vworld_once(addr, addr_type):
