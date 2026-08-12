@@ -100,7 +100,6 @@ var sel = { sido:null, gugun:null, dong:null };
 function esc(s){ return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function countGugun(g){ var n=0; for(var d in g) n+=g[d].length; return n; }
 function countSido(s){ var n=0; for(var g in s) n+=countGugun(s[g]); return n; }
-function totalCount(){ var n=0; for(var s in DATA) n+=countSido(DATA[s]); return n; }
 function collectGugun(g){ var out=[]; for(var d in g) out=out.concat(g[d]); return out; }
 function collectSido(s){ var out=[]; for(var g in s) out=out.concat(collectGugun(s[g])); return out; }
 
@@ -108,64 +107,36 @@ var dotIcon = L.divIcon({ className:'', html:'<div class="addr-dot"></div>', ico
 var dotApprox = L.divIcon({ className:'', html:'<div class="addr-dot approx"></div>', iconSize:[12,12], iconAnchor:[6,6] });
 var redIcon = L.divIcon({ className:'', html:'<div class="my-dot"></div>', iconSize:[18,18], iconAnchor:[9,9] });
 
-// ================= 브라우저 실시간 지오코딩(VWorld) =================
-// 키가 있으면 구/동 선택 시 그 주소들을 VWorld로 조회해 '정확한 위치'로 점 이동.
-// (py 실행 불필요 · JSONP로 CORS 우회 · 결과는 브라우저 localStorage에 저장)
-var VWKEY = (window.VWORLD_KEY || '').trim();
-var geoStatusEl = document.getElementById('geoStatus');
-var geoCache = {};
-try { geoCache = JSON.parse(localStorage.getItem('vw_geo') || '{}'); } catch(e){}
-var geoSaveTimer = null;
-function geoSave(){ clearTimeout(geoSaveTimer); geoSaveTimer=setTimeout(function(){
-  try{ localStorage.setItem('vw_geo', JSON.stringify(geoCache)); }catch(e){} }, 1000); }
+// ── 성능: 마커는 '필요할 때 생성 + 재사용', 표시는 잘게 쪼개 비동기로 ──
+// 42,401개를 로드 즉시 한꺼번에 만들면 화면이 몇 초~수십 초 멈춰 버튼이 안 먹힌다.
+// 그래서 (1) 목록부터 그리고 (2) 마커는 선택 범위만 지연 생성/캐시한다.
+var ALL = [];                    // 평면 인덱스 {p, real, s, g, d}
+var markerCache = new Map();     // 점 → L.marker (한 번만 생성)
+var _showToken = 0;              // 표시 작업 토큰(새 선택이 오면 옛 작업 취소)
 
-function cleanAddr(a){ return String(a).replace(/\(.*?\)/g,'').split(',')[0].replace(/\s+/g,' ').trim(); }
-
-function jsonp(url){
-  return new Promise(function(resolve,reject){
-    var cb='vwcb_'+(jsonp._n=(jsonp._n||0)+1)+'_'+Math.floor(performance.now());
-    var s=document.createElement('script');
-    var to=setTimeout(function(){ done(); reject('timeout'); }, 8000);
-    function done(){ clearTimeout(to); try{delete window[cb];}catch(e){} if(s.parentNode) s.parentNode.removeChild(s); }
-    window[cb]=function(d){ done(); resolve(d); };
-    s.onerror=function(){ done(); reject('neterr'); };
-    s.src=url+'&callback='+cb; document.head.appendChild(s);
-  });
-}
-function vwGeocode(addr){
-  var key=cleanAddr(addr);
-  if(geoCache[key]) return Promise.resolve(geoCache[key]);
-  if(!VWKEY) return Promise.resolve(null);
-  var base='https://api.vworld.kr/req/address?service=address&request=getcoord&version=2.0'
-    +'&crs=epsg:4326&format=json&key='+encodeURIComponent(VWKEY)+'&address='+encodeURIComponent(key);
-  function one(t){ return jsonp(base+'&type='+t).then(function(d){
-    if(d&&d.response&&d.response.status==='OK'){ var p=d.response.result.point; return [parseFloat(p.y),parseFloat(p.x)]; }
-    return null; }).catch(function(){ return null; }); }
-  return one('ROAD').then(function(r){ return r || one('PARCEL'); })
-    .then(function(r){ if(r){ geoCache[key]=r; geoSave(); } return r; });
-}
-
-// 마커 묶음을 동시 4개씩 조회해 정확 위치로 이동
-function geocodeMarkers(markers){
-  if(!VWKEY){ if(geoStatusEl) geoStatusEl.textContent='(정확위치: config.js에 VWorld 키 입력 시 작동)'; return; }
-  var queue=markers.filter(function(m){ return m && !m._exact; });
-  if(!queue.length){ if(geoStatusEl) geoStatusEl.textContent=''; return; }
-  var i=0, active=0, done=0, CONC=4;
-  function tick(){
-    while(active<CONC && i<queue.length){
-      var m=queue[i++]; active++;
-      vwGeocode(m._d[2]).then(function(res){ active--; done++;
-        if(res && this._d){ this.setLatLng(res); this.setIcon(dotIcon); this._exact=true; }
-        if(geoStatusEl) geoStatusEl.textContent='정확 위치 조회 '+done+'/'+queue.length;
-        tick();
-      }.bind(m));
+function buildIndex(){
+  var nReal = 0, nApprox = 0;
+  for(var sido in DATA) for(var gugun in DATA[sido]) for(var dong in DATA[sido][gugun]){
+    var arr = DATA[sido][gugun][dong];
+    for(var i=0;i<arr.length;i++){
+      var p = arr[i];
+      if(p[0]==null) continue;
+      var real = p[4] ? true : false;
+      ALL.push({ p:p, real:real, s:sido, g:gugun, d:dong });
+      if(real) nReal++; else nApprox++;
     }
-    if(active===0 && i>=queue.length && geoStatusEl) geoStatusEl.textContent='정확 위치 완료 ('+queue.length+'건)';
   }
-  tick();
+  return { nReal:nReal, nApprox:nApprox };
 }
-function markersOf(s,g,d){ return allMarkers.filter(function(m){
-  return m._s===s && (g==null||m._g===g) && (d==null||m._n===d); }); }
+function getMarker(rec){
+  var m = markerCache.get(rec.p);
+  if(m) return m;
+  m = L.marker([rec.p[0], rec.p[1]], { icon: rec.real ? dotIcon : dotApprox });
+  m._d = rec.p; m._s = rec.s; m._g = rec.g; m._n = rec.d;
+  m.on('click', function(e){ openPopup(e.target, e.target._d); });
+  markerCache.set(rec.p, m);
+  return m;
+}
 
 function initMap(){
   map = L.map('map', { zoomControl:true, preferCanvas:true }).setView([36.5,127.8], 7);
@@ -174,43 +145,36 @@ function initMap(){
     subdomains:['0','1','2','3'], maxZoom:20, attribution:'&copy; Google Maps'
   }).addTo(map);
 
+  // disableClusteringAtZoom 제거: 줌인해도 밀집지역 수천 개 마커를 개별로 안 뿌림
+  // → 프리즈 방지. 정확한 단일 지점은 목록에서 주소를 누르면 단일 마커로 표시됨.
   cluster = L.markerClusterGroup({ chunkedLoading:true, chunkInterval:200, chunkDelay:20,
-    maxClusterRadius:60, disableClusteringAtZoom:17, removeOutsideVisibleBounds:true });
-
-  // 모든 마커를 미리 만들어 두고(시도/구/동 태그 부착), 선택 범위만 지도에 표시
-  window.allMarkers = [];
-  var nReal=0, nApprox=0;
-  for(var sido in DATA) for(var gugun in DATA[sido]) for(var dong in DATA[sido][gugun]){
-    var arr = DATA[sido][gugun][dong];
-    for(var i=0;i<arr.length;i++){
-      var p = arr[i];
-      if(p[0]==null) continue;
-      var real = p[4] ? true : false;
-      var cached = geoCache[cleanAddr(p[2])];        // 이전에 조회해둔 정확 좌표
-      var lat = cached ? cached[0] : p[0];
-      var lng = cached ? cached[1] : p[1];
-      var exact = cached ? true : false;
-      if(real || exact) nReal++; else nApprox++;
-      var m = L.marker([lat,lng], {icon: (real||exact) ? dotIcon : dotApprox});
-      m._d = p; m._s = sido; m._g = gugun; m._n = dong; m._exact = exact;
-      m.on('click', function(e){ openPopup(e.target, e.target._d); });
-      allMarkers.push(m);
-    }
-  }
+    maxClusterRadius:70, spiderfyOnMaxZoom:true, removeOutsideVisibleBounds:true });
   map.addLayer(cluster);
-  showMarkers(null);   // 처음엔 전체 표시
 
-  document.getElementById('totalCnt').textContent = totalCount().toLocaleString() + '건';
-  document.getElementById('nReal').textContent = nReal.toLocaleString();
-  document.getElementById('nApprox').textContent = nApprox.toLocaleString();
-  renderSido();
+  var cnt = buildIndex();   // 평면 인덱스만 먼저(가벼움 · 마커는 아직 안 만듦)
+  document.getElementById('totalCnt').textContent = ALL.length.toLocaleString() + '건';
+  document.getElementById('nReal').textContent = cnt.nReal.toLocaleString();
+  document.getElementById('nApprox').textContent = cnt.nApprox.toLocaleString();
+
+  renderSido();                                     // ★ 목록 먼저 → 버튼 즉시 작동
+  setTimeout(function(){ showMarkers(null); }, 0);  // 전체 마커는 뒤에서 천천히
 }
 
-// 선택 범위(filter)에 맞는 마커만 지도에 표시. filter=null 이면 전체.
+// 선택 범위(filter)에 맞는 점만 지도에 표시. filter=null 이면 전체.
+// 마커 생성/추가를 2000개씩 끊어서 처리 → 메인 스레드가 안 멈춘다(모바일 대응).
 function showMarkers(filter){
+  var token = ++_showToken;
   cluster.clearLayers();
-  var subset = filter ? allMarkers.filter(filter) : allMarkers;
-  cluster.addLayers(subset);
+  var recs = [];
+  for(var i=0;i<ALL.length;i++){ if(!filter || filter(ALL[i])) recs.push(ALL[i]); }
+  var CH = 2000, idx = 0;
+  (function step(){
+    if(token !== _showToken) return;                // 새 선택이 들어오면 이 작업 중단
+    var slice = [], end = Math.min(idx+CH, recs.length);
+    for(; idx<end; idx++) slice.push(getMarker(recs[idx]));
+    if(slice.length) cluster.addLayers(slice);
+    if(idx < recs.length) setTimeout(step, 0);
+  })();
 }
 
 function openPopup(marker, rec){
@@ -256,7 +220,7 @@ function renderSido(){
 function renderGugun(){
   sel.gugun=null; sel.dong=null; setCrumb(); clearList(); addBack(renderSido);
   var s=sel.sido;
-  showMarkers(function(m){ return m._s===s; });          // 이 시도만 점으로
+  showMarkers(function(r){ return r.s===s; });           // 이 시도만 점으로
   fitToRecords(collectSido(DATA[s]));
   var g=DATA[s];
   Object.keys(g).sort().forEach(function(k){ navRow(k, countGugun(g[k]), function(){ sel.gugun=k; renderDong(); }); });
@@ -264,7 +228,7 @@ function renderGugun(){
 function renderDong(){
   sel.dong=null; setCrumb(); clearList(); addBack(renderGugun);
   var s=sel.sido, gg=sel.gugun;
-  showMarkers(function(m){ return m._s===s && m._g===gg; });   // 이 구만 점으로
+  showMarkers(function(r){ return r.s===s && r.g===gg; });     // 이 구만 점으로
   fitToRecords(collectGugun(DATA[s][gg]));
   var g=DATA[s][gg];
   Object.keys(g).sort().forEach(function(k){ navRow(k, g[k].length, function(){ sel.dong=k; renderAddr(); }); });
@@ -273,9 +237,7 @@ function renderAddr(){
   setCrumb(); clearList(); addBack(renderDong);
   var s=sel.sido, gg=sel.gugun, dd=sel.dong;
   var arr=DATA[s][gg][dd];
-  showMarkers(function(m){ return m._s===s && m._g===gg && m._n===dd; });  // 이 동만 점으로
-  // 좌표는 이미 미리 넣어둠(카카오+gimi9) → 브라우저 실시간 조회는 사용 안 함
-  // geocodeMarkers(markersOf(s, gg, dd));
+  showMarkers(function(r){ return r.s===s && r.g===gg && r.d===dd; });  // 이 동만 점으로
   arr.forEach(function(p){
     var r=document.createElement('div'); r.className='row addr-row';
     var sub=[];
