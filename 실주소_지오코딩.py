@@ -31,6 +31,7 @@ import urllib.request
 import urllib.error
 import http.client
 import socket
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # =============================================================================
 # CONFIG  (여기만 수정)
@@ -41,10 +42,11 @@ KAKAO_REST_KEY = r''        # 예) r'abcd1234...'   (BACKEND='KAKAO' 일 때)
 VWORLD_KEY     = r''        # 예) r'XXXX-XXXX-...' (BACKEND='VWORLD' 일 때)
 NOMINATIM_UA   = r'addr-map-geocoder/1.0 (contact: your_email@example.com)'
 
-# 호출 간격(초). 서버 정책·쿼터에 맞춰 조절.
-SLEEP_SEC = {'VWORLD': 0.10, 'KAKAO': 0.05, 'NOMINATIM': 1.05}[BACKEND]
-MAX_RETRY = 3               # 네트워크 오류 시 재시도 횟수
-CACHE_EVERY = 200           # 이 건수마다 캐시 파일 저장(중단 대비)
+# 동시 처리 개수(병렬). 클수록 빠름. VWorld는 일일 무제한이라 10~16 권장.
+#   NOMINATIM 은 정책상 반드시 1.
+WORKERS = {'VWORLD': 12, 'KAKAO': 8, 'NOMINATIM': 1}[BACKEND]
+MAX_RETRY = 4               # 네트워크 오류 시 재시도 횟수
+CACHE_EVERY = 500           # 이 건수마다 캐시 파일 저장(중단 대비)
 RETRY_FAILED = False        # True 면 이전에 실패(null)한 주소도 다시 시도
 
 # 처음엔 TEST_LIMIT = 10 으로 두고 실행 → 키/성공률 확인.
@@ -115,6 +117,7 @@ def geocode_vworld(addr):
 
 
 def geocode_nominatim(addr):
+    time.sleep(1.0)   # Nominatim 정책: 초당 1건
     url = ('https://nominatim.openstreetmap.org/search?format=json&limit=1'
            '&countrycodes=kr&q=' + urllib.parse.quote(addr))
     data = _http_get_json(url, {'User-Agent': NOMINATIM_UA})
@@ -201,20 +204,28 @@ def main():
 
     done = 0
     ok = 0
-    for c in todo:
-        res = geocode_one(c)
-        cache[c] = [res[0], res[1]] if res else None
-        if res:
-            ok += 1
-            if test_mode:
-                print('  ✓ %-40s → 위도 %.6f, 경도 %.6f' % (c[:40], res[0], res[1]))
-        elif test_mode:
-            print('  ✗ %-40s → 실패(매칭 없음)' % c[:40])
-        done += 1
-        if not test_mode and done % CACHE_EVERY == 0:
-            save_cache(cache)
-            print('  ... %d/%d 진행 (성공 %d)' % (done, len(todo), ok))
-        time.sleep(SLEEP_SEC)
+    workers = 1 if test_mode else WORKERS
+    print('동시 처리 %d개로 진행합니다.' % workers)
+
+    with ThreadPoolExecutor(max_workers=workers) as ex:
+        futures = {ex.submit(geocode_one, c): c for c in todo}
+        for fut in as_completed(futures):
+            c = futures[fut]
+            try:
+                res = fut.result()
+            except Exception:
+                res = None
+            cache[c] = [res[0], res[1]] if res else None
+            if res:
+                ok += 1
+                if test_mode:
+                    print('  ✓ %-40s → 위도 %.6f, 경도 %.6f' % (c[:40], res[0], res[1]))
+            elif test_mode:
+                print('  ✗ %-40s → 실패(매칭 없음)' % c[:40])
+            done += 1
+            if not test_mode and done % CACHE_EVERY == 0:
+                save_cache(cache)
+                print('  ... %d/%d 진행 (성공 %d)' % (done, len(todo), ok))
     save_cache(cache)
     print('지오코딩 완료: 신규 성공 %d / 시도 %d' % (ok, len(todo)))
 
