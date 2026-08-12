@@ -51,6 +51,7 @@ OUTPUT_HTML = os.path.join(BASE_DIR, r'모바일_구글지도.html')
 
 # 입력 엑셀에서 읽어올 컬럼 인덱스(1-based)
 COL_ADDR = 1   # A열 : 주소
+COL_CNT  = 3   # C열 : 사업장 수 (한 주소에 여러 사업장)
 COL_TEL  = 4   # D열 : 전화번호
 COL_BIZ  = 5   # E열 : 사업자 등록번호
 
@@ -355,7 +356,12 @@ def read_rows(path):
             continue
         tel = str(cell(COL_TEL)).strip()
         biz = str(cell(COL_BIZ)).strip()
-        rows.append((addr, tel, biz))
+        cnt_raw = cell(COL_CNT)
+        try:
+            cnt = int(float(cnt_raw)) if str(cnt_raw).strip() != '' else 1
+        except (ValueError, TypeError):
+            cnt = 1
+        rows.append((addr, tel, biz, cnt))
     wb.close()
     print('      → 총 %d 건' % len(rows))
     return rows
@@ -364,7 +370,7 @@ def read_rows(path):
 # =============================================================================
 # 4. 시도별 시트 분리 엑셀 저장
 # =============================================================================
-HEADERS = ['원본주소', '시도', '구군', '동네', '상세주소', '분류상태', '전화번호', '사업자등록번호']
+HEADERS = ['원본주소', '시도', '구군', '동네', '상세주소', '분류상태', '전화번호', '사업자등록번호', '사업장수']
 
 # 시트 정렬 순서 (자주 쓰는 시도 우선)
 SIDO_ORDER = [
@@ -417,11 +423,12 @@ def save_classified_xlsx(records, path):
             ws.append([
                 rec['주소'], rec['시도'], rec['구군'], rec['동네'],
                 rec['상세'], rec['상태'], rec['전화'], rec['사업자'],
+                rec.get('사업장수', 1),
             ])
 
         # 보기 좋게: 머리글 고정 + 열 너비
         ws.freeze_panes = 'A2'
-        widths = [42, 12, 16, 10, 30, 8, 16, 16]
+        widths = [42, 12, 16, 10, 30, 8, 16, 16, 8]
         for c_i, w in enumerate(widths, start=1):
             ws.column_dimensions[get_column_letter(c_i)].width = w
 
@@ -517,13 +524,17 @@ for (var i=0; i<POINTS.length; i++){
   m._d = p;                       // 팝업 내용은 클릭 시 생성(메모리 절약)
   m.on('click', function(e){
     var d = e.target._d;
-    var addr = esc(d[2]), tel = esc(d[3]);
-    // 길안내 목적지는 (근사좌표가 아닌) 실제 주소 문자열로 지정 → 구글이 정확히 검색
-    var navUrl = 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(d[2]);
+    var addr = esc(d[2]), tel = esc(d[3]), cnt = d[4] || 1;
+    var q = encodeURIComponent(d[2]);
+    // 실제 주소 문자열로 구글에 연동 (근사좌표 아님)
+    var navUrl = 'https://www.google.com/maps/dir/?api=1&destination=' + q;   // 길안내
+    var searchUrl = 'https://www.google.com/maps/search/?api=1&query=' + q;   // 구글지도 검색
     var htmlStr =
       '<div class="popup-addr">' + addr + '</div>' +
+      (cnt > 1 ? '<div class="popup-sub" style="color:#d93025;font-weight:bold">🏬 이 주소 사업장 ' + cnt + '개</div>' : '') +
       (tel ? '<div class="popup-sub">☎ ' + tel + '</div>' : '') +
-      '<a class="nav-btn" href="' + navUrl + '" target="_blank" rel="noopener">🚗 구글 길안내</a>';
+      '<a class="nav-btn" href="' + searchUrl + '" target="_blank" rel="noopener">🔍 구글지도에서 열기</a>' +
+      '<a class="nav-btn" style="background:#34a853;margin-top:6px" href="' + navUrl + '" target="_blank" rel="noopener">🚗 구글 길안내</a>';
     e.target.bindPopup(htmlStr, {maxWidth:260}).openPopup();
   });
   markers.push(m);
@@ -616,7 +627,7 @@ def save_map_html(records, path, coord_lookup=None):
         if loc is None:
             skipped += 1
             continue
-        points.append([round(loc[0], 6), round(loc[1], 6), rec['주소'], rec['전화']])
+        points.append([round(loc[0], 6), round(loc[1], 6), rec['주소'], rec['전화'], rec.get('사업장수', 1)])
     if coord_lookup:
         print('      · 실제좌표 %d건 / 근사좌표 폴백 %d건' % (exact, len(points) - exact))
 
@@ -637,10 +648,12 @@ def save_map_html(records, path, coord_lookup=None):
 # 6. 메인
 # =============================================================================
 def build_records(rows):
-    """(주소, 전화, 사업자) 목록 → 분류된 레코드 목록."""
+    """(주소, 전화, 사업자, 사업장수) 목록 → 분류된 레코드 목록."""
     records = []
     ok = 0
-    for addr, tel, biz in rows:
+    for row in rows:
+        addr, tel, biz = row[0], row[1], row[2]
+        cnt = row[3] if len(row) > 3 else 1
         sido, gugun, dong, detail = classify_address(addr)
         status = '정상' if is_classified(sido, dong) else '기타'
         if status == '정상':
@@ -648,6 +661,7 @@ def build_records(rows):
         records.append({
             '주소': addr, '시도': sido, '구군': gugun, '동네': dong,
             '상세': detail, '상태': status, '전화': tel, '사업자': biz,
+            '사업장수': cnt,
         })
     return records, ok
 

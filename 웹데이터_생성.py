@@ -54,7 +54,7 @@ def main():
         lat, lng = (round(loc[0], 6), round(loc[1], 6)) if loc else (None, None)
 
         node = tree.setdefault(sido, {}).setdefault(gugun, {}).setdefault(dong, [])
-        node.append([lat, lng, r['주소'], r['전화'], r['사업자']])
+        node.append([lat, lng, r['주소'], r['전화'], r['사업자'], r.get('사업장수', 1)])
         n_pt += 1
 
     data_json = json.dumps(tree, ensure_ascii=False, separators=(',', ':'))

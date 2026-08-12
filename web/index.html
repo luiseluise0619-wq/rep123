@@ -108,31 +108,44 @@ function initMap(){
   cluster = L.markerClusterGroup({ chunkedLoading:true, chunkInterval:200, chunkDelay:20,
     maxClusterRadius:60, disableClusteringAtZoom:17, removeOutsideVisibleBounds:true });
 
-  var markers = [];
+  // 모든 마커를 미리 만들어 두고(시도/구/동 태그 부착), 선택 범위만 지도에 표시
+  window.allMarkers = [];
   for(var sido in DATA) for(var gugun in DATA[sido]) for(var dong in DATA[sido][gugun]){
     var arr = DATA[sido][gugun][dong];
     for(var i=0;i<arr.length;i++){
       var p = arr[i];
       if(p[0]==null) continue;
       var m = L.marker([p[0],p[1]], {icon:dotIcon});
-      m._d = p;
+      m._d = p; m._s = sido; m._g = gugun; m._n = dong;
       m.on('click', function(e){ openPopup(e.target, e.target._d); });
-      markers.push(m);
+      allMarkers.push(m);
     }
   }
-  cluster.addLayers(markers);
   map.addLayer(cluster);
+  showMarkers(null);   // 처음엔 전체 표시
 
   document.getElementById('totalCnt').textContent = totalCount().toLocaleString() + '건';
   renderSido();
 }
 
+// 선택 범위(filter)에 맞는 마커만 지도에 표시. filter=null 이면 전체.
+function showMarkers(filter){
+  cluster.clearLayers();
+  var subset = filter ? allMarkers.filter(filter) : allMarkers;
+  cluster.addLayers(subset);
+}
+
 function openPopup(marker, rec){
-  var nav = 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(rec[2]);
+  var q = encodeURIComponent(rec[2]);
+  var search = 'https://www.google.com/maps/search/?api=1&query=' + q;   // 구글지도 검색(연동)
+  var nav = 'https://www.google.com/maps/dir/?api=1&destination=' + q;   // 길안내
+  var cnt = rec[5] || 1;
   var html = '<div class="popup-addr">' + esc(rec[2]) + '</div>' +
+    (cnt > 1 ? '<div class="popup-sub" style="color:#d93025;font-weight:bold">🏬 이 주소 사업장 ' + cnt + '개</div>' : '') +
     (rec[3] ? '<div class="popup-sub">☎ ' + esc(rec[3]) + '</div>' : '') +
     (rec[4] ? '<div class="popup-sub">🏢 ' + esc(rec[4]) + '</div>' : '') +
-    '<a class="nav-btn" href="' + nav + '" target="_blank" rel="noopener">🚗 구글 길안내</a>';
+    '<a class="nav-btn" href="' + search + '" target="_blank" rel="noopener">🔍 구글지도에서 열기</a>' +
+    '<a class="nav-btn" style="background:#34a853;margin-top:6px" href="' + nav + '" target="_blank" rel="noopener">🚗 구글 길안내</a>';
   marker.bindPopup(html, {maxWidth:260}).openPopup();
 }
 
@@ -160,27 +173,36 @@ function navRow(label, count, onClick){
 }
 function renderSido(){
   sel={sido:null,gugun:null,dong:null}; setCrumb(); clearList();
-  Object.keys(DATA).sort().forEach(function(s){ navRow(s, countSido(DATA[s]), function(){ sel.sido=s; renderGugun(); fitToRecords(collectSido(DATA[s])); }); });
+  showMarkers(null);   // 전체 표시
+  Object.keys(DATA).sort().forEach(function(s){ navRow(s, countSido(DATA[s]), function(){ sel.sido=s; renderGugun(); }); });
   panel.classList.add('open');
 }
 function renderGugun(){
   sel.gugun=null; sel.dong=null; setCrumb(); clearList(); addBack(renderSido);
-  var g=DATA[sel.sido];
-  Object.keys(g).sort().forEach(function(k){ navRow(k, countGugun(g[k]), function(){ sel.gugun=k; renderDong(); fitToRecords(collectGugun(g[k])); }); });
-  fitToRecords(collectSido(g));
+  var s=sel.sido;
+  showMarkers(function(m){ return m._s===s; });          // 이 시도만 점으로
+  fitToRecords(collectSido(DATA[s]));
+  var g=DATA[s];
+  Object.keys(g).sort().forEach(function(k){ navRow(k, countGugun(g[k]), function(){ sel.gugun=k; renderDong(); }); });
 }
 function renderDong(){
   sel.dong=null; setCrumb(); clearList(); addBack(renderGugun);
-  var g=DATA[sel.sido][sel.gugun];
-  Object.keys(g).sort().forEach(function(k){ navRow(k, g[k].length, function(){ sel.dong=k; renderAddr(); fitToRecords(g[k]); }); });
-  fitToRecords(collectGugun(g));
+  var s=sel.sido, gg=sel.gugun;
+  showMarkers(function(m){ return m._s===s && m._g===gg; });   // 이 구만 점으로
+  fitToRecords(collectGugun(DATA[s][gg]));
+  var g=DATA[s][gg];
+  Object.keys(g).sort().forEach(function(k){ navRow(k, g[k].length, function(){ sel.dong=k; renderAddr(); }); });
 }
 function renderAddr(){
   setCrumb(); clearList(); addBack(renderDong);
-  var arr=DATA[sel.sido][sel.gugun][sel.dong];
+  var s=sel.sido, gg=sel.gugun, dd=sel.dong;
+  var arr=DATA[s][gg][dd];
+  showMarkers(function(m){ return m._s===s && m._g===gg && m._n===dd; });  // 이 동만 점으로
   arr.forEach(function(p){
     var r=document.createElement('div'); r.className='row addr-row';
-    var sub=[]; if(p[3]) sub.push('☎ '+esc(p[3])); if(p[4]) sub.push('🏢 '+esc(p[4]));
+    var sub=[];
+    if((p[5]||1)>1) sub.push('🏬 사업장 '+p[5]+'개');
+    if(p[3]) sub.push('☎ '+esc(p[3])); if(p[4]) sub.push('🏢 '+esc(p[4]));
     r.innerHTML='<div class="a">'+esc(p[2])+'</div>'+(sub.length?'<div class="sub">'+sub.join('&nbsp;&nbsp;')+'</div>':'');
     r.onclick=function(){
       if(p[0]==null){ alert('이 주소는 좌표가 없습니다.'); return; }
