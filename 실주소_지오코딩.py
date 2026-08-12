@@ -222,14 +222,23 @@ def geocode_one(addr):
 # =============================================================================
 def load_cache():
     if os.path.exists(CACHE_PATH):
-        with open(CACHE_PATH, 'r', encoding='utf-8') as f:
-            return json.load(f)
+        try:
+            with open(CACHE_PATH, 'r', encoding='utf-8') as f:
+                text = f.read().strip()
+            if text:
+                return json.loads(text)
+        except (ValueError, OSError) as e:
+            print('  ⚠ geocode_cache.json 이 손상되어 무시합니다(%s).' % type(e).__name__)
+            print('    백업 캐시가 있으면 덮어쓰고 다시 실행하세요.')
     return {}
 
 
 def save_cache(cache):
-    with open(CACHE_PATH, 'w', encoding='utf-8') as f:
+    # 임시파일에 쓰고 원자적 교체 → 중간에 끊겨도 원본이 안 깨짐
+    tmp = CACHE_PATH + '.tmp'
+    with open(tmp, 'w', encoding='utf-8') as f:
         json.dump(cache, f, ensure_ascii=False)
+    os.replace(tmp, CACHE_PATH)
 
 
 # =============================================================================

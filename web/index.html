@@ -274,7 +274,8 @@ function renderAddr(){
   var s=sel.sido, gg=sel.gugun, dd=sel.dong;
   var arr=DATA[s][gg][dd];
   showMarkers(function(m){ return m._s===s && m._g===gg && m._n===dd; });  // 이 동만 점으로
-  geocodeMarkers(markersOf(s, gg, dd));   // 이 동 주소들을 VWorld로 정확 위치 조회(키 있을 때)
+  // 좌표는 이미 미리 넣어둠(카카오+gimi9) → 브라우저 실시간 조회는 사용 안 함
+  // geocodeMarkers(markersOf(s, gg, dd));
   arr.forEach(function(p){
     var r=document.createElement('div'); r.className='row addr-row';
     var sub=[];
