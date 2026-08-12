@@ -84,6 +84,14 @@
     white-space:nowrap; overflow-x:auto; }
   #crumb b{ color:var(--teal); cursor:pointer; font-weight:600; }
   #crumb .sep{ color:var(--line); margin:0 6px; }
+  #panelTools{ flex:none; display:flex; gap:8px; padding:10px 16px; border-bottom:1px solid var(--line);
+    background:var(--surface); flex-wrap:wrap; }
+  .ptool{ display:inline-flex; align-items:center; gap:5px; flex:1; justify-content:center; min-width:130px;
+    background:var(--card2, #FBF9F3); color:var(--teal-d); border:1px solid var(--line);
+    border-radius:12px; padding:9px 12px; font-size:13px; font-weight:600; text-decoration:none; }
+  .ptool:active{ transform:scale(.97); }
+  .ptool b{ font-variant-numeric:tabular-nums; }
+  .ptool.warn{ color:var(--amber); }
   #list{ overflow-y:auto; -webkit-overflow-scrolling:touch; padding:6px 0 16px; }
   .row{ display:flex; align-items:center; gap:10px; padding:13px 16px; cursor:pointer;
     border-bottom:1px solid var(--line); font-size:15px; }
@@ -160,6 +168,10 @@
 <div id="panel">
   <div class="panel-handle" id="panelHandle"><span class="bar"></span>📋 지역 선택 · 구 · 동 · 주소</div>
   <div id="crumb"></div>
+  <div id="panelTools">
+    <a class="ptool" href="./duplicates.html" target="_blank" rel="noopener">🏬 같은주소 <b>1,001</b>곳</a>
+    <a class="ptool warn" href="./check.html" target="_blank" rel="noopener">⚠ 확인필요 <b>100</b>건</a>
+  </div>
   <div id="list"></div>
 </div>
 
