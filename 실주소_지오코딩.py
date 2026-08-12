@@ -168,16 +168,36 @@ NET_ERRORS = (
 )
 
 
+# 시도할 지오코더 순서: 주 백엔드 먼저, 실패하면 다른 키가 있는 백엔드로 폴백
+#   (예: 카카오가 못 찾는 주소를 VWorld가 찾기도 함)
+def _geocoder_chain():
+    chain = []
+    if BACKEND == 'KAKAO':
+        if KAKAO_REST_KEY: chain.append(geocode_kakao)
+        if VWORLD_KEY:     chain.append(geocode_vworld)   # 카카오 실패분 → VWorld
+    elif BACKEND == 'VWORLD':
+        if VWORLD_KEY:     chain.append(geocode_vworld)
+        if KAKAO_REST_KEY: chain.append(geocode_kakao)
+    else:
+        chain.append(GEOCODERS[BACKEND])
+    return chain or [GEOCODERS[BACKEND]]
+
+
+CHAIN = None   # main()에서 초기화
+
+
 def geocode_one(addr):
-    fn = GEOCODERS[BACKEND]
-    for attempt in range(1, MAX_RETRY + 1):
-        try:
-            return fn(addr)
-        except NET_ERRORS as e:
-            if attempt == MAX_RETRY:
-                print('    ! 실패(%s): %s' % (type(e).__name__, addr[:30]))
-                return None
-            time.sleep(2 ** attempt)             # 2s, 4s, 8s 백오프
+    for fn in CHAIN:
+        for attempt in range(1, MAX_RETRY + 1):
+            try:
+                r = fn(addr)
+                if r:
+                    return r
+                break                 # 못 찾음(정상 응답) → 다음 엔진으로
+            except NET_ERRORS:
+                if attempt == MAX_RETRY:
+                    break             # 이 엔진 포기 → 다음 엔진으로
+                time.sleep(2 ** attempt)
     return None
 
 
@@ -206,7 +226,10 @@ def main():
             '  · kakao_key.txt  (카카오 REST API 키 · 권장)\n'
             '  · vworld_key.txt (VWorld 인증키)')
 
-    print('== 지오코딩 백엔드:', BACKEND, '==')
+    global CHAIN
+    CHAIN = _geocoder_chain()
+    names = ' → '.join(fn.__name__.replace('geocode_', '').upper() for fn in CHAIN)
+    print('== 지오코딩 엔진:', names, '(앞이 실패하면 뒤로 폴백) ==')
     rows = core.read_rows(INPUT_XLSX)
     records, _ = core.build_records(rows)
 
