@@ -57,17 +57,20 @@
   .gps-btn.loading svg{ display:none; } .gps-btn.loading .spin{ display:block; }
   @keyframes spin{ to{ transform:rotate(360deg); } }
 
-  /* ── 하단 시트(드릴다운) ── */
+  /* ── 하단 시트(드릴다운) · 손잡이 드래그로 크기 조절 ── */
   #panel{ position:absolute; left:0; right:0; bottom:0; z-index:640;
     background:var(--surface); border-radius:20px 20px 0 0;
-    box-shadow:0 -6px 26px rgba(27,26,23,.18); max-height:64%;
+    box-shadow:0 -6px 26px rgba(27,26,23,.18);
+    height:46vh; min-height:52px; max-height:90vh;
     display:flex; flex-direction:column; padding-bottom:env(safe-area-inset-bottom);
-    transform:translateY(calc(100% - 52px)); transition:transform .28s cubic-bezier(.4,0,.2,1); }
-  #panel.open{ transform:translateY(0); }
+    transition:height .26s cubic-bezier(.4,0,.2,1); }
+  #panel.dragging{ transition:none; }               /* 드래그 중엔 부드럽게 따라오도록 */
   .panel-handle{ position:relative; height:52px; flex:none; display:flex; align-items:center;
-    justify-content:center; gap:8px; cursor:pointer; font-weight:600; font-size:14px; color:var(--teal); }
+    justify-content:center; gap:8px; cursor:grab; font-weight:600; font-size:14px; color:var(--teal);
+    touch-action:none; user-select:none; -webkit-user-select:none; }
+  .panel-handle:active{ cursor:grabbing; }
   .panel-handle .bar{ position:absolute; top:9px; left:50%; transform:translateX(-50%);
-    width:38px; height:4px; border-radius:2px; background:var(--line); }
+    width:44px; height:5px; border-radius:3px; background:var(--line); }
   #crumb{ flex:none; padding:8px 16px; font-size:13px; color:var(--mut);
     background:var(--surface2); border-top:1px solid var(--line); border-bottom:1px solid var(--line);
     white-space:nowrap; overflow-x:auto; }
@@ -282,7 +285,7 @@ function renderSido(){
   sel={sido:null,gugun:null,dong:null}; setCrumb(); clearList();
   showMarkers(null);
   Object.keys(DATA).sort().forEach(function(s){ navRow(s, countSido(DATA[s]), function(){ sel.sido=s; renderGugun(); }); });
-  panel.classList.add('open');
+  expandPanel();
 }
 function renderGugun(){
   sel.gugun=null; sel.dong=null; setCrumb(); clearList(); addBack(renderSido);
@@ -317,15 +320,50 @@ function renderAddr(){
       var tmp=L.marker([p[0],p[1]], {icon: p[4]?dotIcon:dotApprox}).addTo(map);
       openPopup(tmp, p);
       tmp.on('popupclose', function(){ map.removeLayer(tmp); });
-      panel.classList.remove('open');
+      collapsePanel();
     };
     listEl.appendChild(r);
   });
   fitToRecords(arr);
 }
 
-// ── 패널 · GPS ──
-document.getElementById('panelHandle').onclick=function(){ panel.classList.toggle('open'); };
+// ── 패널: 손잡이 드래그로 크기 조절 + 톡 누르면 접기/펴기 ──
+function panelPx(){ return panel.getBoundingClientRect().height; }
+function setPanel(px){ panel.style.height = Math.round(px) + 'px'; }
+function defaultH(){ return Math.round(window.innerHeight * 0.46); }
+function expandPanel(){ if(panelPx() < 120) setPanel(defaultH()); }   // 접혀 있으면 중간 크기로
+function collapsePanel(){ setPanel(52); }                            // 손잡이만 남김
+(function(){
+  var handle=document.getElementById('panelHandle');
+  var startY=0, startH=0, dragging=false, moved=false;
+  function down(e){
+    dragging=true; moved=false;
+    startY=(e.touches?e.touches[0].clientY:e.clientY); startH=panelPx();
+    panel.classList.add('dragging');
+    if(handle.setPointerCapture && e.pointerId!=null){ try{ handle.setPointerCapture(e.pointerId); }catch(_){} }
+  }
+  function move(e){
+    if(!dragging) return;
+    var y=(e.touches?e.touches[0].clientY:e.clientY);
+    var dy=startY-y;
+    if(Math.abs(dy)>5) moved=true;
+    var h=Math.min(window.innerHeight*0.90, Math.max(52, startH+dy));
+    setPanel(h);
+    if(e.cancelable) e.preventDefault();
+  }
+  function up(){
+    if(!dragging) return;
+    dragging=false; panel.classList.remove('dragging');
+    if(!moved){ setPanel(panelPx()>120 ? 52 : defaultH()); }   // 안 끌고 톡 누르면 토글
+  }
+  handle.addEventListener('pointerdown', down);
+  window.addEventListener('pointermove', move, {passive:false});
+  window.addEventListener('pointerup', up);
+  // 구형 터치 폴백
+  handle.addEventListener('touchstart', down, {passive:false});
+  window.addEventListener('touchmove', move, {passive:false});
+  window.addEventListener('touchend', up);
+})();
 document.getElementById('gpsBtn').addEventListener('click', function(){
   if(!navigator.geolocation){ alert('위치 기능을 지원하지 않습니다.'); return; }
   var btn=this;
