@@ -76,8 +76,9 @@
 <body>
 <div class="topbar">🗺️ 지역별 주소 지도 <span class="cnt" id="totalCnt"></span></div>
 <div id="map"></div>
-<div class="legend"><span class="dotb" style="background:#1a73e8"></span>실좌표 <b id="nReal">-</b>
-  &nbsp; <span class="dotb" style="background:#f39c12"></span>근사 <b id="nApprox">-</b></div>
+<div class="legend"><span class="dotb" style="background:#1a73e8"></span>정확/정밀 <b id="nReal">-</b>
+  &nbsp; <span class="dotb" style="background:#f39c12"></span>대략(구) <b id="nApprox">-</b>
+  <span id="geoStatus" style="display:block;color:#1a73e8;margin-top:2px"></span></div>
 <button class="gps-btn" id="gpsBtn" title="내 위치">🎯</button>
 
 <div id="panel">
@@ -87,6 +88,7 @@
 </div>
 
 <script src="./addresses.js"></script>
+<script src="./config.js"></script>
 <script>
 var DATA = window.ADDR_DATA || {};
 var map, cluster, myMarker = null, watchId = null;
@@ -105,6 +107,65 @@ function collectSido(s){ var out=[]; for(var g in s) out=out.concat(collectGugun
 var dotIcon = L.divIcon({ className:'', html:'<div class="addr-dot"></div>', iconSize:[12,12], iconAnchor:[6,6] });
 var dotApprox = L.divIcon({ className:'', html:'<div class="addr-dot approx"></div>', iconSize:[12,12], iconAnchor:[6,6] });
 var redIcon = L.divIcon({ className:'', html:'<div class="my-dot"></div>', iconSize:[18,18], iconAnchor:[9,9] });
+
+// ================= 브라우저 실시간 지오코딩(VWorld) =================
+// 키가 있으면 구/동 선택 시 그 주소들을 VWorld로 조회해 '정확한 위치'로 점 이동.
+// (py 실행 불필요 · JSONP로 CORS 우회 · 결과는 브라우저 localStorage에 저장)
+var VWKEY = (window.VWORLD_KEY || '').trim();
+var geoStatusEl = document.getElementById('geoStatus');
+var geoCache = {};
+try { geoCache = JSON.parse(localStorage.getItem('vw_geo') || '{}'); } catch(e){}
+var geoSaveTimer = null;
+function geoSave(){ clearTimeout(geoSaveTimer); geoSaveTimer=setTimeout(function(){
+  try{ localStorage.setItem('vw_geo', JSON.stringify(geoCache)); }catch(e){} }, 1000); }
+
+function cleanAddr(a){ return String(a).replace(/\(.*?\)/g,'').split(',')[0].replace(/\s+/g,' ').trim(); }
+
+function jsonp(url){
+  return new Promise(function(resolve,reject){
+    var cb='vwcb_'+(jsonp._n=(jsonp._n||0)+1)+'_'+Math.floor(performance.now());
+    var s=document.createElement('script');
+    var to=setTimeout(function(){ done(); reject('timeout'); }, 8000);
+    function done(){ clearTimeout(to); try{delete window[cb];}catch(e){} if(s.parentNode) s.parentNode.removeChild(s); }
+    window[cb]=function(d){ done(); resolve(d); };
+    s.onerror=function(){ done(); reject('neterr'); };
+    s.src=url+'&callback='+cb; document.head.appendChild(s);
+  });
+}
+function vwGeocode(addr){
+  var key=cleanAddr(addr);
+  if(geoCache[key]) return Promise.resolve(geoCache[key]);
+  if(!VWKEY) return Promise.resolve(null);
+  var base='https://api.vworld.kr/req/address?service=address&request=getcoord&version=2.0'
+    +'&crs=epsg:4326&format=json&key='+encodeURIComponent(VWKEY)+'&address='+encodeURIComponent(key);
+  function one(t){ return jsonp(base+'&type='+t).then(function(d){
+    if(d&&d.response&&d.response.status==='OK'){ var p=d.response.result.point; return [parseFloat(p.y),parseFloat(p.x)]; }
+    return null; }).catch(function(){ return null; }); }
+  return one('ROAD').then(function(r){ return r || one('PARCEL'); })
+    .then(function(r){ if(r){ geoCache[key]=r; geoSave(); } return r; });
+}
+
+// 마커 묶음을 동시 4개씩 조회해 정확 위치로 이동
+function geocodeMarkers(markers){
+  if(!VWKEY){ if(geoStatusEl) geoStatusEl.textContent='(정확위치: config.js에 VWorld 키 입력 시 작동)'; return; }
+  var queue=markers.filter(function(m){ return m && !m._exact; });
+  if(!queue.length){ if(geoStatusEl) geoStatusEl.textContent=''; return; }
+  var i=0, active=0, done=0, CONC=4;
+  function tick(){
+    while(active<CONC && i<queue.length){
+      var m=queue[i++]; active++;
+      vwGeocode(m._d[2]).then(function(res){ active--; done++;
+        if(res && this._d){ this.setLatLng(res); this.setIcon(dotIcon); this._exact=true; }
+        if(geoStatusEl) geoStatusEl.textContent='정확 위치 조회 '+done+'/'+queue.length;
+        tick();
+      }.bind(m));
+    }
+    if(active===0 && i>=queue.length && geoStatusEl) geoStatusEl.textContent='정확 위치 완료 ('+queue.length+'건)';
+  }
+  tick();
+}
+function markersOf(s,g,d){ return allMarkers.filter(function(m){
+  return m._s===s && (g==null||m._g===g) && (d==null||m._n===d); }); }
 
 function initMap(){
   map = L.map('map', { zoomControl:true, preferCanvas:true }).setView([36.5,127.8], 7);
@@ -125,9 +186,13 @@ function initMap(){
       var p = arr[i];
       if(p[0]==null) continue;
       var real = p[4] ? true : false;
-      if(real) nReal++; else nApprox++;
-      var m = L.marker([p[0],p[1]], {icon: real ? dotIcon : dotApprox});
-      m._d = p; m._s = sido; m._g = gugun; m._n = dong;
+      var cached = geoCache[cleanAddr(p[2])];        // 이전에 조회해둔 정확 좌표
+      var lat = cached ? cached[0] : p[0];
+      var lng = cached ? cached[1] : p[1];
+      var exact = cached ? true : false;
+      if(real || exact) nReal++; else nApprox++;
+      var m = L.marker([lat,lng], {icon: (real||exact) ? dotIcon : dotApprox});
+      m._d = p; m._s = sido; m._g = gugun; m._n = dong; m._exact = exact;
       m.on('click', function(e){ openPopup(e.target, e.target._d); });
       allMarkers.push(m);
     }
@@ -209,6 +274,7 @@ function renderAddr(){
   var s=sel.sido, gg=sel.gugun, dd=sel.dong;
   var arr=DATA[s][gg][dd];
   showMarkers(function(m){ return m._s===s && m._g===gg && m._n===dd; });  // 이 동만 점으로
+  geocodeMarkers(markersOf(s, gg, dd));   // 이 동 주소들을 VWorld로 정확 위치 조회(키 있을 때)
   arr.forEach(function(p){
     var r=document.createElement('div'); r.className='row addr-row';
     var sub=[];

@@ -320,18 +320,58 @@ def _jitter(seed_text, scale=0.012):
     return dx, dy
 
 
-def locate(sido, gugun, raw):
-    """(시도, 구군) 중심좌표 + 지터로 대략적 위·경도를 반환. 좌표를 못 찾으면 None."""
+# 전국 읍면동 중심좌표 (emd_centroids.json) 로드 — 있으면 '동 단위'로 정밀 배치
+_EMD_PATH = os.path.join(BASE_DIR, r'emd_centroids.json')
+try:
+    with open(_EMD_PATH, 'r', encoding='utf-8') as _f:
+        DONG_CENTROIDS = json.load(_f)   # {동base이름: [[lat,lng], ...]}
+except (OSError, ValueError):
+    DONG_CENTROIDS = {}
+
+
+def _dong_base(dong):
+    """행정동/법정동 이름에서 숫자·구분점을 떼어 매칭용 기준 이름으로."""
+    if not dong:
+        return ''
+    return re.sub(r'[0-9]', '', dong).replace('.', '').replace('·', '')
+
+
+def _ref_point(sido, gugun):
+    """동명 중복(같은 이름 여러 지역) 해소를 위한 기준점: 구 → 시도 중심."""
+    if gugun:
+        p = GUGUN_COORDS.get('%s|%s' % (sido, gugun.split()[0]))
+        if p:
+            return p
+    return SIDO_COORDS.get(sido)
+
+
+def locate(sido, gugun, raw, dong=None):
+    """
+    위·경도와 정밀도 등급을 (lat, lng, level) 로 반환. 못 찾으면 None.
+      level='dong' : 읍면동 중심좌표(정밀)  /  'gu' : 시군구·시도 중심(대략)
+    """
+    # 1) 동 단위 (가장 정밀) — emd_centroids.json 매칭
+    cands = DONG_CENTROIDS.get(_dong_base(dong)) if dong else None
+    if cands:
+        if len(cands) == 1:
+            center = cands[0]
+        else:
+            ref = _ref_point(sido, gugun)
+            center = (min(cands, key=lambda c: (c[0]-ref[0])**2 + (c[1]-ref[1])**2)
+                      if ref else cands[0])
+        dlat, dlng = _jitter(raw, 0.0035)   # 동 내부에 촘촘히 흩뿌림
+        return round(center[0] + dlat, 6), round(center[1] + dlng, 6), 'dong'
+
+    # 2) 시군구·시도 폴백 (대략)
     base = None
     if gugun:
-        primary = gugun.split()[0]
-        base = GUGUN_COORDS.get('%s|%s' % (sido, primary))
+        base = GUGUN_COORDS.get('%s|%s' % (sido, gugun.split()[0]))
     if base is None:
         base = SIDO_COORDS.get(sido)
     if base is None:
         return None
     dlat, dlng = _jitter(raw)
-    return round(base[0] + dlat, 6), round(base[1] + dlng, 6)
+    return round(base[0] + dlat, 6), round(base[1] + dlng, 6), 'gu'
 
 
 # =============================================================================
@@ -492,8 +532,8 @@ __HEAD_ASSETS__
 <body>
 <div id="map"></div>
 <div class="info-badge">📍 주소 __COUNT__건 · 마커를 눌러 길안내</div>
-<div class="legend" id="legend"><span class="dotb" style="background:#1a73e8"></span>실좌표 <b id="nReal">-</b>
-  &nbsp; <span class="dotb" style="background:#f39c12"></span>근사 <b id="nApprox">-</b></div>
+<div class="legend" id="legend"><span class="dotb" style="background:#1a73e8"></span>정밀(동) <b id="nReal">-</b>
+  &nbsp; <span class="dotb" style="background:#f39c12"></span>대략(구) <b id="nApprox">-</b></div>
 <button class="gps-btn" id="gpsBtn" title="내 위치 찾기">🎯</button>
 
 <script>
@@ -627,23 +667,26 @@ def save_map_html(records, path, coord_lookup=None):
     print('[4/4] 모바일 지도 HTML 생성 중 :', path)
     points = []
     skipped = 0
-    exact = 0
+    n_good = 0
     for rec in records:
-        loc = None
-        is_real = 0
-        if coord_lookup:
-            loc = coord_lookup.get(rec['주소'])
+        lat = lng = None
+        good = 0                       # 1 = 실좌표/동단위(정밀), 0 = 구단위(대략)
+        v = coord_lookup.get(rec['주소']) if coord_lookup else None
+        if v:                          # VWorld 실좌표(최정밀)
+            lat, lng = v[0], v[1]
+            good = 1
+        else:
+            loc = locate(rec['시도'], rec['구군'], rec['주소'], dong=rec['동네'])
             if loc:
-                exact += 1
-                is_real = 1
-        if loc is None:
-            loc = locate(rec['시도'], rec['구군'], rec['주소'])  # 근사좌표 폴백
-        if loc is None:
+                lat, lng, level = loc
+                good = 1 if level == 'dong' else 0
+        if lat is None:
             skipped += 1
             continue
-        points.append([round(loc[0], 6), round(loc[1], 6), rec['주소'], rec.get('사업장수', 1), is_real])
-    if coord_lookup:
-        print('      · 실제좌표 %d건 / 근사좌표 폴백 %d건' % (exact, len(points) - exact))
+        if good:
+            n_good += 1
+        points.append([round(lat, 6), round(lng, 6), rec['주소'], rec.get('사업장수', 1), good])
+    print('      · 정밀(동/실좌표) %d건 / 대략(구단위) %d건' % (n_good, len(points) - n_good))
 
     # ensure_ascii=False 로 한글을 그대로 담고 UTF-8 로 저장
     data_json = json.dumps(points, ensure_ascii=False, separators=(',', ':'))

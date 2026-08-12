@@ -51,12 +51,18 @@ def main():
         dong  = r['동네'] or NO_DONG
 
         real = cache.get(core.clean_address_for_geocoding(r['주소'])) if cache else None
-        is_real = 1 if real else 0
-        loc = real or core.locate(r['시도'], r['구군'], r['주소'])
-        lat, lng = (round(loc[0], 6), round(loc[1], 6)) if loc else (None, None)
+        if real:                       # VWorld 실좌표(최정밀)
+            lat, lng, good = round(real[0], 6), round(real[1], 6), 1
+        else:
+            loc = core.locate(r['시도'], r['구군'], r['주소'], dong=r['동네'])
+            if loc:
+                lat, lng = round(loc[0], 6), round(loc[1], 6)
+                good = 1 if loc[2] == 'dong' else 0
+            else:
+                lat, lng, good = None, None, 0
 
         node = tree.setdefault(sido, {}).setdefault(gugun, {}).setdefault(dong, [])
-        node.append([lat, lng, r['주소'], r.get('사업장수', 1), is_real])
+        node.append([lat, lng, r['주소'], r.get('사업장수', 1), good])
         n_pt += 1
 
     data_json = json.dumps(tree, ensure_ascii=False, separators=(',', ':'))
