@@ -1,0 +1,316 @@
+<title>주소가 지도가 되기까지</title>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<style>
+  :root{
+    --ground:#f6f7f5; --surface:#ffffff; --surface2:#eef1ee;
+    --ink:#1b2530; --muted:#5c6b7a; --line:#dde3e0;
+    --accent:#1a73e8; --accent-soft:#e8f0fe;
+    --warn:#c9781a; --warn-soft:#fbeeda; --ok:#2e9e5b; --ok-soft:#e4f4ea;
+    --code-bg:#0f1720; --code-ink:#dfe7ef; --code-line:#24313f;
+    --radius:14px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#0f141a; --surface:#161d26; --surface2:#1c2631;
+      --ink:#e6ecf2; --muted:#93a2b3; --line:#28323d;
+      --accent:#5b9bf3; --accent-soft:#16273c;
+      --warn:#e2a24a; --warn-soft:#2e2415; --ok:#4bb87a; --ok-soft:#14271c;
+      --code-bg:#0b1016; --code-ink:#dbe4ee; --code-line:#1f2a35;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#0f141a; --surface:#161d26; --surface2:#1c2631;
+    --ink:#e6ecf2; --muted:#93a2b3; --line:#28323d;
+    --accent:#5b9bf3; --accent-soft:#16273c;
+    --warn:#e2a24a; --warn-soft:#2e2415; --ok:#4bb87a; --ok-soft:#14271c;
+    --code-bg:#0b1016; --code-ink:#dbe4ee; --code-line:#1f2a35;
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--ground); color:var(--ink);
+    font-family:'Apple SD Gothic Neo','Malgun Gothic','맑은 고딕',system-ui,sans-serif;
+    line-height:1.72; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:820px; margin:0 auto; padding:0 20px 96px}
+  code,pre,.mono{font-family:'SFMono-Regular',Consolas,'D2Coding','Courier New',monospace}
+
+  /* header */
+  header{padding:56px 0 28px; text-align:center}
+  .pin{width:46px;height:46px;display:inline-block;margin-bottom:14px}
+  h1{font-size:clamp(1.7rem,4.5vw,2.4rem); line-height:1.2; margin:0 0 10px; text-wrap:balance; letter-spacing:-.01em}
+  .sub{color:var(--muted); font-size:1.02rem; margin:0 auto; max-width:34em; text-wrap:balance}
+  .meta{margin-top:18px; display:flex; gap:8px; justify-content:center; flex-wrap:wrap}
+  .tag{font-size:.78rem; letter-spacing:.03em; color:var(--muted); background:var(--surface2);
+    border:1px solid var(--line); border-radius:999px; padding:4px 11px}
+
+  /* pipeline strip */
+  .flow{display:flex; gap:8px; align-items:stretch; overflow-x:auto; padding:14px 2px 6px; margin:8px 0 34px}
+  .flow .node{flex:0 0 auto; min-width:118px; background:var(--surface); border:1px solid var(--line);
+    border-radius:12px; padding:11px 12px; text-align:center}
+  .flow .node b{display:block; font-size:.86rem}
+  .flow .node span{font-size:.72rem; color:var(--muted)}
+  .flow .arw{flex:0 0 auto; align-self:center; color:var(--accent); font-weight:700}
+
+  section{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+    padding:26px 24px; margin:16px 0}
+  .step-h{display:flex; align-items:center; gap:13px; margin:0 0 6px}
+  .num{flex:0 0 auto; width:34px;height:34px; border-radius:10px; display:grid; place-items:center;
+    background:var(--accent); color:#fff; font-weight:700; font-size:1.02rem}
+  h2{font-size:1.28rem; margin:0; letter-spacing:-.01em}
+  h3{font-size:1.02rem; margin:22px 0 6px}
+  .why{color:var(--muted); font-size:.95rem; margin:2px 0 14px}
+  p{margin:12px 0}
+
+  /* plain-language callout */
+  .plain{border-left:3px solid var(--accent); background:var(--accent-soft); border-radius:0 10px 10px 0;
+    padding:12px 15px; margin:14px 0; font-size:.95rem}
+  .plain b{color:var(--accent)}
+  .concept{border:1px dashed var(--line); background:var(--surface2); border-radius:12px; padding:14px 16px; margin:16px 0}
+  .concept .lbl{font-size:.72rem; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); font-weight:700}
+  .concept h4{margin:5px 0 6px; font-size:1rem}
+  .concept p{margin:6px 0; font-size:.93rem}
+
+  pre{background:var(--code-bg); color:var(--code-ink); border:1px solid var(--code-line);
+    border-radius:10px; padding:14px 15px; overflow-x:auto; font-size:.82rem; line-height:1.6; margin:12px 0}
+  pre .c{color:#6f8598}  pre .k{color:#7fb4ff}  pre .s{color:#8bd6a0}
+  :not(pre)>code{background:var(--surface2); border:1px solid var(--line); border-radius:6px;
+    padding:1px 6px; font-size:.86em}
+
+  ul.clean{list-style:none; padding:0; margin:12px 0; display:flex; flex-direction:column; gap:8px}
+  ul.clean li{padding-left:24px; position:relative; font-size:.96rem}
+  ul.clean li::before{content:"→"; position:absolute; left:0; color:var(--accent); font-weight:700}
+
+  table{width:100%; border-collapse:collapse; margin:12px 0; font-size:.9rem}
+  th,td{text-align:left; padding:9px 11px; border-bottom:1px solid var(--line)}
+  th{color:var(--muted); font-weight:600; font-size:.8rem; letter-spacing:.02em}
+  .tblwrap{overflow-x:auto}
+
+  .pillrow{display:flex; gap:8px; flex-wrap:wrap; margin:8px 0}
+  .pill{font-size:.8rem; padding:3px 10px; border-radius:999px; border:1px solid var(--line)}
+  .pill.b{background:var(--accent-soft); color:var(--accent); border-color:transparent}
+  .pill.o{background:var(--warn-soft); color:var(--warn); border-color:transparent}
+  .pill.g{background:var(--ok-soft); color:var(--ok); border-color:transparent}
+
+  .trouble{display:flex; flex-direction:column; gap:0}
+  .trouble .row{display:grid; grid-template-columns:1fr 1fr; gap:14px; padding:14px 0; border-bottom:1px solid var(--line)}
+  .trouble .row:last-child{border-bottom:0}
+  .trouble .q{font-weight:600}
+  .trouble .a{color:var(--muted); font-size:.93rem}
+  .trouble .q small{display:block; font-weight:400; color:var(--warn); font-size:.8rem; margin-top:3px}
+  @media(max-width:560px){ .trouble .row{grid-template-columns:1fr; gap:4px} }
+
+  footer{text-align:center; color:var(--muted); font-size:.85rem; margin-top:34px}
+  a{color:var(--accent)}
+  :focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:4px}
+</style>
+
+<div class="wrap">
+<header>
+  <svg class="pin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M12 22s7-6.16 7-12a7 7 0 1 0-14 0c0 5.84 7 12 7 12Z" fill="var(--accent)"/>
+    <circle cx="12" cy="10" r="2.6" fill="#fff"/>
+  </svg>
+  <h1>주소가 지도가 되기까지</h1>
+  <p class="sub">엑셀에 줄줄이 적힌 주소 <b>42,401개</b>를, 눌러보고 길찾는 지도로 바꾼 전 과정을 개발 처음 하는 분도 따라올 수 있게 풀어썼습니다.</p>
+  <div class="meta">
+    <span class="tag">Python · 정규표현식</span>
+    <span class="tag">지오코딩</span>
+    <span class="tag">Leaflet 지도</span>
+    <span class="tag">Vercel 배포</span>
+  </div>
+</header>
+
+<div class="flow" role="list" aria-label="처리 순서">
+  <div class="node" role="listitem"><b>① 정리</b><span>피벗 엑셀 → 주소</span></div>
+  <div class="arw">→</div>
+  <div class="node" role="listitem"><b>② 분류</b><span>시도·구·동</span></div>
+  <div class="arw">→</div>
+  <div class="node" role="listitem"><b>③ 엑셀</b><span>지역별 시트</span></div>
+  <div class="arw">→</div>
+  <div class="node" role="listitem"><b>④ 좌표</b><span>지오코딩</span></div>
+  <div class="arw">→</div>
+  <div class="node" role="listitem"><b>⑤ 지도</b><span>마커·드릴다운</span></div>
+  <div class="arw">→</div>
+  <div class="node" role="listitem"><b>⑥ 배포</b><span>Vercel</span></div>
+</div>
+
+<!-- STEP 1 -->
+<section>
+  <div class="step-h"><div class="num">1</div><h2>원본 데이터 정리</h2></div>
+  <p class="why">문제: 받은 엑셀은 사람이 보기 좋은 <b>피벗(요약) 표</b>였어요. 지역이 접혀 있고, 주소가 A열이 아니라 E열에 있고, 소계·총합계 같은 “주소 아닌 줄”이 섞여 있었죠.</p>
+
+  <div class="plain"><b>쉽게 말하면</b> — 컴퓨터가 계산하려면 “한 줄 = 한 주소”인 깨끗한 표가 필요해요. 사람용으로 꾸며진 표를 프로그램용으로 <b>펴는(정규화)</b> 작업이 1단계예요.</div>
+
+  <ul class="clean">
+    <li><b>주소</b>는 E열에서만 꺼내고, 소계·총합계 줄은 건너뜀</li>
+    <li>한 주소에 사업장이 여러 개면 그 개수(<code>사업장 수</code>)도 같이 챙김</li>
+    <li>결과를 <code>A열 = 주소</code>, <code>C열 = 사업장수</code>인 표준 엑셀로 다시 저장</li>
+  </ul>
+
+  <pre><span class="c"># 원본_정규화.py — 핵심만</span>
+for i, row in enumerate(rows):
+    if i &lt; 3: continue          <span class="c"># 머리말 3줄 건너뛰기</span>
+    addr = row[4]                 <span class="c"># E열 = 주소</span>
+    if not addr: continue         <span class="c"># 소계/총합계 = 주소 없음 → 스킵</span>
+    out.append([addr, None, row[5]])   <span class="c"># A=주소, C=사업장수</span></pre>
+
+  <p>이렇게 <b>26,000 → 42,401건</b>으로 늘어난 이유도 여기 있어요. 처음엔 지역이 접혀 있어서 26,000건만 보였고, 원본에서 <b>전부 펼친 뒤</b> 42,401건이 나온 겁니다. (합계 44,075는 “사업장 수”까지 더한 값)</p>
+</section>
+
+<!-- STEP 2 -->
+<section>
+  <div class="step-h"><div class="num">2</div><h2>주소를 시도 · 구 · 동으로 쪼개기</h2></div>
+  <p class="why">“서울특별시 강남구 역삼동 …” 한 덩어리를 <b>시도 / 구군 / 동네</b>로 나눠야 지역별로 묶고 지도에 표시할 수 있어요. 여기서 <b>정규표현식</b>을 씁니다.</p>
+
+  <div class="concept">
+    <div class="lbl">개념 쏙</div>
+    <h4>정규표현식(Regex)이 뭐예요?</h4>
+    <p>“이런 <b>패턴</b>의 글자를 찾아줘”라고 컴퓨터에 알려주는 규칙이에요. 예를 들어 “한글로 시작해서 <code>동/로/길/리/읍/면</code>으로 끝나는 단어”를 한 줄로 표현할 수 있죠.</p>
+  </div>
+
+  <pre><span class="c"># 동네 = 한글로 시작하고 동·로·길·리·읍·면·가 로 끝나는 토큰</span>
+DONG = re.compile(r'^[가-힣][가-힣0-9]*(동|로|길|리|읍|면|가)$')
+
+<span class="c"># 괄호 안 법정동을 최우선: "…19, 1층(호암동)" → 호암동</span>
+PAREN = re.compile(r'\(\s*([가-힣][가-힣0-9]*(동|로|길|리|읍|면|가))')</pre>
+
+  <p>숫자가 섞인 이름(<code>나성북1로</code>)이나 <code>가</code>로 끝나는 법정동(<code>북문로3가</code>)까지 잡아서, 거의 모든 주소가 분류돼요. 시도조차 못 찾는 것(예: <code>#REF!</code> 같은 오류)만 <b>‘기타’</b>로 따로 모읍니다.</p>
+  <div class="pillrow">
+    <span class="pill b">시도 18종</span>
+    <span class="pill b">구·군 288종</span>
+    <span class="pill b">동 4,440종</span>
+    <span class="pill g">정상 42,401</span>
+    <span class="pill o">기타 0</span>
+  </div>
+</section>
+
+<!-- STEP 3 -->
+<section>
+  <div class="step-h"><div class="num">3</div><h2>지역별로 엑셀 시트 나누기</h2></div>
+  <p class="why">분류가 끝나면 <b>시도별로 시트를 쪼갠</b> 엑셀 한 파일(<code>지역별_주소_분류.xlsx</code>)을 만들어요. 서울 시트, 경기 시트… 이렇게요.</p>
+  <div class="tblwrap">
+  <table>
+    <tr><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>F</th><th>G</th></tr>
+    <tr><td>원본주소</td><td>시도</td><td>구군</td><td>동네</td><td>상세주소</td><td>분류상태</td><td>사업장수</td></tr>
+  </table>
+  </div>
+  <div class="plain"><b>왜 시트를 나눠요?</b> — 4만 줄이 한 시트에 있으면 찾기 힘들어요. 지역별로 나누면 “경기도만 보기”가 클릭 한 번이에요. <code>openpyxl</code>이라는 파이썬 도구로 시트를 자동 생성합니다.</div>
+  <p>참고로 전화번호·사업자번호는 <b>개인정보</b>라 결과물에서 뺐어요. 공개 웹에 올라가면 노출되니까요.</p>
+</section>
+
+<!-- STEP 4 -->
+<section>
+  <div class="step-h"><div class="num">4</div><h2>주소 → 좌표 (지오코딩)</h2></div>
+  <p class="why">지도에 점을 찍으려면 주소를 <b>위도·경도 숫자</b>로 바꿔야 해요. 이걸 지오코딩이라고 합니다. 이 단계가 이 프로젝트에서 제일 까다로웠어요.</p>
+
+  <div class="concept">
+    <div class="lbl">개념 쏙</div>
+    <h4>지오코딩 · 좌표계</h4>
+    <p><b>지오코딩</b> = “서울 강남구 …” 같은 <b>글자 주소</b>를 <b>(위도 37.49, 경도 127.03)</b> 숫자로 바꾸는 것.</p>
+    <p><b>좌표계</b>는 지구를 숫자로 나타내는 방식이에요. 지도(구글/Leaflet)는 <code>WGS84</code>(우리가 아는 위경도)를 써요. 어떤 데이터는 한국 전용 좌표(<code>EPSG:5179</code>)라 <code>pyproj</code>로 변환이 필요하기도 해요.</p>
+  </div>
+
+  <h3>두 가지 방식을 섞었어요</h3>
+  <div class="tblwrap">
+  <table>
+    <tr><th>방식</th><th>정확도</th><th>비용/조건</th></tr>
+    <tr><td>행정동 중심좌표 (오프라인)</td><td><span class="pill o">동 단위</span></td><td>무료·즉시, 인터넷 불필요</td></tr>
+    <tr><td>카카오/VWorld API</td><td><span class="pill b">건물 단위</span></td><td>무료 키 필요, 인터넷으로 조회</td></tr>
+  </table>
+  </div>
+  <p>기본 지도는 <b>동 단위 근사</b>(파일에 미리 넣어둠)로 바로 뜨고, 정확한 위치가 필요하면 <b>API로 실제 좌표</b>를 받아 덮어써요. 지도 범례에 <span style="color:var(--accent)">파란 점=정확</span> / <span style="color:var(--warn)">주황 점=근사</span>로 구분해서 눈으로 확인돼요.</p>
+
+  <div class="concept">
+    <div class="lbl">개념 쏙</div>
+    <h4>왜 API가 자꾸 실패했을까? (캐시 · 재시도)</h4>
+    <p>4만 건을 <b>한 번에 너무 빨리</b> 보내면 서버가 “너무 많아!” 하고 연결을 끊어요(<code>RemoteDisconnected</code>). 그래서 <b>동시 처리 개수를 낮추고</b>, 실패하면 <b>잠깐 쉬었다 다시(재시도)</b> 보내게 했어요.</p>
+    <p>또 성공한 좌표는 <b>캐시</b>(<code>geocode_cache.json</code>)에 저장해요. 그래서 중간에 멈춰도 <b>이어서</b> 되고, 실패한 것만 골라 다시 채울 수 있어요.</p>
+  </div>
+
+  <pre><span class="c"># 실패는 근사좌표로 자동 폴백 → 지도가 비지 않음</span>
+<span class="k">if</span> 실좌표: 점 = 실좌표          <span class="c"># 파란 점(정확)</span>
+<span class="k">else</span>:    점 = 동_중심좌표 + 살짝흔들기  <span class="c"># 주황 점(근사)</span></pre>
+</section>
+
+<!-- STEP 5 -->
+<section>
+  <div class="step-h"><div class="num">5</div><h2>지도 만들기</h2></div>
+  <p class="why">좌표가 준비되면 지도에 점을 찍어요. 여기서 쓴 핵심 기술 네 가지예요.</p>
+
+  <h3>① 마커 클러스터 — 4만 개도 안 튕기게</h3>
+  <p>점 4만 개를 그대로 그리면 폰이 느려져요. 가까운 점들을 <b>동그라미 하나로 묶어</b> 보여주고, 확대하면 펼쳐지는 <b>클러스터</b>를 씁니다.</p>
+
+  <h3>② 배경지도 — API 키 없이</h3>
+  <p>키가 필요 없는 구글 지도 타일을 배경으로 깔고, 지도 라이브러리(<b>Leaflet</b>)는 파일에 동봉해서 <b>인터넷 없이도</b> 화면이 떠요(타일 이미지만 인터넷 필요).</p>
+
+  <h3>③ 🎯 내 위치 · 🚗 길안내</h3>
+  <ul class="clean">
+    <li>🎯 버튼 → 브라우저 GPS로 <b>내 현재 위치에 빨간 점</b> (서버 필요 없음)</li>
+    <li>점을 누르면 → <b>구글지도 열기 / 길안내</b> 버튼. 실제 주소로 연결돼 정확해요</li>
+  </ul>
+
+  <h3>④ 구 → 동 → 주소 드릴다운</h3>
+  <p>웹 버전은 <b>구</b>를 누르면 그 구의 <b>동</b> 목록, 동을 누르면 <b>주소</b> 목록이 나오고, 지도엔 <b>그 지역 점만</b> 남아요. 큰 데이터를 뒤지기 쉽게 만든 UI예요.</p>
+</section>
+
+<!-- STEP 6 -->
+<section>
+  <div class="step-h"><div class="num">6</div><h2>Vercel에 올리기</h2></div>
+  <p class="why">만든 웹을 인터넷에 공개하는 단계. <b>Vercel</b>은 폴더만 올리면 주소(URL)를 주는 무료 배포 서비스예요.</p>
+  <div class="concept">
+    <div class="lbl">개념 쏙</div>
+    <h4>정적 사이트 · 서버리스</h4>
+    <p>우리 앱은 계산을 전부 <b>브라우저</b>가 해요. Vercel은 파일만 “배달”하면 되니(=정적 사이트), 서버를 관리할 필요가 없어요. 이런 방식을 <b>서버리스</b>라고 해요.</p>
+    <p>그래서 <b>동시 접속 수천 명도 거뜬</b>하고(파일 배달만 하니까), 무료 한도는 월 전송량 100GB 정도예요.</p>
+  </div>
+  <p>배포 팁 하나: Vercel에서 <b>Root Directory를 <code>web</code></b>으로 지정해야 지도가 떠요. (안 하면 빈 화면)</p>
+</section>
+
+<!-- 우리가 실제로 겪은 문제 -->
+<section>
+  <div class="step-h"><div class="num">★</div><h2>실제로 부딪힌 문제 & 해결</h2></div>
+  <p class="why">이 프로젝트를 하며 진짜로 막혔던 지점들. 초보라면 똑같이 만날 수 있어서 정리했어요.</p>
+  <div class="trouble">
+    <div class="row"><div class="q">데이터가 26,000건만 나와요<small>피벗이 접혀 있었음</small></div><div class="a">엑셀에서 지역을 <b>전부 펼친 뒤</b> 다시 저장 → 42,401건.</div></div>
+    <div class="row"><div class="q">API가 “엄청 실패”해요<small>RemoteDisconnected</small></div><div class="a">동시 요청이 너무 많음. <b>동시 개수를 3~8로 낮추고</b> 재시도. 그래도 막히면 서버가 잠깐 IP를 차단한 것 → <b>기다렸다 다시</b>.</div></div>
+    <div class="row"><div class="q">터미널·폴더가 너무 어려워요</div><div class="a">키는 <code>.txt</code>에 붙여넣기, 실행은 <b>.bat 더블클릭</b>으로 바꿈. 배치파일이 자기 폴더에서 알아서 실행돼요.</div></div>
+    <div class="row"><div class="q">“액세스할 수 없다”(카카오)</div><div class="a">키 4종류 중 <b>REST API 키</b>를 써야 해요. 다른 키를 넣으면 거부돼요.</div></div>
+    <div class="row"><div class="q">전화번호 올려도 되나요?</div><div class="a">공개 URL엔 <b>개인정보 금지</b>. 결과물에서 전화·사업자번호는 아예 뺐어요.</div></div>
+  </div>
+</section>
+
+<!-- 재실행 -->
+<section>
+  <div class="step-h"><div class="num">↺</div><h2>실패한 것만 다시 채우기</h2></div>
+  <p>지오코딩이 끝난 뒤 <b>실패(근사로 남은) 주소</b>가 있으면, <code>정확좌표_실행.bat</code>을 <b>다시 더블클릭</b>하면 됩니다.</p>
+  <ul class="clean">
+    <li>이미 성공한 건 <b>건너뛰고</b>, 실패했던 것만 다시 시도(<code>RETRY_FAILED=True</code>)</li>
+    <li>2~3번 반복하면 대부분 채워져요 (서버가 잠깐 끊었던 것들이 다음엔 성공)</li>
+    <li>성공률 확인: <code>python 지오코딩_검증.py</code> → 시도별 성공률 막대그래프</li>
+  </ul>
+</section>
+
+<!-- 미니 사전 -->
+<section>
+  <div class="step-h"><div class="num">＃</div><h2>한눈에 보는 용어</h2></div>
+  <div class="tblwrap">
+  <table>
+    <tr><th>용어</th><th>한 줄 뜻</th></tr>
+    <tr><td>정규표현식</td><td>“이런 패턴의 글자 찾아줘” 규칙</td></tr>
+    <tr><td>지오코딩</td><td>글자 주소 → 위도·경도 숫자</td></tr>
+    <tr><td>좌표계 / WGS84</td><td>지구를 숫자로 표기하는 방식 / 지도가 쓰는 위경도</td></tr>
+    <tr><td>클러스터</td><td>가까운 마커를 하나로 묶어 보여주기</td></tr>
+    <tr><td>API</td><td>다른 서비스에 “이 주소 좌표 줘” 요청하는 창구</td></tr>
+    <tr><td>캐시</td><td>한 번 구한 결과를 저장해 재사용</td></tr>
+    <tr><td>정적 사이트 / 서버리스</td><td>계산은 브라우저가, 서버는 파일만 배달</td></tr>
+  </table>
+  </div>
+</section>
+
+<footer>
+  주소 42,401건 · 18개 시도 · 4,440개 동 &nbsp;·&nbsp; Python · Leaflet · Vercel<br/>
+  이 문서도 파일 하나로 된 정적 HTML이에요. 그냥 열면 바로 보입니다.
+</footer>
+</div>
