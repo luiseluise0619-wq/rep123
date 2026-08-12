@@ -2,93 +2,153 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0"/>
-<title>지역별 주소 지도 (구·동 드릴다운)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5.0"/>
+<title>전국 주소 탐색</title>
+
+<!-- 폰트(Pretendard) — 로드 실패해도 시스템 폰트로 자연 대체 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css"/>
 
 <!-- 지도 라이브러리 (로컬 동봉 · API 키 불필요) -->
 <link rel="stylesheet" href="./lib/leaflet.css"/>
 <link rel="stylesheet" href="./lib/MarkerCluster.css"/>
-<link rel="stylesheet" href="./lib/MarkerCluster.Default.css"/>
 <script src="./lib/leaflet.js"></script>
 <script src="./lib/leaflet.markercluster.js"></script>
 
 <style>
-  html, body { margin:0; height:100%; font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif; }
-  #map { position:absolute; inset:0; }
-  .topbar {
-    position:absolute; top:0; left:0; right:0; z-index:1000; height:48px;
-    background:rgba(26,115,232,.95); color:#fff; display:flex; align-items:center;
-    padding:0 12px; box-shadow:0 2px 6px rgba(0,0,0,.3); font-weight:bold; font-size:15px; gap:10px;
+  :root{
+    --bg:#EFEBE3; --surface:#F7F4EC; --surface2:#FBF9F3;
+    --ink:#1B1A17; --mut:#6B6459; --line:#E4DDD0;
+    --teal:#0E6E63; --teal-d:#0A544B; --teal-soft:rgba(14,110,99,.12);
+    --amber:#C77D2E; --amber-soft:rgba(199,125,46,.14);
+    --red:#D5573B;
   }
-  .topbar .cnt { margin-left:auto; font-weight:normal; font-size:12px; opacity:.9; }
-  #panel {
-    position:absolute; left:0; right:0; bottom:0; z-index:1001;
-    background:#fff; border-radius:16px 16px 0 0; box-shadow:0 -3px 14px rgba(0,0,0,.25);
-    max-height:62%; display:flex; flex-direction:column;
-    transform:translateY(calc(100% - 46px)); transition:transform .25s ease;
-  }
-  #panel.open { transform:translateY(0); }
-  .panel-handle {
-    position:relative; height:46px; flex:0 0 auto; display:flex; align-items:center; justify-content:center;
-    cursor:pointer; font-weight:bold; color:#1a73e8; border-bottom:1px solid #eee; gap:8px;
-  }
-  .panel-handle .bar { position:absolute; top:8px; left:50%; transform:translateX(-50%);
-    width:40px; height:4px; background:#ccc; border-radius:2px; }
-  #crumb {
-    flex:0 0 auto; padding:8px 12px; font-size:13px; color:#444; background:#f6f8fc;
-    border-bottom:1px solid #eee; white-space:nowrap; overflow-x:auto;
-  }
-  #crumb b { color:#1a73e8; cursor:pointer; }
-  #crumb .sep { color:#aaa; margin:0 6px; }
-  #list { overflow-y:auto; -webkit-overflow-scrolling:touch; padding:6px 0 14px; }
-  .row { display:flex; align-items:center; gap:8px; padding:11px 14px; cursor:pointer;
-    border-bottom:1px solid #f2f2f2; font-size:15px; }
-  .row:active { background:#eef4ff; }
-  .row .name { flex:1; }
-  .row .badge { font-size:12px; color:#888; background:#f0f0f0; border-radius:10px; padding:2px 8px; }
-  .row .chev { color:#bbb; }
-  .addr-row { flex-direction:column; align-items:stretch; gap:3px; }
-  .addr-row .a { font-size:14px; color:#222; word-break:keep-all; }
-  .addr-row .sub { font-size:12px; color:#777; }
-  .back { padding:10px 14px; color:#1a73e8; font-weight:bold; cursor:pointer;
-    border-bottom:1px solid #eee; font-size:14px; }
-  .gps-btn {
-    position:absolute; right:14px; bottom:70px; z-index:1000;
-    width:52px; height:52px; border:none; border-radius:50%;
-    background:#fff; box-shadow:0 3px 8px rgba(0,0,0,.35); font-size:24px; cursor:pointer;
-  }
-  .gps-btn:active { transform:scale(.94); }
-  .addr-dot { width:12px; height:12px; background:#1a73e8; border:2px solid #fff;
-    border-radius:50%; box-shadow:0 1px 2px rgba(0,0,0,.4); }
-  .addr-dot.approx { background:#f39c12; }
-  .legend { position:absolute; left:10px; bottom:80px; z-index:1000;
-    background:rgba(255,255,255,.93); padding:6px 10px; border-radius:8px;
-    box-shadow:0 2px 6px rgba(0,0,0,.3); font-size:12px; color:#333; }
-  .dotb { display:inline-block; width:10px; height:10px; border-radius:50%; vertical-align:middle; margin-right:3px; }
-  .my-dot { width:18px; height:18px; background:#e53935; border:3px solid #fff;
-    border-radius:50%; box-shadow:0 0 6px rgba(229,57,53,.9); }
-  .popup-addr { font-size:14px; font-weight:bold; margin-bottom:6px; word-break:keep-all; color:#111; }
-  .popup-sub { font-size:12px; color:#666; margin-bottom:3px; }
-  .nav-btn { display:block; text-align:center; margin-top:8px; background:#1a73e8; color:#fff;
-    padding:8px 10px; border-radius:8px; text-decoration:none; font-weight:bold; font-size:14px; }
+  *{ -webkit-tap-highlight-color:transparent; box-sizing:border-box; }
+  html,body{ margin:0; height:100%; overscroll-behavior:none;
+    font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Malgun Gothic','Apple SD Gothic Neo',sans-serif;
+    color:var(--ink); background:var(--bg); -webkit-font-smoothing:antialiased; letter-spacing:-.01em; }
+  #map{ position:absolute; inset:0; background:var(--bg); }
+  .leaflet-container{ font-family:inherit; background:var(--bg); }
+
+  /* ── 상단 헤더 (지도 위에 크림 그라데이션) ── */
+  .header{ position:absolute; top:0; left:0; right:0; z-index:600; pointer-events:none;
+    padding:calc(env(safe-area-inset-top) + 10px) 14px 20px;
+    background:linear-gradient(var(--bg) 30%, rgba(239,235,227,.86) 66%, rgba(239,235,227,0)); }
+  .brand{ max-width:560px; margin:0 auto; display:flex; align-items:center; gap:11px; }
+  .logo{ width:38px; height:38px; border-radius:12px; background:var(--teal); flex:none;
+    display:flex; align-items:center; justify-content:center; box-shadow:0 5px 16px rgba(14,110,99,.32); }
+  .logo .d{ width:10px; height:10px; border-radius:50%; background:var(--surface);
+    box-shadow:0 0 0 4px rgba(247,244,236,.28); }
+  .titles{ min-width:0; }
+  .t1{ font-size:17px; font-weight:700; line-height:1.15; letter-spacing:-.03em; }
+  .t2{ font-size:12px; color:var(--mut); margin-top:3px; display:flex; align-items:center; flex-wrap:wrap; gap:3px 8px; }
+  .t2 b{ color:var(--ink); font-weight:600; font-variant-numeric:tabular-nums; }
+  .lg{ display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:3px; vertical-align:middle; }
+  .lg.teal{ background:var(--teal); } .lg.amber{ background:var(--amber); }
+
+  /* ── GPS(내 위치) 버튼 ── */
+  .gps-btn{ position:absolute; right:16px; bottom:calc(env(safe-area-inset-bottom) + 74px); z-index:620;
+    width:52px; height:52px; border:none; border-radius:16px; background:var(--surface);
+    box-shadow:0 6px 18px rgba(27,26,23,.20); cursor:pointer; color:var(--teal);
+    display:flex; align-items:center; justify-content:center; transition:transform .12s; }
+  .gps-btn:active{ transform:scale(.93); }
+  .gps-btn svg{ width:26px; height:26px; display:block; }
+  .gps-btn .spin{ display:none; width:22px; height:22px; border:3px solid var(--teal-soft);
+    border-top-color:var(--teal); border-radius:50%; animation:spin .7s linear infinite; }
+  .gps-btn.loading svg{ display:none; } .gps-btn.loading .spin{ display:block; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  /* ── 하단 시트(드릴다운) ── */
+  #panel{ position:absolute; left:0; right:0; bottom:0; z-index:640;
+    background:var(--surface); border-radius:20px 20px 0 0;
+    box-shadow:0 -6px 26px rgba(27,26,23,.18); max-height:64%;
+    display:flex; flex-direction:column; padding-bottom:env(safe-area-inset-bottom);
+    transform:translateY(calc(100% - 52px)); transition:transform .28s cubic-bezier(.4,0,.2,1); }
+  #panel.open{ transform:translateY(0); }
+  .panel-handle{ position:relative; height:52px; flex:none; display:flex; align-items:center;
+    justify-content:center; gap:8px; cursor:pointer; font-weight:600; font-size:14px; color:var(--teal); }
+  .panel-handle .bar{ position:absolute; top:9px; left:50%; transform:translateX(-50%);
+    width:38px; height:4px; border-radius:2px; background:var(--line); }
+  #crumb{ flex:none; padding:8px 16px; font-size:13px; color:var(--mut);
+    background:var(--surface2); border-top:1px solid var(--line); border-bottom:1px solid var(--line);
+    white-space:nowrap; overflow-x:auto; }
+  #crumb b{ color:var(--teal); cursor:pointer; font-weight:600; }
+  #crumb .sep{ color:var(--line); margin:0 6px; }
+  #list{ overflow-y:auto; -webkit-overflow-scrolling:touch; padding:6px 0 16px; }
+  .row{ display:flex; align-items:center; gap:10px; padding:13px 16px; cursor:pointer;
+    border-bottom:1px solid var(--line); font-size:15px; }
+  .row:active{ background:var(--teal-soft); }
+  .row .name{ flex:1; font-weight:500; }
+  .row .badge{ font-size:12px; color:var(--teal-d); background:var(--teal-soft);
+    border-radius:999px; padding:2px 9px; font-weight:600; font-variant-numeric:tabular-nums; }
+  .row .chev{ color:#C3B9A6; font-size:17px; }
+  .addr-row{ flex-direction:column; align-items:stretch; gap:4px; }
+  .addr-row .a{ font-size:14px; color:var(--ink); word-break:keep-all; line-height:1.45; }
+  .addr-row .sub{ font-size:12px; color:var(--mut); display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+  .tag-check{ display:inline-block; background:var(--amber-soft); color:var(--amber);
+    border-radius:999px; padding:1px 8px; font-size:11px; font-weight:700; }
+  .tag-biz{ color:var(--red); font-weight:600; }
+  .back{ padding:12px 16px; color:var(--teal); font-weight:600; cursor:pointer;
+    border-bottom:1px solid var(--line); font-size:14px; }
+  .back:active{ background:var(--teal-soft); }
+
+  /* ── 마커 점 ── */
+  .addr-dot{ width:13px; height:13px; border-radius:50%; background:var(--teal);
+    border:2px solid var(--surface); box-shadow:0 1px 4px rgba(14,110,99,.5); }
+  .addr-dot.approx{ background:var(--amber); box-shadow:0 1px 4px rgba(199,125,46,.5); }
+  .my-dot{ width:20px; height:20px; border-radius:50%; background:var(--red);
+    border:3px solid #fff; box-shadow:0 0 0 6px rgba(213,87,59,.22); }
+
+  /* ── 클러스터 (참고 디자인 톤) ── */
+  .kc{ background:rgba(14,110,99,.16); border-radius:50%;
+    display:flex; align-items:center; justify-content:center; }
+  .kc .kc-inner{ width:100%; height:100%; border-radius:50%; background:var(--teal); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-weight:600; font-size:12px;
+    letter-spacing:-.02em; box-shadow:0 3px 12px rgba(14,110,99,.38); }
+
+  /* ── 팝업 ── */
+  .leaflet-popup-content-wrapper{ border-radius:16px; box-shadow:0 14px 36px rgba(27,26,23,.24); }
+  .leaflet-popup-content{ margin:13px 15px; font-family:inherit; }
+  .popup-addr{ font-size:14px; font-weight:700; margin-bottom:6px; color:var(--ink); word-break:keep-all; line-height:1.45; }
+  .popup-sub{ font-size:12px; margin-bottom:4px; }
+  .popup-warn{ font-size:12px; color:var(--amber); font-weight:700; margin-bottom:6px; }
+  .pbtn{ display:block; text-align:center; margin-top:7px; padding:9px 12px; border-radius:11px;
+    text-decoration:none; font-weight:600; font-size:13px; color:#fff; }
+  .pbtn.search{ background:var(--teal); } .pbtn.nav{ background:var(--teal-d); }
+  .leaflet-bar a{ color:var(--ink); }
 </style>
 </head>
 <body>
-<div class="topbar">🗺️ 지역별 주소 지도 <span class="cnt" id="totalCnt"></span></div>
 <div id="map"></div>
-<div class="legend"><span class="dotb" style="background:#1a73e8"></span>정확/정밀 <b id="nReal">-</b>
-  &nbsp; <span class="dotb" style="background:#f39c12"></span>대략(구) <b id="nApprox">-</b>
-  <span id="geoStatus" style="display:block;color:#1a73e8;margin-top:2px"></span></div>
-<button class="gps-btn" id="gpsBtn" title="내 위치">🎯</button>
+
+<div class="header">
+  <div class="brand">
+    <div class="logo"><span class="d"></span></div>
+    <div class="titles">
+      <div class="t1">전국 주소 탐색</div>
+      <div class="t2">
+        <span><span class="lg teal"></span>정밀 <b id="nReal">-</b></span>
+        <span><span class="lg amber"></span>확인필요 <b id="nApprox">-</b></span>
+        <span>· 총 <b id="totalCnt">-</b></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<button class="gps-btn" id="gpsBtn" title="내 위치" aria-label="내 위치">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="3.4"></circle>
+    <path d="M12 2v3.2M12 18.8V22M2 12h3.2M18.8 12H22"></path>
+  </svg>
+  <div class="spin"></div>
+</button>
 
 <div id="panel">
-  <div class="panel-handle" id="panelHandle"><span class="bar"></span>📋 지역 선택 (구 · 동 · 주소)</div>
+  <div class="panel-handle" id="panelHandle"><span class="bar"></span>📋 지역 선택 · 구 · 동 · 주소</div>
   <div id="crumb"></div>
   <div id="list"></div>
 </div>
 
 <script src="./addresses.js"></script>
-<script src="./config.js"></script>
 <script>
 var DATA = window.ADDR_DATA || {};
 var map, cluster, myMarker = null;
@@ -103,12 +163,12 @@ function countSido(s){ var n=0; for(var g in s) n+=countGugun(s[g]); return n; }
 function collectGugun(g){ var out=[]; for(var d in g) out=out.concat(g[d]); return out; }
 function collectSido(s){ var out=[]; for(var g in s) out=out.concat(collectGugun(s[g])); return out; }
 
-var dotIcon = L.divIcon({ className:'', html:'<div class="addr-dot"></div>', iconSize:[12,12], iconAnchor:[6,6] });
-var dotApprox = L.divIcon({ className:'', html:'<div class="addr-dot approx"></div>', iconSize:[12,12], iconAnchor:[6,6] });
-var redIcon = L.divIcon({ className:'', html:'<div class="my-dot"></div>', iconSize:[18,18], iconAnchor:[9,9] });
+var dotIcon   = L.divIcon({ className:'', html:'<div class="addr-dot"></div>', iconSize:[13,13], iconAnchor:[7,7] });
+var dotApprox = L.divIcon({ className:'', html:'<div class="addr-dot approx"></div>', iconSize:[13,13], iconAnchor:[7,7] });
+var redIcon   = L.divIcon({ className:'', html:'<div class="my-dot"></div>', iconSize:[20,20], iconAnchor:[10,10] });
 
 // ── 성능: 마커는 '필요할 때 생성 + 재사용', 표시는 잘게 쪼개 비동기로 ──
-// 42,401개를 로드 즉시 한꺼번에 만들면 화면이 몇 초~수십 초 멈춰 버튼이 안 먹힌다.
+// 42,401개를 로드 즉시 한꺼번에 만들면 화면이 멈춰 버튼이 안 먹힌다.
 // 그래서 (1) 목록부터 그리고 (2) 마커는 선택 범위만 지연 생성/캐시한다.
 var ALL = [];                    // 평면 인덱스 {p, real, s, g, d}
 var markerCache = new Map();     // 점 → L.marker (한 번만 생성)
@@ -139,20 +199,26 @@ function getMarker(rec){
 }
 
 function initMap(){
-  map = L.map('map', { zoomControl:true, preferCanvas:true }).setView([36.5,127.8], 7);
-  // API 키가 필요 없는 구글 지도 타일
+  map = L.map('map', { zoomControl:true, preferCanvas:true }).setView([36.4,127.9], 7);
   L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
     subdomains:['0','1','2','3'], maxZoom:20, attribution:'&copy; Google Maps'
   }).addTo(map);
 
-  // disableClusteringAtZoom 제거: 줌인해도 밀집지역 수천 개 마커를 개별로 안 뿌림
-  // → 프리즈 방지. 정확한 단일 지점은 목록에서 주소를 누르면 단일 마커로 표시됨.
-  cluster = L.markerClusterGroup({ chunkedLoading:true, chunkInterval:200, chunkDelay:20,
-    maxClusterRadius:70, spiderfyOnMaxZoom:true, removeOutsideVisibleBounds:true });
+  // disableClusteringAtZoom 없음: 줌인해도 밀집지역 수천 개 마커를 개별로 안 뿌림(프리즈 방지).
+  cluster = L.markerClusterGroup({
+    chunkedLoading:true, chunkInterval:200, chunkDelay:20,
+    maxClusterRadius:70, spiderfyOnMaxZoom:true, removeOutsideVisibleBounds:true,
+    iconCreateFunction:function(c){
+      var n=c.getChildCount(), size = n<100?38:n<1000?46:54;
+      var label = n>=10000 ? Math.round(n/1000)+'k' : (n>=1000 ? (Math.round(n/100)/10)+'k' : n);
+      return L.divIcon({ className:'kc', iconSize:[size,size],
+        html:'<div class="kc-inner">'+label+'</div>' });
+    }
+  });
   map.addLayer(cluster);
 
-  var cnt = buildIndex();   // 평면 인덱스만 먼저(가벼움 · 마커는 아직 안 만듦)
-  document.getElementById('totalCnt').textContent = ALL.length.toLocaleString() + '건';
+  var cnt = buildIndex();   // 평면 인덱스만 먼저(가벼움)
+  document.getElementById('totalCnt').textContent = ALL.length.toLocaleString();
   document.getElementById('nReal').textContent = cnt.nReal.toLocaleString();
   document.getElementById('nApprox').textContent = cnt.nApprox.toLocaleString();
 
@@ -160,8 +226,7 @@ function initMap(){
   setTimeout(function(){ showMarkers(null); }, 0);  // 전체 마커는 뒤에서 천천히
 }
 
-// 선택 범위(filter)에 맞는 점만 지도에 표시. filter=null 이면 전체.
-// 마커 생성/추가를 2000개씩 끊어서 처리 → 메인 스레드가 안 멈춘다(모바일 대응).
+// 선택 범위(filter)에 맞는 점만 표시. 생성/추가를 2000개씩 끊어 비동기 처리(모바일 대응).
 function showMarkers(filter){
   var token = ++_showToken;
   cluster.clearLayers();
@@ -179,14 +244,16 @@ function showMarkers(filter){
 
 function openPopup(marker, rec){
   var q = encodeURIComponent(rec[2]);
-  var search = 'https://www.google.com/maps/search/?api=1&query=' + q;   // 구글지도 검색(연동)
-  var nav = 'https://www.google.com/maps/dir/?api=1&destination=' + q;   // 길안내
+  var search = 'https://www.google.com/maps/search/?api=1&query=' + q;
+  var nav = 'https://www.google.com/maps/dir/?api=1&destination=' + q;
   var cnt = rec[3] || 1;
+  var approx = rec[4] ? false : true;
   var html = '<div class="popup-addr">' + esc(rec[2]) + '</div>' +
-    (cnt > 1 ? '<div class="popup-sub" style="color:#d93025;font-weight:bold">🏬 이 주소 사업장 ' + cnt + '개</div>' : '') +
-    '<a class="nav-btn" href="' + search + '" target="_blank" rel="noopener">🔍 구글지도에서 열기</a>' +
-    '<a class="nav-btn" style="background:#34a853;margin-top:6px" href="' + nav + '" target="_blank" rel="noopener">🚗 구글 길안내</a>';
-  marker.bindPopup(html, {maxWidth:260}).openPopup();
+    (approx ? '<div class="popup-warn">⚠ 대략 위치 · 확인필요</div>' : '') +
+    (cnt > 1 ? '<div class="popup-sub tag-biz">🏬 이 주소 사업장 ' + cnt + '개</div>' : '') +
+    '<a class="pbtn search" href="' + search + '" target="_blank" rel="noopener">🔍 구글지도에서 열기</a>' +
+    '<a class="pbtn nav" href="' + nav + '" target="_blank" rel="noopener">🚗 구글 길안내</a>';
+  marker.bindPopup(html, {maxWidth:264}).openPopup();
 }
 
 function fitToRecords(records){
@@ -213,14 +280,14 @@ function navRow(label, count, onClick){
 }
 function renderSido(){
   sel={sido:null,gugun:null,dong:null}; setCrumb(); clearList();
-  showMarkers(null);   // 전체 표시
+  showMarkers(null);
   Object.keys(DATA).sort().forEach(function(s){ navRow(s, countSido(DATA[s]), function(){ sel.sido=s; renderGugun(); }); });
   panel.classList.add('open');
 }
 function renderGugun(){
   sel.gugun=null; sel.dong=null; setCrumb(); clearList(); addBack(renderSido);
   var s=sel.sido;
-  showMarkers(function(r){ return r.s===s; });           // 이 시도만 점으로
+  showMarkers(function(r){ return r.s===s; });
   fitToRecords(collectSido(DATA[s]));
   var g=DATA[s];
   Object.keys(g).sort().forEach(function(k){ navRow(k, countGugun(g[k]), function(){ sel.gugun=k; renderDong(); }); });
@@ -228,7 +295,7 @@ function renderGugun(){
 function renderDong(){
   sel.dong=null; setCrumb(); clearList(); addBack(renderGugun);
   var s=sel.sido, gg=sel.gugun;
-  showMarkers(function(r){ return r.s===s && r.g===gg; });     // 이 구만 점으로
+  showMarkers(function(r){ return r.s===s && r.g===gg; });
   fitToRecords(collectGugun(DATA[s][gg]));
   var g=DATA[s][gg];
   Object.keys(g).sort().forEach(function(k){ navRow(k, g[k].length, function(){ sel.dong=k; renderAddr(); }); });
@@ -237,16 +304,17 @@ function renderAddr(){
   setCrumb(); clearList(); addBack(renderDong);
   var s=sel.sido, gg=sel.gugun, dd=sel.dong;
   var arr=DATA[s][gg][dd];
-  showMarkers(function(r){ return r.s===s && r.g===gg && r.d===dd; });  // 이 동만 점으로
+  showMarkers(function(r){ return r.s===s && r.g===gg && r.d===dd; });
   arr.forEach(function(p){
     var r=document.createElement('div'); r.className='row addr-row';
     var sub=[];
-    if((p[3]||1)>1) sub.push('🏬 사업장 '+p[3]+'개');
-    r.innerHTML='<div class="a">'+esc(p[2])+'</div>'+(sub.length?'<div class="sub">'+sub.join('&nbsp;&nbsp;')+'</div>':'');
+    if(!p[4]) sub.push('<span class="tag-check">확인필요</span>');   // 대략 위치
+    if((p[3]||1)>1) sub.push('<span class="tag-biz">🏬 사업장 '+p[3]+'개</span>');
+    r.innerHTML='<div class="a">'+esc(p[2])+'</div>'+(sub.length?'<div class="sub">'+sub.join('')+'</div>':'');
     r.onclick=function(){
       if(p[0]==null){ alert('이 주소는 좌표가 없습니다.'); return; }
       map.setView([p[0],p[1]], 17);
-      var tmp=L.marker([p[0],p[1]], {icon:dotIcon}).addTo(map);
+      var tmp=L.marker([p[0],p[1]], {icon: p[4]?dotIcon:dotApprox}).addTo(map);
       openPopup(tmp, p);
       tmp.on('popupclose', function(){ map.removeLayer(tmp); });
       panel.classList.remove('open');
@@ -261,18 +329,18 @@ document.getElementById('panelHandle').onclick=function(){ panel.classList.toggl
 document.getElementById('gpsBtn').addEventListener('click', function(){
   if(!navigator.geolocation){ alert('위치 기능을 지원하지 않습니다.'); return; }
   var btn=this;
-  if(btn.textContent==='⏳') return;         // 이미 조회 중이면 중복 실행 안 함
-  btn.textContent='⏳';
+  if(btn.classList.contains('loading')) return;      // 이미 조회 중이면 중복 실행 안 함
+  btn.classList.add('loading');
   // 한 번만 불러옴(추적 X) → 지도가 계속 튀는 렉 없음. 타임아웃 없음 → 잡힐 때까지 대기.
   navigator.geolocation.getCurrentPosition(function(pos){
-    btn.textContent='🎯';
+    btn.classList.remove('loading');
     var ll=[pos.coords.latitude, pos.coords.longitude];
     if(myMarker){ myMarker.setLatLng(ll); }
     else { myMarker=L.marker(ll, {icon:redIcon, zIndexOffset:1000}).addTo(map).bindPopup('📍 현재 내 위치'); }
     myMarker.openPopup();
     map.setView(ll, 16);
-  }, function(err){ btn.textContent='🎯'; alert('위치를 가져올 수 없습니다: '+err.message); },
-  { enableHighAccuracy:true, maximumAge:30000 });   // timeout 미설정 = 무한 대기(실패 안 뜸)
+  }, function(err){ btn.classList.remove('loading'); alert('위치를 가져올 수 없습니다: '+err.message); },
+  { enableHighAccuracy:true, maximumAge:30000 });     // timeout 미설정 = 무한 대기(실패 안 뜸)
 });
 
 initMap();

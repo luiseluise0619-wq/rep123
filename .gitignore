@@ -2,3 +2,4 @@ __pycache__/
 *.pyc
 geocode_cache.json
 지오코딩_실패목록.txt
+approx_addrs_cat.json

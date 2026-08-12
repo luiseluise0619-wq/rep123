@@ -43,6 +43,7 @@ def main():
             cache = json.load(f)
         print('실좌표 캐시 사용: %d개' % sum(1 for v in cache.values() if v))
 
+    approx_keys = core.load_approx_keys()   # 인근/대표점이라 부정확 → 주황(대략) 표시
     tree = {}
     n_pt = 0
     for r in records:
@@ -50,9 +51,11 @@ def main():
         gugun = r['구군'] or NO_GUGUN
         dong  = r['동네'] or NO_DONG
 
-        real = cache.get(core.clean_address_for_geocoding(r['주소'])) if cache else None
-        if real:                       # VWorld 실좌표(최정밀)
-            lat, lng, good = round(real[0], 6), round(real[1], 6), 1
+        key  = core.clean_address_for_geocoding(r['주소'])
+        real = cache.get(key) if cache else None
+        if real:                       # 실좌표(캐시)
+            good = 0 if key in approx_keys else 1
+            lat, lng = round(real[0], 6), round(real[1], 6)
         else:
             loc = core.locate(r['시도'], r['구군'], r['주소'], dong=r['동네'])
             if loc:

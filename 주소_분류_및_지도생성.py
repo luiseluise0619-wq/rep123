@@ -329,6 +329,21 @@ except (OSError, ValueError):
     DONG_CENTROIDS = {}
 
 
+# '대략(확인필요)' 주소 목록 — 실좌표가 있어도 위치가 인근/대표점이라 부정확한 것들.
+# gimi9_병합.py 가 approx_addrs.json(정리주소 키 리스트)을 써두면 여기서 읽어
+# 지도/웹에서 주황(대략)으로 구분 표시한다.
+_APPROX_PATH = os.path.join(BASE_DIR, r'approx_addrs.json')
+
+
+def load_approx_keys():
+    """{정리주소, ...} 집합을 반환. 파일 없으면 빈 집합."""
+    try:
+        with open(_APPROX_PATH, 'r', encoding='utf-8') as f:
+            return set(json.load(f))
+    except (OSError, ValueError):
+        return set()
+
+
 def _dong_base(dong):
     """행정동/법정동 이름에서 숫자·구분점을 떼어 매칭용 기준 이름으로."""
     if not dong:
@@ -665,16 +680,17 @@ def save_map_html(records, path, coord_lookup=None):
                    해당 주소가 있으면 근사좌표 대신 실제 좌표를 사용한다.
     """
     print('[4/4] 모바일 지도 HTML 생성 중 :', path)
+    approx_keys = load_approx_keys()   # 인근/대표점이라 부정확한 주소들(주황 표시)
     points = []
     skipped = 0
     n_good = 0
     for rec in records:
         lat = lng = None
-        good = 0                       # 1 = 실좌표/동단위(정밀), 0 = 구단위(대략)
+        good = 0                       # 1 = 실좌표/동단위(정밀), 0 = 대략(구단위·인근·대표)
         v = coord_lookup.get(rec['주소']) if coord_lookup else None
-        if v:                          # VWorld 실좌표(최정밀)
+        if v:                          # 실좌표(캐시)
             lat, lng = v[0], v[1]
-            good = 1
+            good = 0 if clean_address_for_geocoding(rec['주소']) in approx_keys else 1
         else:
             loc = locate(rec['시도'], rec['구군'], rec['주소'], dong=rec['동네'])
             if loc:
