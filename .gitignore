@@ -3,3 +3,6 @@ __pycache__/
 geocode_cache.json
 지오코딩_실패목록.txt
 approx_addrs_cat.json
+
+# 재생성 가능한 단독실행 산출물(용량 큼)
+전국주소지도_단독실행.html
