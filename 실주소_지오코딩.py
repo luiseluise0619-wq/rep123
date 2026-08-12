@@ -23,6 +23,7 @@
 """
 
 import os
+import re
 import json
 import time
 import importlib.util
@@ -185,19 +186,34 @@ def _geocoder_chain():
 
 CHAIN = None   # main()에서 초기화
 
+# 주소 뒤에 붙은 건물명·층·호를 떼어 '도로명/지번 + 번호'까지만 남긴다.
+#   예) "구로동 735-3 1층" → "구로동 735-3",  "염리동 507 마포자이 …" → "염리동 507"
+_TRIM = re.compile(r'^(.*?(?:로|길|동|가|읍|면|리)\s+\d+(?:-\d+)?)(?:\s|$)')
+
+
+def _trim_detail(addr):
+    m = _TRIM.match(addr)
+    return m.group(1).strip() if m else addr
+
 
 def geocode_one(addr):
+    # 원주소로 시도 → 실패하면 '군더더기 뗀' 주소로 한 번 더
+    variants = [addr]
+    t = _trim_detail(addr)
+    if t and t != addr:
+        variants.append(t)
     for fn in CHAIN:
-        for attempt in range(1, MAX_RETRY + 1):
-            try:
-                r = fn(addr)
-                if r:
-                    return r
-                break                 # 못 찾음(정상 응답) → 다음 엔진으로
-            except NET_ERRORS:
-                if attempt == MAX_RETRY:
-                    break             # 이 엔진 포기 → 다음 엔진으로
-                time.sleep(0.4 * attempt)   # 0.4s, 0.8s, 1.2s (짧게)
+        for q in variants:
+            for attempt in range(1, MAX_RETRY + 1):
+                try:
+                    r = fn(q)
+                    if r:
+                        return r
+                    break             # 못 찾음(정상 응답) → 다음 변형/엔진
+                except NET_ERRORS:
+                    if attempt == MAX_RETRY:
+                        break
+                    time.sleep(0.4 * attempt)
     return None
 
 
