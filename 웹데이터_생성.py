@@ -18,11 +18,7 @@ BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
 INPUT_XLSX  = os.path.join(BASE_DIR, r'exceldata1.xlsx')
 CACHE_PATH  = os.path.join(BASE_DIR, r'geocode_cache.json')
 OUT_JS      = os.path.join(BASE_DIR, r'web', r'addresses.js')
-
-# ★ 보안: 웹(Vercel)은 URL만 알면 누구나 접속 가능(공개)이므로,
-#   기본적으로 전화·사업자번호(개인정보)를 웹 데이터에 넣지 않는다.
-#   Vercel 배포에 인증(비밀번호)을 걸었거나, 내부용으로만 쓴다면 True 로.
-WEB_INCLUDE_CONTACT = False
+# 개인정보 보호를 위해 전화·사업자번호는 결과물에 포함하지 않는다(주소·사업장수만).
 
 # 메인 모듈(한글 파일명) 동적 import → 분류·좌표 로직 재사용
 _spec = importlib.util.spec_from_file_location(
@@ -58,10 +54,8 @@ def main():
         loc = real or core.locate(r['시도'], r['구군'], r['주소'])
         lat, lng = (round(loc[0], 6), round(loc[1], 6)) if loc else (None, None)
 
-        tel = r['전화'] if WEB_INCLUDE_CONTACT else ''
-        biz = r['사업자'] if WEB_INCLUDE_CONTACT else ''
         node = tree.setdefault(sido, {}).setdefault(gugun, {}).setdefault(dong, [])
-        node.append([lat, lng, r['주소'], tel, biz, r.get('사업장수', 1)])
+        node.append([lat, lng, r['주소'], r.get('사업장수', 1)])
         n_pt += 1
 
     data_json = json.dumps(tree, ensure_ascii=False, separators=(',', ':'))

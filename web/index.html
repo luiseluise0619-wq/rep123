@@ -139,11 +139,9 @@ function openPopup(marker, rec){
   var q = encodeURIComponent(rec[2]);
   var search = 'https://www.google.com/maps/search/?api=1&query=' + q;   // 구글지도 검색(연동)
   var nav = 'https://www.google.com/maps/dir/?api=1&destination=' + q;   // 길안내
-  var cnt = rec[5] || 1;
+  var cnt = rec[3] || 1;
   var html = '<div class="popup-addr">' + esc(rec[2]) + '</div>' +
     (cnt > 1 ? '<div class="popup-sub" style="color:#d93025;font-weight:bold">🏬 이 주소 사업장 ' + cnt + '개</div>' : '') +
-    (rec[3] ? '<div class="popup-sub">☎ ' + esc(rec[3]) + '</div>' : '') +
-    (rec[4] ? '<div class="popup-sub">🏢 ' + esc(rec[4]) + '</div>' : '') +
     '<a class="nav-btn" href="' + search + '" target="_blank" rel="noopener">🔍 구글지도에서 열기</a>' +
     '<a class="nav-btn" style="background:#34a853;margin-top:6px" href="' + nav + '" target="_blank" rel="noopener">🚗 구글 길안내</a>';
   marker.bindPopup(html, {maxWidth:260}).openPopup();
@@ -201,8 +199,7 @@ function renderAddr(){
   arr.forEach(function(p){
     var r=document.createElement('div'); r.className='row addr-row';
     var sub=[];
-    if((p[5]||1)>1) sub.push('🏬 사업장 '+p[5]+'개');
-    if(p[3]) sub.push('☎ '+esc(p[3])); if(p[4]) sub.push('🏢 '+esc(p[4]));
+    if((p[3]||1)>1) sub.push('🏬 사업장 '+p[3]+'개');
     r.innerHTML='<div class="a">'+esc(p[2])+'</div>'+(sub.length?'<div class="sub">'+sub.join('&nbsp;&nbsp;')+'</div>':'');
     r.onclick=function(){
       if(p[0]==null){ alert('이 주소는 좌표가 없습니다.'); return; }
