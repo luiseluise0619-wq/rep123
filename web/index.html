@@ -91,7 +91,7 @@
 <script src="./config.js"></script>
 <script>
 var DATA = window.ADDR_DATA || {};
-var map, cluster, myMarker = null, watchId = null;
+var map, cluster, myMarker = null;
 var panel = document.getElementById('panel');
 var listEl = document.getElementById('list');
 var crumbEl = document.getElementById('crumb');
@@ -260,16 +260,19 @@ function renderAddr(){
 document.getElementById('panelHandle').onclick=function(){ panel.classList.toggle('open'); };
 document.getElementById('gpsBtn').addEventListener('click', function(){
   if(!navigator.geolocation){ alert('위치 기능을 지원하지 않습니다.'); return; }
-  if(watchId!==null){ navigator.geolocation.clearWatch(watchId); }
-  var btn=this; btn.textContent='⏳';
-  watchId=navigator.geolocation.watchPosition(function(pos){
+  var btn=this;
+  if(btn.textContent==='⏳') return;         // 이미 조회 중이면 중복 실행 안 함
+  btn.textContent='⏳';
+  // 한 번만 불러옴(추적 X) → 지도가 계속 튀는 렉 없음. 타임아웃 없음 → 잡힐 때까지 대기.
+  navigator.geolocation.getCurrentPosition(function(pos){
     btn.textContent='🎯';
     var ll=[pos.coords.latitude, pos.coords.longitude];
     if(myMarker){ myMarker.setLatLng(ll); }
     else { myMarker=L.marker(ll, {icon:redIcon, zIndexOffset:1000}).addTo(map).bindPopup('📍 현재 내 위치'); }
+    myMarker.openPopup();
     map.setView(ll, 16);
   }, function(err){ btn.textContent='🎯'; alert('위치를 가져올 수 없습니다: '+err.message); },
-  { enableHighAccuracy:true, maximumAge:5000, timeout:10000 });
+  { enableHighAccuracy:true, maximumAge:30000 });   // timeout 미설정 = 무한 대기(실패 안 뜸)
 });
 
 initMap();
