@@ -161,26 +161,27 @@ def main():
     rows = core.read_rows(INPUT_XLSX)
     records, _ = core.build_records(rows)
 
-    # 중복 제거된 고유 주소만 호출 (호출 수 절감)
+    # 상세주소를 뗀 '깔끔한 주소'로 중복 제거 → 호출 수 최소화 (캐시 키도 이것)
+    clean = core.clean_address_for_geocoding
     unique = []
     seen = set()
     for r in records:
-        a = r['주소']
-        if a not in seen:
-            seen.add(a)
-            unique.append(a)
-    print('고유 주소 %d개 (전체 %d행)' % (len(unique), len(records)))
+        c = clean(r['주소'])
+        if c and c not in seen:
+            seen.add(c)
+            unique.append(c)
+    print('전체 %d행 → 고유 정리주소 %d개' % (len(records), len(unique)))
 
-    cache = load_cache()
-    todo = [a for a in unique
-            if a not in cache or (RETRY_FAILED and cache.get(a) is None)]
+    cache = load_cache()                          # {정리주소: [lat,lng] | null}
+    todo = [c for c in unique
+            if c not in cache or (RETRY_FAILED and cache.get(c) is None)]
     print('이번에 지오코딩할 주소: %d개 (캐시 %d개 재사용)' % (len(todo), len(unique) - len(todo)))
 
     done = 0
     ok = 0
-    for a in todo:
-        res = geocode_one(a)
-        cache[a] = [res[0], res[1]] if res else None
+    for c in todo:
+        res = geocode_one(c)
+        cache[c] = [res[0], res[1]] if res else None
         if res:
             ok += 1
         done += 1
@@ -191,8 +192,12 @@ def main():
     save_cache(cache)
     print('지오코딩 완료: 신규 성공 %d / 시도 %d' % (ok, len(todo)))
 
-    # 실제 좌표 lookup 구성 (튜플)
-    coord_lookup = {a: tuple(v) for a, v in cache.items() if v}
+    # 원본주소 → 실좌표 매핑 (정리주소 경유)
+    coord_lookup = {}
+    for r in records:
+        v = cache.get(clean(r['주소']))
+        if v:
+            coord_lookup[r['주소']] = tuple(v)
     print('실좌표 확보 주소: %d개' % len(coord_lookup))
 
     # 실제 좌표로 지도 재생성 (미확보 주소는 근사좌표 폴백)

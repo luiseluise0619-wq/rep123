@@ -35,13 +35,12 @@ def main():
     rows = core.read_rows(INPUT_XLSX)
     records, _ = core.build_records(rows)
 
-    # 실좌표 캐시(있으면)
-    coord_lookup = {}
+    # 실좌표 캐시(있으면). 캐시 키는 '정리주소'이므로 원본주소를 정리해 조회.
+    cache = {}
     if os.path.exists(CACHE_PATH):
         with open(CACHE_PATH, 'r', encoding='utf-8') as f:
             cache = json.load(f)
-        coord_lookup = {a: tuple(v) for a, v in cache.items() if v}
-        print('실좌표 캐시 사용: %d개' % len(coord_lookup))
+        print('실좌표 캐시 사용: %d개' % sum(1 for v in cache.values() if v))
 
     tree = {}
     n_pt = 0
@@ -50,7 +49,8 @@ def main():
         gugun = r['구군'] or NO_GUGUN
         dong  = r['동네'] or NO_DONG
 
-        loc = coord_lookup.get(r['주소']) or core.locate(r['시도'], r['구군'], r['주소'])
+        real = cache.get(core.clean_address_for_geocoding(r['주소'])) if cache else None
+        loc = real or core.locate(r['시도'], r['구군'], r['주소'])
         lat, lng = (round(loc[0], 6), round(loc[1], 6)) if loc else (None, None)
 
         node = tree.setdefault(sido, {}).setdefault(gugun, {}).setdefault(dong, [])
