@@ -242,9 +242,27 @@ def main():
             coord_lookup[r['주소']] = tuple(v)
     print('실좌표 확보 주소: %d개' % len(coord_lookup))
 
-    # 실제 좌표로 지도 재생성 (미확보 주소는 근사좌표 폴백)
+    # 실제 좌표로 모바일 지도 재생성 (미확보 주소는 근사좌표 폴백)
     core.save_map_html(records, OUTPUT_HTML, coord_lookup=coord_lookup)
-    print('\n[완료] 지도 갱신:', OUTPUT_HTML)
+    print('\n[완료] 모바일 지도 갱신:', OUTPUT_HTML)
+
+    # 웹(구·동 드릴다운) 데이터도 자동 갱신 → 명령 하나로 끝
+    try:
+        wspec = importlib.util.spec_from_file_location(
+            'webgen', os.path.join(BASE_DIR, r'웹데이터_생성.py'))
+        webgen = importlib.util.module_from_spec(wspec)
+        wspec.loader.exec_module(webgen)
+        webgen.main()
+        print('[완료] 웹 데이터 갱신: web/addresses.js')
+    except Exception as e:
+        print('웹 데이터 갱신은 건너뜀(%s) — 필요하면 python 웹데이터_생성.py 실행' % e)
+
+    # 성공률 요약
+    total = len(records)
+    real = len(coord_lookup)
+    print('\n★ 실좌표 %d / 전체 %d  (%.1f%%),  근사 폴백 %d건'
+          % (real, total, real / total * 100 if total else 0, total - real))
+    print('  자세한 검증:  python 지오코딩_검증.py')
 
 
 if __name__ == '__main__':
