@@ -42,16 +42,15 @@ KAKAO_REST_KEY = r''        # 예) r'abcd1234...'   (BACKEND='KAKAO' 일 때)
 VWORLD_KEY     = r''        # 예) r'XXXX-XXXX-...' (BACKEND='VWORLD' 일 때)
 NOMINATIM_UA   = r'addr-map-geocoder/1.0 (contact: your_email@example.com)'
 
-# 동시 처리 개수(병렬). 클수록 빠름. VWorld는 일일 무제한이라 10~16 권장.
+# 동시 처리 개수(병렬). VWorld는 3~4가 안정적(너무 크면 서버가 연결을 끊음).
 #   NOMINATIM 은 정책상 반드시 1.
-WORKERS = {'VWORLD': 12, 'KAKAO': 8, 'NOMINATIM': 1}[BACKEND]
+WORKERS = {'VWORLD': 3, 'KAKAO': 8, 'NOMINATIM': 1}[BACKEND]
 MAX_RETRY = 4               # 네트워크 오류 시 재시도 횟수
 CACHE_EVERY = 500           # 이 건수마다 캐시 파일 저장(중단 대비)
-RETRY_FAILED = False        # True 면 이전에 실패(null)한 주소도 다시 시도
+RETRY_FAILED = True         # 실패(null)한 주소도 다시 시도 (여러 번 돌리면 점점 채워짐)
 
-# 처음엔 TEST_LIMIT = 10 으로 두고 실행 → 키/성공률 확인.
-# 정상 확인되면 0(=전체) 으로 바꿔 다시 실행.
-TEST_LIMIT = 10             # 0 이면 전체, N>0 이면 앞에서 N건만
+# 0 = 전체 실행. 처음 키 확인만 하려면 10 정도로.
+TEST_LIMIT = 0              # 0 이면 전체, N>0 이면 앞에서 N건만
 
 # =============================================================================
 # 경로 (윈도우 역슬래시 방지 r'')
@@ -60,6 +59,13 @@ BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
 INPUT_XLSX  = os.path.join(BASE_DIR, r'exceldata1.xlsx')
 CACHE_PATH  = os.path.join(BASE_DIR, r'geocode_cache.json')
 OUTPUT_HTML = os.path.join(BASE_DIR, r'모바일_구글지도.html')
+
+# 키를 .py 안에 안 넣어도, 같은 폴더의 'vworld_key.txt' 에 붙여넣으면 자동으로 읽음
+if not VWORLD_KEY:
+    _kf = os.path.join(BASE_DIR, r'vworld_key.txt')
+    if os.path.exists(_kf):
+        with open(_kf, 'r', encoding='utf-8') as _f:
+            VWORLD_KEY = _f.read().strip()
 
 # 같은 폴더의 메인 모듈(한글 파일명)을 동적 import 하여 분류·지도 로직 재사용
 _spec = importlib.util.spec_from_file_location(
@@ -173,8 +179,10 @@ def save_cache(cache):
 def main():
     if BACKEND == 'KAKAO' and not KAKAO_REST_KEY:
         raise SystemExit('KAKAO_REST_KEY 를 입력하세요.')
-    if BACKEND == 'VWORLD' and not VWORLD_KEY:
-        raise SystemExit('VWORLD_KEY 를 입력하세요.')
+    if BACKEND == 'VWORLD' and (not VWORLD_KEY or VWORLD_KEY.startswith('여기에')):
+        raise SystemExit(
+            'VWorld 키가 없습니다.\n'
+            '  → vworld_key.txt 파일을 열어 발급받은 인증키를 붙여넣고 저장하세요.')
 
     print('== 지오코딩 백엔드:', BACKEND, '==')
     rows = core.read_rows(INPUT_XLSX)
