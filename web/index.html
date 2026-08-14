@@ -43,7 +43,7 @@
   .t2{ font-size:12px; color:var(--mut); margin-top:3px; display:flex; align-items:center; flex-wrap:wrap; gap:3px 8px; }
   .t2 b{ color:var(--ink); font-weight:600; font-variant-numeric:tabular-nums; }
   .lg{ display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:3px; vertical-align:middle; }
-  .lg.teal{ background:var(--teal); } .lg.amber{ background:var(--amber); }
+  .lg.teal{ background:#1B5BFF; } .lg.amber{ background:#FF6A00; }
   .hbtns{ display:flex; gap:7px; margin-top:8px; flex-wrap:wrap; }
   .hbtn{ pointer-events:auto; display:inline-flex; align-items:center; gap:5px;
     background:var(--surface); color:var(--teal-d); border:1px solid var(--line);
@@ -110,15 +110,15 @@
     border-bottom:1px solid var(--line); font-size:14px; }
   .back:active{ background:var(--teal-soft); }
 
-  /* ── 마커 점 — 크고 선명하게 + 퍼지는 효과 ── */
-  .addr-dot{ width:16px; height:16px; border-radius:50%; background:#0E9E86;
-    border:2.5px solid #fff; box-shadow:0 2px 7px rgba(0,0,0,.4); }
-  .addr-dot.approx{ background:#F0851C; border-color:#fff;
-    animation:spread 1.7s ease-out infinite; }          /* 확인필요 = 퍼지는 주황 물결 */
+  /* ── 마커 점 — 지도 위에서 확 튀는 고대비 색 + 퍼지는 효과 ── */
+  .addr-dot{ width:17px; height:17px; border-radius:50%; background:#1B5BFF;   /* 정밀 = 전기 파랑 */
+    border:3px solid #fff; box-shadow:0 2px 8px rgba(0,0,0,.5); }
+  .addr-dot.approx{ background:#FF6A00; border-color:#fff;                       /* 확인필요 = 선명 주황 */
+    animation:spread 1.7s ease-out infinite; }
   @keyframes spread{
-    0%  { box-shadow:0 2px 7px rgba(0,0,0,.4), 0 0 0 0   rgba(240,133,28,.6); }
-    70% { box-shadow:0 2px 7px rgba(0,0,0,.4), 0 0 0 13px rgba(240,133,28,0); }
-    100%{ box-shadow:0 2px 7px rgba(0,0,0,.4), 0 0 0 0   rgba(240,133,28,0); } }
+    0%  { box-shadow:0 2px 8px rgba(0,0,0,.5), 0 0 0 0   rgba(255,106,0,.65); }
+    70% { box-shadow:0 2px 8px rgba(0,0,0,.5), 0 0 0 14px rgba(255,106,0,0); }
+    100%{ box-shadow:0 2px 8px rgba(0,0,0,.5), 0 0 0 0   rgba(255,106,0,0); } }
   /* 선택(클릭)한 지점 — 크게 퍼지는 물결 링 */
   .sel-dot{ position:relative; width:22px; height:22px; border-radius:50%; background:#E5322B;
     border:3px solid #fff; box-shadow:0 3px 11px rgba(0,0,0,.5); }
@@ -137,11 +137,11 @@
     background:var(--teal-soft); }
 
   /* ── 클러스터 (참고 디자인 톤) ── */
-  .kc{ background:rgba(14,110,99,.16); border-radius:50%;
+  .kc{ background:rgba(27,91,255,.20); border-radius:50%;
     display:flex; align-items:center; justify-content:center; }
-  .kc .kc-inner{ width:100%; height:100%; border-radius:50%; background:var(--teal); color:#fff;
-    display:flex; align-items:center; justify-content:center; font-weight:600; font-size:12px;
-    letter-spacing:-.02em; box-shadow:0 3px 12px rgba(14,110,99,.38); }
+  .kc .kc-inner{ width:100%; height:100%; border-radius:50%; background:#1B5BFF; color:#fff;
+    display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12px;
+    letter-spacing:-.02em; box-shadow:0 3px 12px rgba(27,91,255,.45); }
 
   /* ── 팝업 ── */
   .leaflet-popup-content-wrapper{ border-radius:16px; box-shadow:0 14px 36px rgba(27,26,23,.24); }
