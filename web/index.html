@@ -254,10 +254,11 @@ function initMap(){
     subdomains:['0','1','2','3'], maxZoom:20, attribution:'&copy; Google Maps'
   }).addTo(map);
 
-  // disableClusteringAtZoom 없음: 줌인해도 밀집지역 수천 개 마커를 개별로 안 뿌림(프리즈 방지).
+  // 줌 18↑에선 클러스터를 풀어 개별 점을 직접 클릭 가능(그 줌에선 화면에 점 몇 개뿐 → 프리즈 없음).
+  // 줌 17↓은 계속 클러스터(밀집지역 수천 개 개별 렌더 방지).
   cluster = L.markerClusterGroup({
     chunkedLoading:true, chunkInterval:200, chunkDelay:20,
-    maxClusterRadius:70, spiderfyOnMaxZoom:true, removeOutsideVisibleBounds:true,
+    maxClusterRadius:70, disableClusteringAtZoom:18, spiderfyOnMaxZoom:true, removeOutsideVisibleBounds:true,
     iconCreateFunction:function(c){
       var n=c.getChildCount(), size = n<100?38:n<1000?46:54;
       var label = n>=10000 ? Math.round(n/1000)+'k' : (n>=1000 ? (Math.round(n/100)/10)+'k' : n);
@@ -275,11 +276,15 @@ function initMap(){
   renderSido();                                     // ★ 목록 먼저 → 버튼 즉시 작동
   setTimeout(function(){ showMarkers(null); }, 0);  // 전체 마커는 뒤에서 천천히
 
-  // 확대(줌 15↑)하면 화면에 보이는 주소를 자동으로 목록에 띄움
+  // 확대(줌 15↑)하면 화면에 보이는 주소를 자동으로 목록에 띄움 (디바운스로 과도한 갱신 방지)
+  var _visTimer=null;
   map.on('moveend', function(){
-    if(suppressAuto){ suppressAuto=false; return; }   // 드릴다운이 움직인 거면 무시
-    if(map.getZoom() >= 15){ renderVisible(); }
-    else if(visibleMode){ exitVisible(); }            // 다시 축소하면 드릴다운 복귀
+    if(suppressAuto){ suppressAuto=false; return; }   // 프로그램이 옮긴 거면 무시
+    clearTimeout(_visTimer);
+    _visTimer=setTimeout(function(){
+      if(map.getZoom() >= 15){ renderVisible(); }
+      else if(visibleMode){ exitVisible(); }          // 다시 축소하면 드릴다운 복귀
+    }, 220);
   });
 }
 
@@ -310,7 +315,12 @@ function openPopup(marker, rec){
     (cnt > 1 ? '<div class="popup-sub tag-biz">🏬 이 주소 사업장 ' + cnt + '개</div>' : '') +
     '<a class="pbtn search" href="' + search + '" target="_blank" rel="noopener">🔍 구글지도에서 열기</a>' +
     '<a class="pbtn nav" href="' + nav + '" target="_blank" rel="noopener">🚗 구글 길안내</a>';
-  marker.bindPopup(html, {maxWidth:264}).openPopup();
+  // 팝업이 항상 '보이는 영역'(헤더 아래·패널 위)에 뜨도록 자동 이동 여백 지정
+  var ph = Math.max(60, panel.getBoundingClientRect().height);
+  suppressAuto = true;   // 이 자동 이동은 화면목록 갱신 대상 아님
+  marker.bindPopup(html, {maxWidth:264, autoPan:true,
+    autoPanPaddingTopLeft: L.point(24, 96),
+    autoPanPaddingBottomRight: L.point(24, ph + 24)}).openPopup();
 }
 
 function fitToRecords(records){
