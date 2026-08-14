@@ -215,7 +215,7 @@ var selIcon   = L.divIcon({ className:'', html:'<div class="sel-dot"></div>', ic
 var redIcon   = L.divIcon({ className:'', html:'<div class="my-dot"></div>', iconSize:[20,20], iconAnchor:[10,10] });
 
 var visibleMode = false;   // 화면에 보이는 주소 목록 모드
-var suppressAuto = false;  // 프로그램이 지도를 움직일 땐 자동 목록 안 뜨게
+var suppressAutoUntil = 0;  // 이 시각 이전의 moveend는 '프로그램 이동'으로 보고 자동목록 억제(자동 만료)
 
 // ── 성능: 마커는 '필요할 때 생성 + 재사용', 표시는 잘게 쪼개 비동기로 ──
 // 42,401개를 로드 즉시 한꺼번에 만들면 화면이 멈춰 버튼이 안 먹힌다.
@@ -279,7 +279,7 @@ function initMap(){
   // 확대(줌 15↑)하면 화면에 보이는 주소를 자동으로 목록에 띄움 (디바운스로 과도한 갱신 방지)
   var _visTimer=null;
   map.on('moveend', function(){
-    if(suppressAuto){ suppressAuto=false; return; }   // 프로그램이 옮긴 거면 무시
+    if(Date.now() < suppressAutoUntil){ return; }     // 프로그램이 옮긴 거면 무시(자동 만료)
     clearTimeout(_visTimer);
     _visTimer=setTimeout(function(){
       if(map.getZoom() >= 15){ renderVisible(); }
@@ -317,7 +317,7 @@ function openPopup(marker, rec){
     '<a class="pbtn nav" href="' + nav + '" target="_blank" rel="noopener">🚗 구글 길안내</a>';
   // 팝업이 항상 '보이는 영역'(헤더 아래·패널 위)에 뜨도록 자동 이동 여백 지정
   var ph = Math.max(60, panel.getBoundingClientRect().height);
-  suppressAuto = true;   // 이 자동 이동은 화면목록 갱신 대상 아님
+  suppressAutoUntil = Date.now() + 900;   // 이 자동 이동은 화면목록 갱신 대상 아님
   marker.bindPopup(html, {maxWidth:264, autoPan:true,
     autoPanPaddingTopLeft: L.point(24, 96),
     autoPanPaddingBottomRight: L.point(24, ph + 24)}).openPopup();
@@ -326,7 +326,7 @@ function openPopup(marker, rec){
 function fitToRecords(records){
   var pts = records.filter(function(p){ return p[0]!=null; }).map(function(p){ return [p[0],p[1]]; });
   if(!pts.length) return;
-  suppressAuto = true;   // 드릴다운이 지도 옮기는 건 '화면 목록' 자동표시 대상 아님
+  suppressAutoUntil = Date.now() + 900;   // 드릴다운이 지도 옮기는 건 '화면 목록' 자동표시 대상 아님
   if(pts.length===1){ map.setView(pts[0], 16); }
   else { map.fitBounds(L.latLngBounds(pts), {padding:[40,40]}); }
 }
@@ -388,7 +388,7 @@ function appendAddrRow(p){
   r.innerHTML='<div class="a">'+esc(p[2])+'</div>'+(sub.length?'<div class="sub">'+sub.join('')+'</div>':'');
   r.onclick=function(){
     if(p[0]==null){ alert('이 주소는 좌표가 없습니다.'); return; }
-    suppressAuto=true; map.setView([p[0],p[1]], 18);
+    suppressAutoUntil = Date.now() + 900; map.setView([p[0],p[1]], 18);
     var tmp=L.marker([p[0],p[1]], {icon:selIcon, zIndexOffset:900}).addTo(map);
     openPopup(tmp, p);
     tmp.on('popupclose', function(){ map.removeLayer(tmp); });
@@ -468,7 +468,7 @@ document.getElementById('gpsBtn').addEventListener('click', function(){
     if(myMarker){ myMarker.setLatLng(ll); }
     else { myMarker=L.marker(ll, {icon:redIcon, zIndexOffset:1000}).addTo(map).bindPopup('📍 현재 내 위치'); }
     myMarker.openPopup();
-    suppressAuto=true; map.setView(ll, 16);
+    suppressAutoUntil = Date.now() + 900; map.setView(ll, 16);
   }, function(err){ btn.classList.remove('loading'); alert('위치를 가져올 수 없습니다: '+err.message); },
   { enableHighAccuracy:true, maximumAge:30000 });     // timeout 미설정 = 무한 대기(실패 안 뜸)
 });
