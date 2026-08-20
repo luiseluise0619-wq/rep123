@@ -274,7 +274,7 @@ function initMap(){
   document.getElementById('nApprox').textContent = cnt.nApprox.toLocaleString();
 
   renderSido();                                     // ★ 목록 먼저 → 버튼 즉시 작동
-  setTimeout(function(){ showMarkers(null); }, 0);  // 전체 마커는 뒤에서 천천히
+  setTimeout(function(){ showMarkers(null, 'ALL'); }, 0);  // 전체 마커는 뒤에서 천천히
 
   // 확대(줌 15↑)하면 화면에 보이는 주소를 자동으로 목록에 띄움 (디바운스로 과도한 갱신 방지)
   var _visTimer=null;
@@ -289,7 +289,11 @@ function initMap(){
 }
 
 // 선택 범위(filter)에 맞는 점만 표시. 생성/추가를 2000개씩 끊어 비동기 처리(모바일 대응).
-function showMarkers(filter){
+// key가 현재 화면과 같으면 재구성 생략 → 줌 인/아웃 반복해도 42k 마커 재렌더 안 함(렉 방지).
+var _curKey = null;
+function showMarkers(filter, key){
+  if(key != null && key === _curKey) return;
+  _curKey = key;
   var token = ++_showToken;
   cluster.clearLayers();
   var recs = [];
@@ -349,14 +353,14 @@ function navRow(label, count, onClick){
 function renderSido(){
   visibleMode=false;
   sel={sido:null,gugun:null,dong:null}; setCrumb(); clearList();
-  showMarkers(null);
+  showMarkers(null, 'ALL');
   Object.keys(DATA).sort().forEach(function(s){ navRow(s, countSido(DATA[s]), function(){ sel.sido=s; renderGugun(); }); });
   expandPanel();
 }
 function renderGugun(){
   sel.gugun=null; sel.dong=null; setCrumb(); clearList(); addBack(renderSido);
   var s=sel.sido;
-  showMarkers(function(r){ return r.s===s; });
+  showMarkers(function(r){ return r.s===s; }, 'S:'+s);
   fitToRecords(collectSido(DATA[s]));
   var g=DATA[s];
   Object.keys(g).sort().forEach(function(k){ navRow(k, countGugun(g[k]), function(){ sel.gugun=k; renderDong(); }); });
@@ -364,7 +368,7 @@ function renderGugun(){
 function renderDong(){
   sel.dong=null; setCrumb(); clearList(); addBack(renderGugun);
   var s=sel.sido, gg=sel.gugun;
-  showMarkers(function(r){ return r.s===s && r.g===gg; });
+  showMarkers(function(r){ return r.s===s && r.g===gg; }, 'G:'+s+'/'+gg);
   fitToRecords(collectGugun(DATA[s][gg]));
   var g=DATA[s][gg];
   Object.keys(g).sort().forEach(function(k){ navRow(k, g[k].length, function(){ sel.dong=k; renderAddr(); }); });
@@ -374,7 +378,7 @@ function renderAddr(){
   setCrumb(); clearList(); addBack(renderDong);
   var s=sel.sido, gg=sel.gugun, dd=sel.dong;
   var arr=DATA[s][gg][dd];
-  showMarkers(function(r){ return r.s===s && r.g===gg && r.d===dd; });
+  showMarkers(function(r){ return r.s===s && r.g===gg && r.d===dd; }, 'D:'+s+'/'+gg+'/'+dd);
   arr.forEach(appendAddrRow);
   fitToRecords(arr);
 }
@@ -389,12 +393,19 @@ function appendAddrRow(p){
   r.onclick=function(){
     if(p[0]==null){ alert('이 주소는 좌표가 없습니다.'); return; }
     suppressAutoUntil = Date.now() + 900; map.setView([p[0],p[1]], 18);
-    var tmp=L.marker([p[0],p[1]], {icon:selIcon, zIndexOffset:900}).addTo(map);
-    openPopup(tmp, p);
-    tmp.on('popupclose', function(){ map.removeLayer(tmp); });
+    showSelected(p);
     collapsePanel();
   };
   listEl.appendChild(r);
+}
+
+// 선택 마커는 '1개만' 재사용(연타해도 누적/누수 없음)
+var selMarker = null;
+function showSelected(p){
+  if(selMarker){ map.removeLayer(selMarker); selMarker=null; }   // 이전 선택 마커 먼저 제거
+  selMarker = L.marker([p[0],p[1]], {icon:selIcon, zIndexOffset:900}).addTo(map);
+  selMarker.on('popupclose', function(){ if(selMarker){ map.removeLayer(selMarker); selMarker=null; } });
+  openPopup(selMarker, p);
 }
 
 // 확대(줌 15↑) 시 화면에 보이는 주소들을 목록으로
