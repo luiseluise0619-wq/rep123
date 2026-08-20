@@ -109,6 +109,8 @@
   .back{ padding:12px 16px; color:var(--teal); font-weight:600; cursor:pointer;
     border-bottom:1px solid var(--line); font-size:14px; }
   .back:active{ background:var(--teal-soft); }
+  .row:focus-visible, .back:focus-visible, .ptool:focus-visible, .hbtn:focus-visible, .gps-btn:focus-visible{
+    outline:3px solid #E5007E; outline-offset:-3px; }
 
   /* ── 마커 점 — 지도 위에서 확 튀는 고대비 색 + 퍼지는 효과 ── */
   .addr-dot{ width:17px; height:17px; border-radius:50%; background:#E5007E;   /* 정밀 = 자홍(마젠타) */
@@ -344,17 +346,30 @@ function setCrumb(){
   crumbEl.innerHTML=h;
 }
 function clearList(){ listEl.innerHTML=''; }
-function addBack(fn){ var b=document.createElement('div'); b.className='back'; b.textContent='‹ 뒤로'; b.onclick=fn; listEl.appendChild(b); }
+function addBack(fn){ var b=document.createElement('div'); b.className='back'; b.tabIndex=0; b.setAttribute('role','button'); b.textContent='‹ 뒤로'; b.onclick=fn; listEl.appendChild(b); }
 function navRow(label, count, onClick){
-  var r=document.createElement('div'); r.className='row';
+  var r=document.createElement('div'); r.className='row'; r.tabIndex=0; r.setAttribute('role','button');
   r.innerHTML='<span class="name">'+esc(label)+'</span><span class="badge">'+count.toLocaleString()+'</span><span class="chev">›</span>';
   r.onclick=onClick; listEl.appendChild(r);
 }
+// 목록/뒤로 버튼을 키보드(Enter·Space)로도 실행
+listEl.addEventListener('keydown', function(e){
+  if(e.key==='Enter' || e.key===' '){
+    var row = e.target.closest && e.target.closest('.row, .back');
+    if(row){ e.preventDefault(); row.click(); }
+  }
+});
 function renderSido(){
   visibleMode=false;
   sel={sido:null,gugun:null,dong:null}; setCrumb(); clearList();
   showMarkers(null, 'ALL');
-  Object.keys(DATA).sort().forEach(function(s){ navRow(s, countSido(DATA[s]), function(){ sel.sido=s; renderGugun(); }); });
+  var keys=Object.keys(DATA).sort();
+  if(keys.length===0){   // 데이터(addresses.js) 로드 실패 시 안내
+    var m=document.createElement('div'); m.className='vis-head'; m.style.color='var(--red)';
+    m.textContent='⚠ 데이터를 불러오지 못했어요. 인터넷 연결을 확인하고 새로고침 해주세요.';
+    listEl.appendChild(m); expandPanel(); return;
+  }
+  keys.forEach(function(s){ navRow(s, countSido(DATA[s]), function(){ sel.sido=s; renderGugun(); }); });
   expandPanel();
 }
 function renderGugun(){
@@ -385,7 +400,7 @@ function renderAddr(){
 
 // 주소 한 줄(확인필요·사업장수 태그 + 클릭 시 그 지점으로 이동 + 빨간 물결 마커)
 function appendAddrRow(p){
-  var r=document.createElement('div'); r.className='row addr-row';
+  var r=document.createElement('div'); r.className='row addr-row'; r.tabIndex=0; r.setAttribute('role','button');
   var sub=[];
   if(!p[4]) sub.push('<span class="tag-check">확인필요</span>');
   if((p[3]||1)>1) sub.push('<span class="tag-biz">🏬 사업장 '+p[3]+'개</span>');
@@ -421,7 +436,7 @@ function renderVisible(){
   }
   crumbEl.innerHTML='<b onclick="exitVisible()">전체</b><span class="sep">›</span><b>🔍 화면에 보이는 주소</b>';
   clearList();
-  var back=document.createElement('div'); back.className='back';
+  var back=document.createElement('div'); back.className='back'; back.tabIndex=0; back.setAttribute('role','button');
   back.textContent='‹ 지역 선택으로'; back.onclick=exitVisible; listEl.appendChild(back);
   var head=document.createElement('div'); head.className='vis-head';
   head.textContent='이 화면에 보이는 주소 '+pts.length+'개'+(pts.length>=600?'+ (더 확대하면 줄어요)':'');
