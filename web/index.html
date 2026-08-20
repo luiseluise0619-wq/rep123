@@ -413,6 +413,7 @@ function renderVisible(){
   var entering = !visibleMode;
   visibleMode = true;
   sel={sido:null,gugun:null,dong:null};
+  showMarkers(null, 'ALL');   // 지도에도 화면 내 모든 점 표시(목록↔지도 일치). dedup으로 이미 전체면 무시
   var b=map.getBounds(), pts=[];
   for(var i=0;i<ALL.length && pts.length<600;i++){
     var q=ALL[i].p;
@@ -466,22 +467,34 @@ function collapsePanel(){ setPanel(52); }                            // 손잡�
   handle.addEventListener('touchstart', down, {passive:false});
   window.addEventListener('touchmove', move, {passive:false});
   window.addEventListener('touchend', up);
+  // 브라우저가 드래그를 중단(pointercancel/touchcancel)해도 상태가 안 끼게 정리
+  window.addEventListener('pointercancel', up);
+  window.addEventListener('touchcancel', up);
 })();
 document.getElementById('gpsBtn').addEventListener('click', function(){
   if(!navigator.geolocation){ alert('위치 기능을 지원하지 않습니다.'); return; }
   var btn=this;
   if(btn.classList.contains('loading')) return;      // 이미 조회 중이면 중복 실행 안 함
   btn.classList.add('loading');
-  // 한 번만 불러옴(추적 X) → 지도가 계속 튀는 렉 없음. 타임아웃 없음 → 잡힐 때까지 대기.
+  // 한 번만 불러옴(추적 X) → 지도 안 튐. 타임아웃 30초(넉넉) → 위치 못 잡아도 무한로딩 안 됨.
+  var done=false;
+  function stop(){ done=true; btn.classList.remove('loading'); }
   navigator.geolocation.getCurrentPosition(function(pos){
-    btn.classList.remove('loading');
+    if(done) return; stop();
     var ll=[pos.coords.latitude, pos.coords.longitude];
     if(myMarker){ myMarker.setLatLng(ll); }
     else { myMarker=L.marker(ll, {icon:redIcon, zIndexOffset:1000}).addTo(map).bindPopup('📍 현재 내 위치'); }
     myMarker.openPopup();
     suppressAutoUntil = Date.now() + 900; map.setView(ll, 16);
-  }, function(err){ btn.classList.remove('loading'); alert('위치를 가져올 수 없습니다: '+err.message); },
-  { enableHighAccuracy:true, maximumAge:30000 });     // timeout 미설정 = 무한 대기(실패 안 뜸)
+  }, function(err){
+    if(done) return; stop();
+    var msg = err && err.code===1 ? '위치 권한이 거부됐어요. 브라우저 설정에서 위치 접근을 허용해 주세요.'
+            : err && err.code===3 ? '위치를 시간 내에 못 잡았어요. 실외에서 다시 시도해 보세요.'
+            : '위치를 가져올 수 없습니다.';
+    alert(msg);
+  }, { enableHighAccuracy:true, maximumAge:30000, timeout:30000 });
+  // 브라우저 콜백이 아예 안 오는 극단적 경우 대비 안전장치(35초 후 로딩 해제)
+  setTimeout(function(){ if(!done){ stop(); } }, 35000);
 });
 
 initMap();
