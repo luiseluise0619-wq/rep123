@@ -118,6 +118,19 @@
   .row:focus-visible, .back:focus-visible, .ptool:focus-visible, .hbtn:focus-visible, .gps-btn:focus-visible{
     outline:3px solid #E5007E; outline-offset:-3px; }
 
+  /* ── 태블릿에서만: 하단 시트를 '왼쪽 플로팅 카드'로 ──
+     조건 = 넓은 화면(≥820px) + 터치기기(pointer:coarse).
+     → 이렇게 하면 PC(마우스)와 휴대폰(좁은 화면)은 전혀 안 바뀌고, 태블릿만 적용된다. */
+  @media (min-width: 820px) and (pointer: coarse){
+    #panel{ left:18px; right:auto; bottom:18px; width:400px;
+      border-radius:20px; max-height:calc(100% - 36px);
+      box-shadow:0 12px 44px rgba(27,26,23,.24); }
+    .panel-handle{ border-radius:20px 20px 0 0; }
+    .header{ padding-left:18px; }
+    .brand{ margin-left:0; }                 /* 헤더 제목도 왼쪽 정렬 */
+    #list{ padding-bottom:10px; }
+  }
+
   /* ── 마커 점 — 지도 위에서 확 튀는 고대비 색 + 퍼지는 효과 ── */
   .addr-dot{ width:17px; height:17px; border-radius:50%; background:#E5007E;   /* 정밀 = 자홍(마젠타) */
     border:3px solid #fff; box-shadow:0 2px 8px rgba(0,0,0,.5); }
@@ -205,16 +218,38 @@
 
 <script src="./addresses.js"></script>
 <script>
-var DATA = window.ADDR_DATA || {};
-var map, cluster, myMarker = null;
-var panel = document.getElementById('panel');
-var listEl = document.getElementById('list');
-var crumbEl = document.getElementById('crumb');
-var sel = { sido:null, gugun:null, dong:null };
+/* =======================================================================
+   전국 주소 지도 — 동작 개요 (초보자용 설명)
+   -----------------------------------------------------------------------
+   [데이터] addresses.js 가 window.ADDR_DATA 라는 큰 객체를 만들어 둡니다.
+     구조: { 시도 : { 구군 : { 동 : [ 주소배열, 주소배열, ... ] } } }
+     주소배열 한 개 = [ 위도, 경도, "주소글자", 사업장수, 정밀여부 ]
+        · 정밀여부 1 = 정확한 좌표(지도에 마젠타 점)
+        · 정밀여부 0 = 대략 위치(주황 점 · '확인필요')
+     예) ADDR_DATA["서울특별시"]["강남구"]["역삼동"][0]
+         = [37.49, 127.03, "서울특별시 강남구 …", 1, 1]
 
+   [화면] 배경 = 지도(Leaflet 라이브러리) / 위 = 헤더 / 아래 = 목록 패널
+     목록 패널에서 시도 → 구 → 동 → 주소 순서로 좁혀 들어갑니다(드릴다운).
+
+   [핵심 아이디어] 주소가 4만 개라, 지도 점(마커)을 '한꺼번에' 만들면
+     휴대폰이 몇 초간 멈춥니다. 그래서 ① 목록(글자)부터 먼저 그리고
+     ② 마커는 필요한 것만 만들어 재사용(캐시)합니다.
+   ======================================================================= */
+
+var DATA = window.ADDR_DATA || {};   // 위에서 설명한 큰 데이터 객체(없으면 빈 객체)
+var map, cluster, myMarker = null;   // map=지도, cluster=마커묶음, myMarker=내 위치 점
+var panel = document.getElementById('panel');   // 아래 목록 패널
+var listEl = document.getElementById('list');    // 목록이 그려지는 곳
+var crumbEl = document.getElementById('crumb');   // '전체 › 서울 › 강남구' 경로 표시줄
+var sel = { sido:null, gugun:null, dong:null };   // 지금 어디까지 골랐는지 기억
+
+// esc: 주소에 <, >, & 같은 특수문자가 있어도 화면이 깨지지 않게 안전한 글자로 바꿈
 function esc(s){ return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+// count*: 한 구/시도 안에 주소가 몇 개인지 세는 계산기
 function countGugun(g){ var n=0; for(var d in g) n+=g[d].length; return n; }
 function countSido(s){ var n=0; for(var g in s) n+=countGugun(s[g]); return n; }
+// collect*: 한 구/시도 안의 모든 주소를 하나의 목록으로 합침(지도 범위 맞출 때 사용)
 function collectGugun(g){ var out=[]; for(var d in g) out=out.concat(g[d]); return out; }
 function collectSido(s){ var out=[]; for(var g in s) out=out.concat(collectGugun(s[g])); return out; }
 
@@ -233,6 +268,8 @@ var ALL = [];                    // 평면 인덱스 {p, real, s, g, d}
 var markerCache = new Map();     // 점 → L.marker (한 번만 생성)
 var _showToken = 0;              // 표시 작업 토큰(새 선택이 오면 옛 작업 취소)
 
+// buildIndex: 3중으로 중첩된 데이터(시도>구>동)를 훑어서
+//   ALL(주소 한 줄짜리 평평한 목록)로 펼친다. 정밀/대략 개수도 함께 센다.
 function buildIndex(){
   var nReal = 0, nApprox = 0;
   for(var sido in DATA) for(var gugun in DATA[sido]) for(var dong in DATA[sido][gugun]){
@@ -247,6 +284,8 @@ function buildIndex(){
   }
   return { nReal:nReal, nApprox:nApprox };
 }
+// getMarker: 주소 한 개의 '지도 점(마커)'을 만든다.
+//   이미 만든 적 있으면 새로 안 만들고 그대로 재사용(markerCache) → 빠르고 메모리 절약.
 function getMarker(rec){
   var m = markerCache.get(rec.p);
   if(m) return m;
@@ -318,6 +357,9 @@ function showMarkers(filter, key){
   })();
 }
 
+// openPopup: 마커/주소를 눌렀을 때 뜨는 말풍선.
+//   주소 + (대략위치 경고) + (사업장 개수) + 구글지도 열기/길안내 버튼.
+//   말풍선이 아래 패널에 가리지 않도록 지도를 자동으로 살짝 옮긴다(autoPan).
 function openPopup(marker, rec){
   var q = encodeURIComponent(rec[2]);
   var search = 'https://www.google.com/maps/search/?api=1&query=' + q;
@@ -345,7 +387,9 @@ function fitToRecords(records){
   else { map.fitBounds(L.latLngBounds(pts), {padding:[40,40]}); }
 }
 
-// ── 드릴다운 ──
+// ── 드릴다운(단계별 좁히기): 시도 → 구 → 동 → 주소 ──
+//   각 render* 함수가 목록을 다시 그리고, 지도도 해당 범위 점만 보여준다.
+//   setCrumb=경로표시줄, navRow=목록 한 줄, addBack=뒤로 버튼.
 function setCrumb(){
   var h='<b onclick="renderSido()">전체</b>';
   if(sel.sido) h+='<span class="sep">›</span><b onclick="renderGugun()">'+esc(sel.sido)+'</b>';
