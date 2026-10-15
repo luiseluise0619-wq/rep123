@@ -7,7 +7,7 @@ var PHOTO_LIMITS_ = Object.freeze({
   accountCeilingBytes: 24000000000, reserveBytes: 1000000000,
   dailyUploads: 1000, dailyReads: 2000, sessionHours: 8,
   sourceUrl: 'https://rep123-seven.vercel.app/addresses.js',
-  rootName: '현장방문_주소사진_v1', version: '2026-10-15-mybox-v1'
+  rootName: '현장방문_주소사진_v1', version: '2026-10-15-mybox-v2'
 });
 
 function doGet(e) {
@@ -23,7 +23,7 @@ function doGet(e) {
 function getStatus(session, address) {
   return rpc_(function() {
     var ready = configured_();
-    if (!ready) return {ready: false, authenticated: false};
+    if (!ready) return {ready: false, authenticated: false, setupProblems: setupProblems_()};
     var user = verifySession_(session, true);
     if (!user) return {ready: true, authenticated: false};
     assertAddress_(address);
@@ -40,13 +40,20 @@ function loginPhoto(name, password) {
     requireConfig_();
     name = String(name || '').trim();
     if (!/^[\p{L}\p{N} ._-]{1,24}$/u.test(name)) fail_('NAME', '이름은 한글·영문·숫자 등 24자 이내로 입력하세요.');
-    if (String(password || '').length > 200) fail_('LOGIN', '이름 또는 접속 암호를 확인하세요.');
+    var now = Date.now(), props = PropertiesService.getScriptProperties();
+    var guard = JSON.parse(props.getProperty('LOGIN_GUARD') || '{}');
+    if (Number(guard.lockedUntil || 0) > now)
+      fail_('RATE_LIMIT', '로그인 실패가 누적되어 잠시 잠겼습니다. 10분 후 다시 시도하세요.');
+    if (!guard.startedAt || now - guard.startedAt >= 600000) guard = {startedAt: now, failures: 0};
     var cache = CacheService.getScriptCache();
     var bucket = 'login:' + digest_(name.toLowerCase());
     var tries = Number(cache.get(bucket) || 0);
     if (tries >= 8) fail_('RATE_LIMIT', '로그인 시도가 많습니다. 잠시 후 다시 시도하세요.');
-    if (!equal_(digest_(String(password || '')), digest_(secret_('PHOTO_TEAM_PASSWORD')))) {
+    if (String(password || '').length > 200 || !equal_(digest_(String(password || '')), digest_(secret_('PHOTO_TEAM_PASSWORD')))) {
       cache.put(bucket, String(tries + 1), 600);
+      guard.failures++;
+      if (guard.failures >= 20) guard.lockedUntil = now + 600000;
+      props.setProperty('LOGIN_GUARD', JSON.stringify(guard));
       fail_('LOGIN', '이름 또는 접속 암호를 확인하세요.');
     }
     cache.remove(bucket);
@@ -148,8 +155,14 @@ function fetch_(url, options) {
 }
 function fail_(code, message) { var e = new Error(message); e.photoCode = code; throw e; }
 function secret_(key) { return String(PropertiesService.getScriptProperties().getProperty(key) || '').trim(); }
-function configured_() { return secret_('MYBOX_TOKEN').length >= 24 && secret_('PHOTO_TEAM_PASSWORD').length >= 16; }
-function requireConfig_() { if (!configured_()) fail_('SETUP', '관리자가 MYBOX 인증키와 16자 이상의 팀 접속 암호를 등록해야 합니다.'); }
+function setupProblems_() {
+  var out = [], size = secret_('PHOTO_TEAM_PASSWORD').length;
+  if (secret_('MYBOX_TOKEN').length < 24) out.push('MYBOX_TOKEN 등록을 확인해 주세요.');
+  if (size < 8 || size > 200) out.push('팀 접속 암호는 8~200자로 등록해 주세요.');
+  return out;
+}
+function configured_() { return setupProblems_().length === 0; }
+function requireConfig_() { var issues=setupProblems_(); if (issues.length) fail_('SETUP', issues.join(' ')); }
 function sign_(payload) {
   var key = digest_(secret_('MYBOX_TOKEN') + '\n' + secret_('PHOTO_TEAM_PASSWORD'));
   return Utilities.base64EncodeWebSafe(Utilities.computeHmacSha256Signature(payload, key, Utilities.Charset.UTF_8));

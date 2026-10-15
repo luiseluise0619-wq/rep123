@@ -98,6 +98,22 @@ test('wrong passwords, forged/expired sessions and invalid addresses cannot uplo
   const old=h.props.get('PHOTO_TEAM_PASSWORD');h.props.set('PHOTO_TEAM_PASSWORD',old+'rotate');
   assert.equal(h.app.uploadPhoto(h.session,ADDRESS,photo()).code,'AUTH');
 });
+test('8-to-15-character team passwords work; fewer than 8 characters stay blocked',()=>{
+  const h=harness();h.props.set('PHOTO_TEAM_PASSWORD','test8x9z');
+  assert.equal(h.app.loginPhoto('담당자','test8x9z').ok,true);
+  h.props.set('PHOTO_TEAM_PASSWORD','short7x');
+  assert.equal(h.app.getStatus('',ADDRESS).data.ready,false);
+  assert.equal(h.app.loginPhoto('담당자','short7x').code,'SETUP');
+});
+test('persistent global login guard cannot be bypassed by changing names or clearing cache',()=>{
+  const h=harness();
+  for(let i=0;i<20;i++)assert.equal(h.app.loginPhoto('새담당자'+i,'wrong').code,'LOGIN');
+  h.cache.clear();
+  assert.equal(h.app.loginPhoto('다른이름',PASSWORD).code,'RATE_LIMIT');
+  const guard=JSON.parse(h.props.get('LOGIN_GUARD'));guard.lockedUntil=Date.now()-1;guard.startedAt=Date.now()-610000;
+  h.props.set('LOGIN_GUARD',JSON.stringify(guard));
+  assert.equal(h.app.loginPhoto('다른이름',PASSWORD).ok,true);
+});
 test('two photos per original address including multiple businesses, no third photo/overwrite',()=>{
   const h=harness();
   assert.equal(h.app.uploadPhoto(h.session,ADDRESS,photo(1)).ok,true);
