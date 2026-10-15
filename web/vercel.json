@@ -3,6 +3,10 @@
   "cleanUrls": true,
   "headers": [
     {
+      "source": "/photo-config.js",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }]
+    },
+    {
       "source": "/addresses.js",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }]
     },

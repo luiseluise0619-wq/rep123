@@ -250,6 +250,7 @@
 
 <script src="./data-meta.js?v=20261015-admin"></script>
 <script src="./addresses.js?v=20261015-admin"></script>
+<script src="./photo-config.js?v=20261015-mybox"></script>
 <script>
 /* =======================================================================
    전국 주소 지도 — 동작 개요 (초보자용 설명)
@@ -414,13 +415,25 @@ function openPopup(marker, rec){
     (approx ? '<div class="popup-warn">⚠ 대략 위치 · 확인필요</div>' : '') +
     '<div class="popup-sub tag-biz">이 주소 사업자수 ' + cnt + '개</div>' +
     '<a class="pbtn search" href="' + search + '" target="_blank" rel="noopener">🔍 구글지도에서 열기</a>' +
-    '<a class="pbtn nav" href="' + nav + '" target="_blank" rel="noopener">🚗 구글 길안내</a>';
+    '<a class="pbtn nav" href="' + nav + '" target="_blank" rel="noopener">🚗 구글 길안내</a>' + photoLinkHtml(rec[2]);
   // 팝업이 항상 '보이는 영역'(헤더 아래·패널 위)에 뜨도록 자동 이동 여백 지정
   var ph = Math.max(60, panel.getBoundingClientRect().height);
   suppressAutoUntil = Date.now() + 900;   // 이 자동 이동은 화면목록 갱신 대상 아님
   marker.bindPopup(html, {maxWidth:264, autoPan:true,
     autoPanPaddingTopLeft: L.point(24, 96),
     autoPanPaddingBottomRight: L.point(24, ph + 24)}).openPopup();
+}
+
+// Public endpoint only; credentials are never included in the map or its links.
+function photoUrl(address){
+  var config=window.PHOTO_CONFIG||{}, base=String(config.webAppUrl||'');
+  if(!/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(base)) return '';
+  return base+'?address='+encodeURIComponent(address);
+}
+function photoLinkHtml(address){
+  var url=photoUrl(address);
+  return url ? '<a class="pbtn search" href="'+url+'" target="_blank" rel="noopener noreferrer">📷 방문 사진 · 최대 2장</a>' :
+    '<div class="popup-sub">📷 MYBOX 사진 연결 준비 중</div>';
 }
 
 function fitToRecords(records){
@@ -451,6 +464,7 @@ function navRow(label, count, onClick){
 }
 // 목록/뒤로 버튼을 키보드(Enter·Space)로도 실행
 listEl.addEventListener('keydown', function(e){
+  if(e.target.closest && e.target.closest('a,button,input')) return;
   if(e.key==='Enter' || e.key===' '){
     var row = e.target.closest && e.target.closest('.row, .back');
     if(row){ e.preventDefault(); row.click(); }
@@ -526,6 +540,14 @@ function appendAddrRow(p){
     showSelected(p);
     collapsePanel();
   };
+  var photo=document.createElement('a'), photoHref=photoUrl(p[2]);
+  photo.className='hbtn'; photo.style.alignSelf='flex-start'; photo.style.marginTop='5px';
+  photo.textContent=photoHref?'📷 방문 사진 · 최대 2장':'📷 MYBOX 사진 연결 준비 중';
+  if(photoHref){
+    photo.href=photoHref; photo.target='_blank'; photo.rel='noopener noreferrer';
+    photo.onclick=function(e){e.stopPropagation();};
+  } else { photo.setAttribute('aria-disabled','true'); }
+  r.appendChild(photo);
   listEl.appendChild(r);
 }
 

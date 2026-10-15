@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><base target="_top">
+<meta name="referrer" content="no-referrer"><title>현장 방문 사진 · MYBOX</title>
+<style>
+:root{color-scheme:light;--ink:#1b1a17;--mut:#6b6459;--line:#e4ddd0;--teal:#0e6e63}
+*{box-sizing:border-box}body{margin:0;background:#efebe3;color:var(--ink);font-family:system-ui,'Malgun Gothic',sans-serif;line-height:1.6}
+main{max-width:720px;margin:auto;padding:22px 16px 60px}h1{font-size:23px;letter-spacing:-.04em;margin:6px 0}h2{font-size:17px;margin:0 0 12px}p{margin:8px 0}
+.small{font-size:12px;color:var(--mut)}.pill{display:inline-block;background:#dcebe5;color:#0a544b;font-size:12px;border-radius:20px;padding:2px 9px}
+.card{background:#fbf9f3;border:1px solid var(--line);border-radius:17px;padding:18px;margin-top:14px}.address{font-weight:700;word-break:break-word}
+label{display:block;font-size:14px;font-weight:600;margin:12px 0 5px}input{font:inherit;width:100%;padding:11px;border:1px solid #bfb6a6;border-radius:9px;background:#fff}
+input[type=checkbox]{width:20px;height:20px;flex:none}button,.button{border:0;border-radius:10px;background:var(--teal);color:#fff;padding:11px 15px;min-height:44px;font:inherit;font-weight:650;cursor:pointer;text-decoration:none;display:inline-block}
+button:disabled{opacity:.5;cursor:not-allowed}.secondary{background:#e9e2d6;color:#184f47}.danger{color:#a43b27}.hidden,[hidden]{display:none!important}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.status{white-space:pre-wrap;border-left:4px solid var(--teal);padding:12px 14px;background:#e2eee6;border-radius:8px;margin:14px 0;font-size:14px}.status.error{background:#fae5dc;border-color:#a43b27;color:#862d1c}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.photo{min-width:0;border:1px solid var(--line);border-radius:12px;padding:10px;background:#fff}.photo img{display:block;max-width:100%;max-height:350px;object-fit:contain;margin:auto;border-radius:6px}.photo p{font-size:12px;word-break:break-word}.photo button{font-size:13px;width:100%}
+.check{display:flex;gap:8px;align-items:flex-start;font-weight:400}progress{width:100%;height:15px}a{color:var(--teal)}button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid #e5007e;outline-offset:3px}
+#photoZoom{width:95vw;max-width:1700px;height:90vh;border:0;border-radius:12px;padding:12px;background:#202823;color:#fff;overflow:auto}#photoZoom::backdrop{background:#000b}#photoZoom img{display:block;width:auto;max-width:none;margin-top:10px}#closeZoom{position:sticky;top:0;left:0}
+@media(max-width:440px){.grid{grid-template-columns:1fr}main{padding:16px 12px 40px}.card{padding:15px}h1{font-size:21px}}
+</style></head><body>
+<main>
+<span class="pill">MYBOX 비공개 저장</span><h1>현장 방문 사진</h1>
+<p class="small">주소당 최대 2장 · 장당 200KB 이하 자동 압축</p>
+<section class="card"><div class="small">원자료 주소</div><p id="address" class="address"></p><p class="small">동일 주소에 사업자가 여러 개 있어도 사진은 이 주소 전체에 2장입니다.</p></section>
+<div id="message" class="status" role="status" aria-live="polite">연결 상태를 확인하는 중…</div>
+<section id="loginCard" class="card" hidden><h2>현장 직원 로그인</h2>
+<form id="loginForm"><label for="name">이름 또는 담당자 표시명</label><input id="name" maxlength="24" autocomplete="nickname" required>
+<label for="password">팀 접속 암호</label><input id="password" type="password" maxlength="200" autocomplete="current-password" required>
+<p class="small">네이버 비밀번호가 아닙니다. 관리자가 전달한 사진 업로드용 암호를 입력하세요.</p>
+<button id="login" type="submit">로그인</button></form></section>
+<section id="workspace" hidden>
+<section class="card"><h2 id="count">저장된 사진 0 / 2장</h2><div id="saved" class="grid"></div><div class="actions"><button id="refresh" class="secondary" type="button">저장 상태 새로고침</button><button id="logout" class="secondary" type="button">로그아웃</button></div>
+<p id="quota" class="small"></p></section>
+<section id="uploadCard" class="card"><h2>사진 추가</h2><p class="small">원본은 기기에 남겨두세요. 사진을 자르지 않고 압축하며, EXIF 촬영일·GPS는 저장하지 않습니다. 사진에 인쇄된 날짜는 이미지에 그대로 남습니다.</p>
+<label for="visitDate">방문일 (직접 입력값)</label><input id="visitDate" type="date" required>
+<label for="files">사진 선택 또는 촬영</label><input id="files" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" multiple>
+<p id="compression" class="small"></p><div id="preview" class="grid"></div>
+<label class="check"><input id="readable" type="checkbox"><span>압축된 미리보기에서 날짜·현장·주소를 식별할 수 있고, 올바른 주소의 사진임을 확인했습니다.</span></label>
+<p class="small">사진과 입력 방문일만으로 실제 촬영·방문 시각을 보증하지는 않습니다. 서버 저장 시각은 별도로 표시합니다.</p>
+<div class="actions"><button id="upload" type="button" disabled>MYBOX에 저장</button><button id="clear" class="secondary" type="button">선택 취소</button></div><progress id="progress" max="2" value="0" hidden></progress>
+<p class="small">무료 운영 안전 한도: 계정 사용량 24GB 이내·여유 공간 1GB 확보·사진 저장 시도 하루 1,000회. 제한에 닿으면 중단되며 자동 결제하지 않습니다. 서비스 자체 한도가 먼저 적용될 수 있습니다.</p>
+</section></section>
+<p class="small">팀 공용 암호를 아는 사람은 이 사이트의 방문 사진을 볼 수 있습니다. 표시명·방문일은 사용자 입력값이며 본인 인증 정보가 아닙니다.</p>
+<p><a href="https://rep123-seven.vercel.app/" rel="noreferrer">지도로 돌아가기</a></p>
+</main>
+<dialog id="photoZoom" aria-label="사진 원래 해상도로 확대"><button id="closeZoom" type="button">확대 닫기</button><p>날짜 부분까지 스크롤해 가독성을 확인하세요.</p><img id="zoomImage" alt="확대한 사진"></dialog>
+<script id="initial" type="application/json"><?!= initialJson ?></script>
+<script>
+'use strict';
+const INITIAL = JSON.parse(document.getElementById('initial').textContent);
+const $ = id => document.getElementById(id);
+const MAX_BYTES = INITIAL.maxBytes;
+let session = sessionStorage.getItem('photoSession') || '';
+let pending = [], savedCount = 0, busy = false, canUpload = false;
+$('address').textContent = INITIAL.address || '지도에서 주소를 선택한 후 사진 버튼을 눌러주세요.';
+const today = new Intl.DateTimeFormat('en-CA', {timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+$('visitDate').value = today; $('visitDate').max = today;
+function say(text, error = false) { $('message').textContent = text; $('message').classList.toggle('error', error); }
+function rpc(name, ...args) { return new Promise((resolve,reject) => {
+  if (!window.google || !google.script || !google.script.run) { reject(new Error('업로드 서버가 연결되지 않았습니다.')); return; }
+  google.script.run.withSuccessHandler(result => {
+    if (!result || !result.ok) { const error = new Error(result && result.message || '요청을 완료하지 못했습니다.'); error.code = result && result.code; reject(error); }
+    else resolve(result.data);
+  }).withFailureHandler(() => reject(new Error('연결이 끊기거나 무료 사용 한도에 도달했습니다. 새로고침 후 저장 상태를 확인하세요.')))[name](...args);
+}); }
+function updateControls() {
+  $('upload').disabled = busy || !pending.length || !$('readable').checked || !canUpload || pending.length + savedCount > 2;
+  ['files','clear','refresh','logout','visitDate','readable'].forEach(id => { $(id).disabled = busy; });
+}
+function clearPending() { pending.forEach(p => URL.revokeObjectURL(p.url)); pending = []; $('files').value = ''; $('preview').replaceChildren(); $('compression').textContent = ''; $('readable').checked = false; updateControls(); }
+function logout() { session = ''; sessionStorage.removeItem('photoSession'); clearPending(); $('saved').replaceChildren(); $('workspace').hidden = true; $('loginCard').hidden = false; say('로그아웃했습니다.'); }
+function handle(error) { if (error.code === 'AUTH') logout(); say(error.message, true); }
+function kb(bytes) { return (bytes / 1000).toFixed(1) + 'KB'; }
+function zoomButton(src, label) { const button=document.createElement('button'); button.type='button'; button.className='secondary'; button.textContent=label||'미리보기 확대'; button.onclick=()=>{ $('zoomImage').src=src; $('photoZoom').showModal(); }; return button; }
+$('closeZoom').onclick=()=>{ $('photoZoom').close(); $('zoomImage').removeAttribute('src'); };
+function photoCard(photo) {
+  const box = document.createElement('article'); box.className = 'photo';
+  const text = document.createElement('p');
+  let time = '확인 불가'; if (photo.uploadedAt && !isNaN(Date.parse(photo.uploadedAt))) time = new Date(photo.uploadedAt).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'});
+  text.textContent = '사진 ' + photo.slot + ' · ' + kb(photo.bytes) + '\n방문일(입력): ' + photo.visitDate + '\n저장 시각: ' + time + '\n담당자(입력): ' + photo.uploader;
+  text.style.whiteSpace = 'pre-line'; box.appendChild(text);
+  const button = document.createElement('button'); button.type = 'button'; button.className = 'secondary'; button.textContent = '사진 보기';
+  button.onclick = async () => { button.disabled = true; try {
+    const result = await rpc('getPhoto',session,INITIAL.address,photo.slot);
+    const image = document.createElement('img'); image.alt = '저장된 현장 사진 ' + photo.slot; image.src = 'data:image/jpeg;base64,' + result.base64;
+    box.prepend(image); box.appendChild(zoomButton(image.src,'사진 확대')); button.remove();
+  } catch(error) { handle(error); button.disabled = false; } };
+  box.appendChild(button); return box;
+}
+async function refresh(message) {
+  const data = await rpc('getStatus',session,INITIAL.address);
+  if (!data.ready) { $('loginCard').hidden = true; $('workspace').hidden = true; say('MYBOX 연결 설정이 아직 완료되지 않았습니다. 관리자 인증키 등록 후 사용할 수 있습니다.', true); return; }
+  if (!data.authenticated) { logout(); say('이름과 팀 접속 암호로 로그인하세요.'); return; }
+  $('loginCard').hidden = true; $('workspace').hidden = false;
+  savedCount = data.photos.length; canUpload = data.quota.canUpload;
+  $('count').textContent = '저장된 사진 ' + savedCount + ' / 2장';
+  $('saved').replaceChildren(...data.photos.map(photoCard));
+  $('quota').textContent = 'MYBOX 사용량 ' + (data.quota.usedBytes/1e9).toFixed(2) + 'GB · 안전 한도까지 ' + (data.quota.remainingSafeBytes/1e9).toFixed(2) + 'GB';
+  $('uploadCard').hidden = savedCount >= 2;
+  say(message || (savedCount === 2 ? '사진 2장이 저장되어 있습니다. 추가·덮어쓰기는 차단됩니다.' : data.name + '님, 사진을 선택하고 압축 미리보기를 확인하세요.'));
+  if (!canUpload) say('남은 저장 공간이 무료 운영 안전 한도에 도달해 업로드를 중단했습니다.',true);
+  updateControls();
+}
+function readImage(file) { return new Promise((resolve,reject) => {
+  const url = URL.createObjectURL(file), image = new Image();
+  image.onload = () => { URL.revokeObjectURL(url); resolve(image); };
+  image.onerror = () => { URL.revokeObjectURL(url); reject(new Error('이 사진 형식을 읽지 못했습니다. 휴대폰에서 JPEG로 내보낸 뒤 다시 선택하세요.')); };
+  image.src = url;
+}); }
+function toJpeg(canvas,quality) { return new Promise((resolve,reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('사진 압축에 실패했습니다.')),'image/jpeg',quality)); }
+async function compress(file) {
+  if (file.size > 30 * 1024 * 1024) throw new Error('원본 사진은 장당 30MB 이하로 선택하세요.');
+  const image = await readImage(file);
+  if (!image.naturalWidth || !image.naturalHeight || image.naturalWidth*image.naturalHeight > 50000000) throw new Error('사진 크기가 너무 큽니다. 작은 해상도로 다시 선택하세요.');
+  const canvas = document.createElement('canvas');
+  let edge = Math.min(INITIAL.maxEdge, Math.max(image.naturalWidth,image.naturalHeight));
+  while (edge >= Math.min(800, Math.max(image.naturalWidth,image.naturalHeight))) {
+    const scale = Math.min(1,edge/Math.max(image.naturalWidth,image.naturalHeight));
+    canvas.width = Math.round(image.naturalWidth*scale); canvas.height = Math.round(image.naturalHeight*scale);
+    const context = canvas.getContext('2d'); context.fillStyle = '#fff'; context.fillRect(0,0,canvas.width,canvas.height); context.drawImage(image,0,0,canvas.width,canvas.height);
+    for (const quality of [0.86,0.76,0.66,0.56,0.46]) { const blob = await toJpeg(canvas,quality); if(blob.size<=MAX_BYTES) return {blob,url:URL.createObjectURL(blob),width:canvas.width,height:canvas.height,originalSize:file.size}; }
+    edge = Math.floor(edge*0.8);
+  }
+  throw new Error('날짜 가독성을 해칠 만큼 압축해야 하는 사진입니다. 날짜가 더 크게 보이도록 다시 촬영해 주세요.');
+}
+function base64(blob) { return new Promise((resolve,reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result).split(',')[1]); reader.onerror = () => reject(new Error('사진을 읽지 못했습니다.')); reader.readAsDataURL(blob); }); }
+$('files').onchange = async () => {
+  const files = Array.from($('files').files || []);
+  clearPending();
+  if (files.length > 2 - savedCount) { say('이 주소에는 최대 ' + (2 - savedCount) + '장을 추가할 수 있습니다.',true); return; }
+  if (!files.length) return;
+  busy = true; updateControls(); say('사진을 자동 압축하는 중… 원본은 변경하지 않습니다.');
+  try { for (const file of files) pending.push(await compress(file));
+    const cards = pending.map((p,index) => { const box=document.createElement('article'); box.className='photo'; const image=document.createElement('img'); image.src=p.url; image.alt='압축 사진 '+(index+1)+' 미리보기'; const note=document.createElement('p'); note.textContent=kb(p.originalSize)+' → '+kb(p.blob.size)+' · '+p.width+' × '+p.height+'px'; box.append(image,note,zoomButton(p.url)); return box; });
+    $('preview').replaceChildren(...cards); $('compression').textContent='선택한 '+pending.length+'장 압축 완료. 미리보기를 확대해 날짜가 읽히는지 확인하세요.'; say('아직 저장되지 않았습니다. 미리보기를 확인하고 MYBOX에 저장을 눌러주세요.');
+  } catch(error) { clearPending(); handle(error); } finally { busy=false; updateControls(); }
+};
+$('upload').onclick = async () => {
+  if ($('upload').disabled) return;
+  busy=true; updateControls(); $('progress').hidden=false; $('progress').max=pending.length; $('progress').value=0;
+  let completed=0, newlySaved=0;
+  try { for (const p of pending) { say((completed+1)+'번째 사진을 저장하는 중… 창을 닫지 마세요.');
+    const result = await rpc('uploadPhoto',session,INITIAL.address,{base64:await base64(p.blob),visitDate:$('visitDate').value,confirmReadable:$('readable').checked});
+    if (!result.alreadySaved) newlySaved++;
+    completed++; $('progress').value=completed;
+  } clearPending(); await refresh('새 사진 '+newlySaved+'장 저장을 확인했습니다. 이미 저장된 동일 사진은 중복으로 추가하지 않았습니다.');
+  } catch(error) {
+    // Keep only unsaved images; server hash checks also make ambiguous retries idempotent.
+    pending.splice(0,completed).forEach(p=>URL.revokeObjectURL(p.url));
+    $('preview').replaceChildren(); pending.forEach(p=>{ const image=document.createElement('img'); image.src=p.url; image.alt='아직 저장되지 않은 사진'; image.style.maxWidth='100%'; $('preview').append(image); });
+    try { await refresh(); } catch(ignored) {}
+    handle(error);
+  } finally { busy=false; $('progress').hidden=true; updateControls(); }
+};
+$('loginForm').onsubmit = async event => { event.preventDefault(); $('login').disabled=true; say('로그인 확인 중…'); try { const result=await rpc('loginPhoto',$('name').value,$('password').value); session=result.session; sessionStorage.setItem('photoSession',session); $('password').value=''; await refresh(); } catch(error) { handle(error); } finally { $('login').disabled=false; } };
+$('readable').onchange=updateControls; $('clear').onclick=clearPending; $('logout').onclick=logout; $('refresh').onclick=()=>refresh().catch(handle);
+if (INITIAL.address) refresh().catch(handle); else say('지도에서 주소를 선택한 후 사진 버튼을 눌러주세요.',true);
+</script></body></html>
