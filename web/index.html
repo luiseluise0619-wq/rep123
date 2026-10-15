@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5.0"/>
-<title>전국 주소 탐색</title>
+<title>행정동별 사업자 탐색</title>
 
 <!-- 폰트(Pretendard) — 로드 실패해도 시스템 폰트로 자연 대체 -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css"/>
@@ -174,6 +174,21 @@
     text-decoration:none; font-weight:600; font-size:13px; color:#fff; }
   .pbtn.search{ background:var(--teal); } .pbtn.nav{ background:var(--teal-d); }
   .leaflet-bar a{ color:var(--ink); }
+  .data-dialog{ width:min(720px,calc(100% - 24px)); max-height:88vh; overflow:auto;
+    padding:22px; border:1px solid var(--line); border-radius:18px;
+    color:var(--ink); background:var(--surface); box-shadow:0 20px 70px #0004; }
+  .data-dialog::backdrop{ background:#0007; }
+  .data-dialog h2{ font-size:18px; margin:0 0 12px; }
+  .data-dialog p,.data-dialog li{ font-size:13px; line-height:1.6; }
+  .data-dialog ul{ padding-left:20px; }
+  .data-dialog button{ float:right; border:1px solid var(--line); background:var(--surface2);
+    color:var(--teal-d); border-radius:8px; padding:7px 13px; cursor:pointer; }
+  .data-scroll{ overflow-x:auto; }
+  .data-dialog table{ width:100%; border-collapse:collapse; font-size:12px; }
+  .data-dialog th,.data-dialog td{ padding:8px 5px; border-bottom:1px solid var(--line); text-align:right; white-space:nowrap; }
+  .data-dialog th:first-child,.data-dialog td:first-child{ text-align:left; }
+  .scope-note{ padding:10px 16px; font-size:12px; line-height:1.6; color:var(--mut);
+    border-bottom:1px solid var(--line); background:var(--surface2); }
 </style>
 </head>
 <body>
@@ -184,15 +199,17 @@
   <div class="brand">
     <div class="logo"><span class="d"></span></div>
     <div class="titles">
-      <div class="t1">전국 주소 탐색</div>
+      <div class="t1">행정동별 사업자 탐색</div>
       <div class="t2">
-        <span><span class="lg teal"></span>정밀 <b id="nReal">-</b></span>
-        <span><span class="lg amber"></span>확인필요 <b id="nApprox">-</b></span>
-        <span>· 총 <b id="totalCnt">-</b></span>
+        <span>사업자 <b id="businessCnt">-</b>개</span>
+        <span>주소 <b id="totalCnt">-</b>건</span>
+        <span><span class="lg amber"></span>좌표 확인 <b id="nApprox">-</b>건</span>
+        <span hidden id="nReal">-</span>
       </div>
       <div class="hbtns">
         <a class="hbtn" href="./duplicates.html" target="_blank" rel="noopener">🏬 같은주소 <b>1,001</b></a>
-        <a class="hbtn warn" href="./check.html" target="_blank" rel="noopener">⚠ 확인필요 <b>100</b></a>
+        <a class="hbtn warn" href="./check.html" target="_blank" rel="noopener">⚠ 좌표 확인 <b>100</b></a>
+        <button class="hbtn" type="button" id="dataInfoBtn">한글 집계 기준</button>
       </div>
     </div>
   </div>
@@ -207,16 +224,32 @@
 </button>
 
 <div id="panel">
-  <div class="panel-handle" id="panelHandle"><span class="bar"></span>📋 지역 선택 · 구 · 동 · 주소</div>
+  <div class="panel-handle" id="panelHandle"><span class="bar"></span>📋 시도 · 시군구 · 행정 읍면동 · 주소</div>
   <div id="crumb"></div>
   <div id="panelTools">
     <a class="ptool" href="./duplicates.html" target="_blank" rel="noopener">🏬 같은주소 <b>1,001</b>곳</a>
-    <a class="ptool warn" href="./check.html" target="_blank" rel="noopener">⚠ 확인필요 <b>100</b>건</a>
+    <a class="ptool warn" href="./check.html" target="_blank" rel="noopener">⚠ 좌표 확인 <b>100</b>건</a>
   </div>
   <div id="list"></div>
 </div>
 
-<script src="./addresses.js"></script>
+<dialog class="data-dialog" id="dataDialog" aria-labelledby="dataDialogTitle">
+  <button type="button" id="closeDataDialog" aria-label="집계 기준 닫기">닫기</button>
+  <h2 id="dataDialogTitle">한글 집계 기준 · 2026-10-15</h2>
+  <p id="dataSummary"></p>
+  <div class="data-scroll"><table>
+    <caption>데이터가 있는 시군구·읍면동의 수입니다. 미확정은 사업자 합계에 포함됩니다.</caption>
+    <thead><tr><th scope="col">지역</th><th scope="col">사업자수</th><th scope="col">시군구수</th><th scope="col">읍면동수</th><th scope="col">미확정</th></tr></thead>
+    <tbody id="dataControls"></tbody>
+  </table></div>
+  <h3>행정동 미확정 3건</h3>
+  <ul id="dataUnresolved"></ul>
+  <ul id="dataNotes"></ul>
+  <p><a href="./data-validation.json" target="_blank" rel="noopener">원자료·한글 대조 결과 보기</a></p>
+</dialog>
+
+<script src="./data-meta.js?v=20261015-admin"></script>
+<script src="./addresses.js?v=20261015-admin"></script>
 <script>
 /* =======================================================================
    전국 주소 지도 — 동작 개요 (초보자용 설명)
@@ -238,6 +271,7 @@
    ======================================================================= */
 
 var DATA = window.ADDR_DATA || {};   // 위에서 설명한 큰 데이터 객체(없으면 빈 객체)
+var META = window.ADDR_META || {};
 var map, cluster, myMarker = null;   // map=지도, cluster=마커묶음, myMarker=내 위치 점
 var panel = document.getElementById('panel');   // 아래 목록 패널
 var listEl = document.getElementById('list');    // 목록이 그려지는 곳
@@ -246,9 +280,11 @@ var sel = { sido:null, gugun:null, dong:null };   // 지금 어디까지 골랐�
 
 // esc: 주소에 <, >, & 같은 특수문자가 있어도 화면이 깨지지 않게 안전한 글자로 바꿈
 function esc(s){ return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-// count*: 한 구/시도 안에 주소가 몇 개인지 세는 계산기
-function countGugun(g){ var n=0; for(var d in g) n+=g[d].length; return n; }
+// 목록의 숫자는 주소 행 수가 아니라 원자료의 사업자수 합계이다.
+function countBusinesses(arr){ return arr.reduce(function(n,p){ return n+(Number(p[3])||1); },0); }
+function countGugun(g){ var n=0; for(var d in g) n+=countBusinesses(g[d]); return n; }
 function countSido(s){ var n=0; for(var g in s) n+=countGugun(s[g]); return n; }
+function hasCoordinates(p){ return p[0]!=null && p[1]!=null && Number.isFinite(p[0]) && Number.isFinite(p[1]) && Math.abs(p[0])<=90 && Math.abs(p[1])<=180; }
 // collect*: 한 구/시도 안의 모든 주소를 하나의 목록으로 합침(지도 범위 맞출 때 사용)
 function collectGugun(g){ var out=[]; for(var d in g) out=out.concat(g[d]); return out; }
 function collectSido(s){ var out=[]; for(var g in s) out=out.concat(collectGugun(s[g])); return out; }
@@ -265,6 +301,7 @@ var suppressAutoUntil = 0;  // 이 시각 이전의 moveend는 '프로그램 이
 // 42,401개를 로드 즉시 한꺼번에 만들면 화면이 멈춰 버튼이 안 먹힌다.
 // 그래서 (1) 목록부터 그리고 (2) 마커는 선택 범위만 지연 생성/캐시한다.
 var ALL = [];                    // 평면 인덱스 {p, real, s, g, d}
+var recordByPoint = new Map();
 var markerCache = new Map();     // 점 → L.marker (한 번만 생성)
 var _showToken = 0;              // 표시 작업 토큰(새 선택이 오면 옛 작업 취소)
 
@@ -276,9 +313,9 @@ function buildIndex(){
     var arr = DATA[sido][gugun][dong];
     for(var i=0;i<arr.length;i++){
       var p = arr[i];
-      if(p[0]==null) continue;
-      var real = p[4] ? true : false;
-      ALL.push({ p:p, real:real, s:sido, g:gugun, d:dong });
+      var real = hasCoordinates(p) && !!p[4];
+      var entry = { p:p, real:real, s:sido, g:gugun, d:dong };
+      ALL.push(entry); recordByPoint.set(p,entry);
       if(real) nReal++; else nApprox++;
     }
   }
@@ -318,6 +355,8 @@ function initMap(){
 
   var cnt = buildIndex();   // 평면 인덱스만 먼저(가벼움)
   document.getElementById('totalCnt').textContent = ALL.length.toLocaleString();
+  var businesses = Object.keys(DATA).reduce(function(n,s){ return n+countSido(DATA[s]); },0);
+  document.getElementById('businessCnt').textContent = businesses.toLocaleString();
   document.getElementById('nReal').textContent = cnt.nReal.toLocaleString();
   document.getElementById('nApprox').textContent = cnt.nApprox.toLocaleString();
 
@@ -346,7 +385,7 @@ function showMarkers(filter, key){
   var token = ++_showToken;
   cluster.clearLayers();
   var recs = [];
-  for(var i=0;i<ALL.length;i++){ if(!filter || filter(ALL[i])) recs.push(ALL[i]); }
+  for(var i=0;i<ALL.length;i++){ if(hasCoordinates(ALL[i].p) && (!filter || filter(ALL[i]))) recs.push(ALL[i]); }
   var CH = 2000, idx = 0;
   (function step(){
     if(token !== _showToken) return;                // 새 선택이 들어오면 이 작업 중단
@@ -366,9 +405,14 @@ function openPopup(marker, rec){
   var nav = 'https://www.google.com/maps/dir/?api=1&destination=' + q;
   var cnt = rec[3] || 1;
   var approx = rec[4] ? false : true;
+  var entry = recordByPoint.get(rec);
+  var admin = entry ? '<div class="popup-sub">집계 관할: '+esc(entry.s+' '+entry.g+' '+entry.d)+'</div>' : '';
   var html = '<div class="popup-addr">' + esc(rec[2]) + '</div>' +
+    admin +
+    (rec[6] && !rec[5] ? '<div class="popup-warn">행정동 미확정 · 시군구 합계에는 포함</div>' : '') +
+    (!rec[6] ? '<div class="popup-sub">원주소 분류 · 한글 행정동 대조 대상 외</div>' : '') +
     (approx ? '<div class="popup-warn">⚠ 대략 위치 · 확인필요</div>' : '') +
-    (cnt > 1 ? '<div class="popup-sub tag-biz">🏬 이 주소 사업장 ' + cnt + '개</div>' : '') +
+    '<div class="popup-sub tag-biz">이 주소 사업자수 ' + cnt + '개</div>' +
     '<a class="pbtn search" href="' + search + '" target="_blank" rel="noopener">🔍 구글지도에서 열기</a>' +
     '<a class="pbtn nav" href="' + nav + '" target="_blank" rel="noopener">🚗 구글 길안내</a>';
   // 팝업이 항상 '보이는 영역'(헤더 아래·패널 위)에 뜨도록 자동 이동 여백 지정
@@ -401,7 +445,8 @@ function clearList(){ listEl.innerHTML=''; }
 function addBack(fn){ var b=document.createElement('div'); b.className='back'; b.tabIndex=0; b.setAttribute('role','button'); b.textContent='‹ 뒤로'; b.onclick=fn; listEl.appendChild(b); }
 function navRow(label, count, onClick){
   var r=document.createElement('div'); r.className='row'; r.tabIndex=0; r.setAttribute('role','button');
-  r.innerHTML='<span class="name">'+esc(label)+'</span><span class="badge">'+count.toLocaleString()+'</span><span class="chev">›</span>';
+  r.setAttribute('aria-label',label+' 사업자수 '+count.toLocaleString()+'개');
+  r.innerHTML='<span class="name">'+esc(label)+'</span><span class="badge">'+count.toLocaleString()+'개</span><span class="chev">›</span>';
   r.onclick=onClick; listEl.appendChild(r);
 }
 // 목록/뒤로 버튼을 키보드(Enter·Space)로도 실행
@@ -411,6 +456,16 @@ listEl.addEventListener('keydown', function(e){
     if(row){ e.preventDefault(); row.click(); }
   }
 });
+function addScopeNote(records, extra){
+  var note=document.createElement('div'); note.className='scope-note';
+  var target=records.filter(function(p){return !!p[6];}).length;
+  var pending=records.filter(function(p){return !!p[6] && !p[5];});
+  note.textContent='사업자수 '+countBusinesses(records).toLocaleString()+'개 · 원주소 '+records.length.toLocaleString()+'건. '+
+    (target===records.length ? '한글 행정동 분류 반영.' : target===0 ? '한글 행정동 대조 대상 외: 기존 원주소 분류.' : '한글 대조 대상과 기존 원주소 분류가 함께 있습니다.')+
+    (pending.length ? ' 행정동 미확정 '+countBusinesses(pending)+'개 포함.' : '')+
+    (extra ? ' '+extra : '');
+  listEl.appendChild(note);
+}
 function renderSido(){
   visibleMode=false;
   sel={sido:null,gugun:null,dong:null}; setCrumb(); clearList();
@@ -421,6 +476,7 @@ function renderSido(){
     m.textContent='⚠ 데이터를 불러오지 못했어요. 인터넷 연결을 확인하고 새로고침 해주세요.';
     listEl.appendChild(m); expandPanel(); return;
   }
+  addScopeNote(ALL.map(function(r){return r.p;}),'목록 숫자는 주소 수가 아닌 사업자수입니다.');
   keys.forEach(function(s){ navRow(s, countSido(DATA[s]), function(){ sel.sido=s; renderGugun(); }); });
   expandPanel();
 }
@@ -430,6 +486,7 @@ function renderGugun(){
   showMarkers(function(r){ return r.s===s; }, 'S:'+s);
   fitToRecords(collectSido(DATA[s]));
   var g=DATA[s];
+  addScopeNote(collectSido(g),s==='충청북도'?'한글 대상 청주시는 아래 청주시 4개 구 합계 708개입니다.':'');
   Object.keys(g).sort().forEach(function(k){ navRow(k, countGugun(g[k]), function(){ sel.gugun=k; renderDong(); }); });
 }
 function renderDong(){
@@ -438,13 +495,18 @@ function renderDong(){
   showMarkers(function(r){ return r.s===s && r.g===gg; }, 'G:'+s+'/'+gg);
   fitToRecords(collectGugun(DATA[s][gg]));
   var g=DATA[s][gg];
-  Object.keys(g).sort().forEach(function(k){ navRow(k, g[k].length, function(){ sel.dong=k; renderAddr(); }); });
+  var yp=META.originalYeongdeungpo;
+  var ypNote=s==='서울특별시' && gg==='영등포구' && yp ?
+    '원주소 영등포구 '+yp.businesses+'개 중 '+yp.sameOriginalDistrictBusinesses+'개와 타 구 원주소 '+yp.incomingFromOtherOriginalDistricts+'개를 합친 현행 관할 수량입니다. 원주소 영등포구의 나머지 '+yp.otherDistrictBusinesses+'개는 '+yp.otherDistrict+'에 포함했습니다.' : '';
+  addScopeNote(collectGugun(g),ypNote);
+  Object.keys(g).sort().forEach(function(k){ navRow(k, countBusinesses(g[k]), function(){ sel.dong=k; renderAddr(); }); });
 }
 function renderAddr(){
   visibleMode=false;
   setCrumb(); clearList(); addBack(renderDong);
   var s=sel.sido, gg=sel.gugun, dd=sel.dong;
   var arr=DATA[s][gg][dd];
+  addScopeNote(arr);
   showMarkers(function(r){ return r.s===s && r.g===gg && r.d===dd; }, 'D:'+s+'/'+gg+'/'+dd);
   arr.forEach(appendAddrRow);
   fitToRecords(arr);
@@ -454,11 +516,12 @@ function renderAddr(){
 function appendAddrRow(p){
   var r=document.createElement('div'); r.className='row addr-row'; r.tabIndex=0; r.setAttribute('role','button');
   var sub=[];
-  if(!p[4]) sub.push('<span class="tag-check">확인필요</span>');
-  if((p[3]||1)>1) sub.push('<span class="tag-biz">🏬 사업장 '+p[3]+'개</span>');
+  if(!p[4]) sub.push('<span class="tag-check">좌표 확인필요</span>');
+  if(p[6] && !p[5]) sub.push('<span class="tag-check">행정동 미확정</span>');
+  sub.push('<span class="tag-biz">사업자수 '+(p[3]||1)+'개</span>');
   r.innerHTML='<div class="a">'+esc(p[2])+'</div>'+(sub.length?'<div class="sub">'+sub.join('')+'</div>':'');
   r.onclick=function(){
-    if(p[0]==null){ alert('이 주소는 좌표가 없습니다.'); return; }
+    if(!hasCoordinates(p)){ alert('이 주소는 좌표가 없습니다. 원주소와 사업자수는 집계에 포함되어 있습니다.'); return; }
     suppressAutoUntil = Date.now() + 900; map.setView([p[0],p[1]], 18);
     showSelected(p);
     collapsePanel();
@@ -497,6 +560,21 @@ function renderVisible(){
   if(entering) expandPanel();
 }
 function exitVisible(){ visibleMode=false; renderSido(); }
+
+function initDataInfo(){
+  document.getElementById('dataSummary').textContent='최종 한글 대상 사업자 '+Number(META.targetBusinesses||0).toLocaleString()+'개. 전국 '+Number(META.nationalBusinesses||0).toLocaleString()+'개, 원주소 '+Number(META.nationalAddresses||0).toLocaleString()+'건은 보존했습니다.';
+  var body=document.getElementById('dataControls');
+  (META.controls||[]).forEach(function(c){
+    var tr=document.createElement('tr');
+    [c.region,c.businesses,c.districts,c.dongs,c.unresolved].forEach(function(v){var td=document.createElement('td');td.textContent=typeof v==='number'?v.toLocaleString():v;tr.appendChild(td);});
+    body.appendChild(tr);
+  });
+  (META.unresolved||[]).forEach(function(r){var li=document.createElement('li');li.textContent=r.address+' — 사업자수 '+r.businesses+'개';document.getElementById('dataUnresolved').appendChild(li);});
+  (META.notes||[]).forEach(function(t){var li=document.createElement('li');li.textContent=t;document.getElementById('dataNotes').appendChild(li);});
+  var dialog=document.getElementById('dataDialog');
+  document.getElementById('dataInfoBtn').onclick=function(){dialog.showModal();};
+  document.getElementById('closeDataDialog').onclick=function(){dialog.close();};
+}
 
 // ── 패널: 손잡이 드래그로 크기 조절 + 톡 누르면 접기/펴기 ──
 function panelPx(){ return panel.getBoundingClientRect().height; }
@@ -564,6 +642,7 @@ document.getElementById('gpsBtn').addEventListener('click', function(){
   setTimeout(function(){ if(!done){ stop(); } }, 35000);
 });
 
+initDataInfo();
 initMap();
 </script>
 </body>
