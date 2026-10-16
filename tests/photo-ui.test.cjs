@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const html = fs.readFileSync(path.join(__dirname, '../photo-backend/Photo.html'), 'utf8');
-const script = html.match(/<script>\s*('use strict';[\s\S]*?)<\/script>/)[1];
+const script = html.match(/<script>\s*('use strict';[\s\S]*?)<\/script>/)[1].replace('initialize().catch(handle);','');
 
 function harness({blockedStorage = false, reply} = {}) {
   const elements = new Map(), local = new Map(), tab = new Map(), delays = [], calls = [], revoked = [], listeners = {};
@@ -15,7 +15,7 @@ function harness({blockedStorage = false, reply} = {}) {
       setAttribute(){},removeAttribute(){},remove(){},close(){this.open=false;},showModal(){this.open=true;},reportValidity(){return !!this.value;}};
   }
   const get = id => {if(!elements.has(id))elements.set(id,element());return elements.get(id);};
-  get('initial').textContent=JSON.stringify({address:'',maxBytes:200000,maxEdge:1600});
+  get('initial').textContent=JSON.stringify({address:'서울특별시 영등포구 당산동 1가 1',maxBytes:200000,maxEdge:1600});
   const storage = map => ({getItem:key=>{if(blockedStorage)throw Error('blocked');return map.get(key)||null;},
     setItem:(key,value)=>{if(blockedStorage)throw Error('blocked');map.set(key,value);},removeItem:key=>{if(blockedStorage)throw Error('blocked');map.delete(key);}});
   let success, failure;
@@ -27,7 +27,7 @@ function harness({blockedStorage = false, reply} = {}) {
   }});
   const window = {localStorage:storage(local),sessionStorage:storage(tab),addEventListener:(name,fn)=>{listeners[name]=fn;},google:{script:{run:runner}}};
   const context = vm.createContext({window,google:window.google,document:{getElementById:get,createElement:element,querySelectorAll:()=>[]},
-    Date,Intl,JSON,Math,Promise,Error,Number,String,Array,URL:{revokeObjectURL:url=>revoked.push(url)},
+    Date,Intl,JSON,Math,Promise,Error,Number,String,Array,URLSearchParams,URL:{revokeObjectURL:url=>revoked.push(url)},
     setTimeout:(callback,delay)=>{delays.push(delay);callback();}});
   vm.runInContext(script,context);
   return {context,get,local,tab,calls,delays,revoked,listeners,run:code=>vm.runInContext(code,context)};
@@ -44,14 +44,14 @@ test('UI starts even when all browser storage is blocked; keeps a memory session
 test('remember stores only a signed token for eight hours; logout clears both stores and zoom',()=>{
   const h=harness();
   assert.equal(h.run("saveSession('signed-test',true)"),true);
-  const record=JSON.parse(h.local.get('photoSession8h'));
+  const record=JSON.parse(h.local.get('photoSessionV3_8h'));
   assert.deepEqual(Object.keys(record).sort(),['expiresAt','token']);
   assert.ok(record.expiresAt-Date.now()<=8*3600000);
   assert.equal(h.run('rememberedSession()'),'signed-test');
   h.run("session='signed-test'; logout()");
   assert.equal(h.local.size,0); assert.equal(h.tab.size,0); assert.equal(h.run('session'),'');
   assert.equal(h.get('photoZoom').open,false);
-  h.local.set('photoSession8h',JSON.stringify({token:'expired',expiresAt:Date.now()-1}));
+  h.local.set('photoSessionV3_8h',JSON.stringify({token:'expired',expiresAt:Date.now()-1}));
   assert.equal(h.run('rememberedSession()'),'');
 });
 
@@ -101,4 +101,25 @@ test('stale status response after logout cannot reopen protected workspace',asyn
   await Promise.resolve(); h.run('logout()');
   finish({ok:true,data:{ready:true,authenticated:true,photos:[],quota:{canUpload:true}}}); await refresh;
   assert.equal(h.get('workspace').hidden,true);
+});
+
+test('private entry accepts only a staff ID and a 16-character random key in the fragment',()=>{
+  const h=harness();
+  assert.equal(h.run("parseStaffHash('#staff=staff01&key=abcdefghijklmnop').login"),'staff01');
+  for(const hash of ['#staff=admin&key=abcdefghijklmnop','#staff=staff01&key=short','?staff=staff01&key=abcdefghijklmnop','#staff=<script>&key=abcdefghijklmnop']) {
+    assert.equal(h.run('parseStaffHash('+JSON.stringify(hash)+')'),null);
+  }
+});
+
+test('timestamp footer preserves the whole original and distinguishes device time from entered visit date',()=>{
+  const h=harness(),draws=[],texts=[];
+  const canvas={getContext:()=>({measureText:s=>({width:s.length*8}),fillRect(){},drawImage:(...args)=>draws.push(args),fillText:(...args)=>texts.push(args)})};
+  h.context.document.createElement=()=>canvas;
+  h.run("stampImage({naturalWidth:3000,naturalHeight:2000},'서울특별시 영등포구 당산동1가 256-119','2026-10-15',new Date('2026-10-16T00:00:00Z'))");
+  assert.equal(canvas.width,1600); assert.ok(canvas.height>1067);
+  assert.deepEqual(draws[0].slice(1),[0,0,1600,1067]);
+  assert.match(texts[0][0],/앱 기록\(KST·기기 시각\): 2026-10-16 09:00:00/);
+  assert.equal(texts[1][0],'방문일(직접 입력): 2026-10-15');
+  assert.ok(texts.some(row=>row[0].includes('당산동1가 256-119')));
+  assert.ok(texts.every(row=>row[2]>1067),'footer must not cover original pixels');
 });

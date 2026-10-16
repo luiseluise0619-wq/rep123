@@ -7,16 +7,18 @@ var PHOTO_LIMITS_ = Object.freeze({
   accountCeilingBytes: 24000000000, reserveBytes: 1000000000,
   dailyUploads: 1000, dailyReads: 2000, sessionHours: 8,
   sourceUrl: 'https://rep123-seven.vercel.app/addresses.js',
-  rootName: '현장방문_주소사진_v1', version: '2026-10-15-mybox-v2'
+  rootName: '현장방문_주소사진_v1', indexRootName: '현장방문_사진목록_v3', version: '2026-10-16-mybox-v3',
+  webAppUrl: 'https://script.google.com/macros/s/AKfycbxkluXWRelyVJ1D0XtuLHHo1GdF76Dzp4CLHQeC-hlvpW6WmctvD9_60WKqugmfN_PAQw/exec'
 });
 
 function doGet(e) {
   var address = String(e && e.parameter && e.parameter.address || '').slice(0, 1000);
-  var template = HtmlService.createTemplate(PHOTO_HTML_);
+  var admin = !!(e && e.parameter && e.parameter.page === 'admin');
+  var template = HtmlService.createTemplate(admin ? PHOTO_ADMIN_HTML_ : PHOTO_HTML_);
   template.initialJson = JSON.stringify({address: address, maxBytes: PHOTO_LIMITS_.maxBytes,
-    maxEdge: PHOTO_LIMITS_.maxEdge, version: PHOTO_LIMITS_.version})
+    maxEdge: PHOTO_LIMITS_.maxEdge, version: PHOTO_LIMITS_.version, webAppUrl: PHOTO_LIMITS_.webAppUrl})
     .replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
-  return template.evaluate().setTitle('현장 방문 사진 · MYBOX')
+  return template.evaluate().setTitle(admin ? '방문 사진 관리자 · MYBOX' : '현장 방문 사진 · MYBOX')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
 
@@ -26,11 +28,12 @@ function getStatus(session, address) {
     if (!ready) return {ready: false, authenticated: false, setupProblems: setupProblems_()};
     var user = verifySession_(session, true);
     if (!user) return {ready: true, authenticated: false};
-    assertAddress_(address);
-    var folder = addressFolder_(address, false);
+    if (address) assertAddress_(address);
+    var folder = address ? addressFolder_(address, false) : null;
     var resources = folder ? photoFiles_(folder) : [];
-    return {ready: true, authenticated: true, name: user.name,
-      photos: resources.map(publicPhoto_), quota: quota_(),
+    return {ready: true, authenticated: true, name: user.name, role: user.role,
+      totalCount: resources.length,
+      photos: resources.filter(function(f) { return canSeePhoto_(user, f); }).map(publicPhoto_), quota: quota_(),
       maxBytes: PHOTO_LIMITS_.maxBytes, maxPhotos: PHOTO_LIMITS_.slots};
   });
 }
@@ -38,8 +41,7 @@ function getStatus(session, address) {
 function loginPhoto(name, password) {
   return rpc_(function() {
     requireConfig_();
-    name = String(name || '').trim();
-    if (!/^[\p{L}\p{N} ._-]{1,24}$/u.test(name)) fail_('NAME', '이름은 한글·영문·숫자 등 24자 이내로 입력하세요.');
+    name = normalizeLogin_(name);
     var now = Date.now(), props = PropertiesService.getScriptProperties();
     var guard = JSON.parse(props.getProperty('LOGIN_GUARD') || '{}');
     if (Number(guard.lockedUntil || 0) > now)
@@ -49,18 +51,21 @@ function loginPhoto(name, password) {
     var bucket = 'login:' + digest_(name.toLowerCase());
     var tries = Number(cache.get(bucket) || 0);
     if (tries >= 8) fail_('RATE_LIMIT', '로그인 시도가 많습니다. 잠시 후 다시 시도하세요.');
-    if (String(password || '').length > 200 || !equal_(digest_(String(password || '')), digest_(secret_('PHOTO_TEAM_PASSWORD')))) {
+    var actor = authenticateActor_(name, password);
+    if (!actor) {
       cache.put(bucket, String(tries + 1), 600);
       guard.failures++;
       if (guard.failures >= 20) guard.lockedUntil = now + 600000;
       props.setProperty('LOGIN_GUARD', JSON.stringify(guard));
-      fail_('LOGIN', '이름 또는 접속 암호를 확인하세요.');
+      fail_('LOGIN', '아이디 또는 개인 접속코드를 확인하세요.');
     }
     cache.remove(bucket);
-    var payload = Utilities.base64EncodeWebSafe(JSON.stringify({name: name,
+    ensureAuthKey_();
+    var payload = Utilities.base64EncodeWebSafe(JSON.stringify({v: 3, login: actor.login, sub: actor.id,
+      role: actor.role, cv: actor.version,
       exp: Date.now() + PHOTO_LIMITS_.sessionHours * 3600000,
       nonce: Utilities.getUuid()}), Utilities.Charset.UTF_8);
-    return {session: payload + '.' + sign_(payload), name: name};
+    return {session: payload + '.' + sign_(payload), name: actor.name, role: actor.role};
   });
 }
 
@@ -78,16 +83,21 @@ function uploadPhoto(session, address, photo) {
       var files = photoFiles_(folder);
       var existing = files.filter(function(f) { return f.name.indexOf('__' + hash + '__') >= 0; })[0];
       // Network retries of an already-saved photo do not use the second slot.
-      if (existing) return {saved: true, alreadySaved: true, photo: publicPhoto_(existing), count: files.length};
+      if (existing) {
+        if (!canSeePhoto_(user, existing)) fail_('DUPLICATE', '동일한 사진은 이미 등록되어 있습니다. 관리자에게 확인해 주세요.');
+        return {saved: true, alreadySaved: true, photo: publicPhoto_(existing), count: files.length,
+          catalogPending: !tryCatalogUpdate_(address, files)};
+      }
       if (files.length >= PHOTO_LIMITS_.slots) fail_('FULL', '이 주소에는 이미 사진 2장이 저장되어 있습니다.');
       var quota = quota_();
       if (!quota.canUpload || quota.usedBytes + bytes.length > quota.stopAtBytes)
         fail_('STORAGE', '무료 운영 안전 한도에 도달했습니다. 용량을 확인한 후 다시 시도하세요.');
       takeBudget_('uploads', PHOTO_LIMITS_.dailyUploads, true);
+      markCatalogPending_(address);
       var slot = files.some(function(f) { return /^1__/.test(f.name); }) ? 2 : 1;
       var timestamp = new Date().toISOString();
       var filename = slot + '__' + hash + '__' + timestamp.replace(/[-:.]/g, '') +
-        '__' + visitDate + '__' + user.name.replace(/[^\p{L}\p{N} ._-]/gu, '_') + '.jpg';
+        '__' + visitDate + '__v3u-' + user.id + '__' + user.name.replace(/[^\p{L}\p{N} ._-]/gu, '_') + '.jpg';
       var target = api_('/drive/files', 'post', {parentId: folder, fileName: filename,
         fileSize: bytes.length, isOverwrite: false});
       var url = storageUrl_(target.uploadUrl, 'upload');
@@ -99,20 +109,22 @@ function uploadPhoto(session, address, photo) {
       var after = photoFiles_(folder);
       var saved = after.filter(function(f) { return f.name === filename && Number(f.size) === bytes.length; })[0];
       if (!saved) fail_('VERIFY', '저장 응답을 받았지만 파일 확인이 지연됩니다. 새로고침 후 확인하세요.');
-      return {saved: true, alreadySaved: false, photo: publicPhoto_(saved), count: after.length};
+      return {saved: true, alreadySaved: false, photo: publicPhoto_(saved), count: after.length,
+        catalogPending: !tryCatalogUpdate_(address, after)};
   });
 }
 
 function getPhoto(session, address, slot) {
   return rpc_(function() {
-    verifySession_(session);
+    var user = verifySession_(session);
     assertAddress_(address);
     slot = Number(slot);
     if (slot !== 1 && slot !== 2) fail_('SLOT', '사진 번호가 올바르지 않습니다.');
-    takeBudget_('reads', PHOTO_LIMITS_.dailyReads, true);
     var folder = addressFolder_(address, false);
     var file = folder && photoFiles_(folder).filter(function(f) { return Number(f.name[0]) === slot; })[0];
     if (!file) fail_('NOT_FOUND', '저장된 사진이 없습니다.');
+    if (!canSeePhoto_(user, file)) fail_('FORBIDDEN', '본인이 등록한 사진만 볼 수 있습니다.');
+    takeBudget_('reads', PHOTO_LIMITS_.dailyReads, true);
     if (Number(file.size) > PHOTO_LIMITS_.maxBytes) fail_('SIZE', '허용된 사진 크기를 초과했습니다.');
     var target = api_('/drive/files/' + encodeURIComponent(file.resourceId) + '/download');
     var response = fetch_(storageUrl_(target.downloadUrl, 'download'),
@@ -130,6 +142,7 @@ function rpc_(fn) {
   try {
     if (!lock.tryLock(1000)) fail_('BUSY', '다른 요청을 처리 중입니다. 잠시 후 다시 시도하세요.');
     locked = true;
+    PHOTO_INDEX_CONTEXT_ = null; PHOTO_SOURCE_ = null;
     var props = PropertiesService.getScriptProperties();
     var today = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd');
     var previous = JSON.parse(props.getProperty('BUDGET_fetch') || '{}');
@@ -143,7 +156,7 @@ function rpc_(fn) {
   } finally {
     if (locked) {
       try { if (PHOTO_FETCH_BUDGET_) PropertiesService.getScriptProperties().setProperty('BUDGET_fetch', JSON.stringify(PHOTO_FETCH_BUDGET_)); }
-      finally { PHOTO_FETCH_BUDGET_ = null; lock.releaseLock(); }
+      finally { PHOTO_FETCH_BUDGET_ = null; PHOTO_INDEX_CONTEXT_ = null; PHOTO_SOURCE_ = null; lock.releaseLock(); }
     }
   }
 }
@@ -156,25 +169,28 @@ function fetch_(url, options) {
 function fail_(code, message) { var e = new Error(message); e.photoCode = code; throw e; }
 function secret_(key) { return String(PropertiesService.getScriptProperties().getProperty(key) || '').trim(); }
 function setupProblems_() {
-  var out = [], size = secret_('PHOTO_TEAM_PASSWORD').length;
+  var out = [], size = secret_('PHOTO_ADMIN_PASSWORD').length;
   if (secret_('MYBOX_TOKEN').length < 24) out.push('MYBOX_TOKEN 등록을 확인해 주세요.');
-  if (size < 8 || size > 200) out.push('팀 접속 암호는 8~200자로 등록해 주세요.');
+  if (size < 8 || size > 200) out.push('관리자가 PHOTO_ADMIN_PASSWORD를 8~200자로 등록해야 합니다. 기존 팀 암호는 사용할 수 없습니다.');
+  if (size && secret_('PHOTO_TEAM_PASSWORD') && equal_(secret_('PHOTO_ADMIN_PASSWORD'), secret_('PHOTO_TEAM_PASSWORD')))
+    out.push('관리자 암호는 직원에게 공유했던 기존 팀 암호와 다르게 설정해 주세요.');
   return out;
 }
 function configured_() { return setupProblems_().length === 0; }
 function requireConfig_() { var issues=setupProblems_(); if (issues.length) fail_('SETUP', issues.join(' ')); }
 function sign_(payload) {
-  var key = digest_(secret_('MYBOX_TOKEN') + '\n' + secret_('PHOTO_TEAM_PASSWORD'));
-  return Utilities.base64EncodeWebSafe(Utilities.computeHmacSha256Signature(payload, key, Utilities.Charset.UTF_8));
+  return Utilities.base64EncodeWebSafe(Utilities.computeHmacSha256Signature('photo-rbac-v3\n' + payload,
+    secret_('PHOTO_AUTH_KEY_V3') || 'uninitialized-no-valid-sessions', Utilities.Charset.UTF_8));
 }
 function verifySession_(token, optional) {
   requireConfig_();
   var parts = String(token || '').split('.');
   if (parts.length === 2 && parts[0].length < 1000 && equal_(sign_(parts[0]), parts[1])) {
     try {
-      var user = JSON.parse(Utilities.newBlob(Utilities.base64DecodeWebSafe(parts[0])).getDataAsString('UTF-8'));
-      if (typeof user.name === 'string' && user.name.length <= 24 && Number.isFinite(user.exp) &&
-          user.exp > Date.now() && user.exp <= Date.now() + PHOTO_LIMITS_.sessionHours * 3600000) return user;
+      var claims = JSON.parse(Utilities.newBlob(Utilities.base64DecodeWebSafe(parts[0])).getDataAsString('UTF-8'));
+      var user = claims.v === 3 && secret_('PHOTO_AUTH_KEY_V3') && actorForLogin_(claims.login);
+      if (user && user.id === claims.sub && user.role === claims.role && user.version === claims.cv && Number.isFinite(claims.exp) &&
+          claims.exp > Date.now() && claims.exp <= Date.now() + PHOTO_LIMITS_.sessionHours * 3600000) return user;
     } catch (ignored) {}
   }
   if (optional) return null;
@@ -235,8 +251,23 @@ function assertJpeg_(signed) {
 }
 function assertAddress_(address) {
   if (typeof address !== 'string' || !address || address.length > 1000) fail_('ADDRESS', '사이트에서 주소를 다시 선택하세요.');
-  var cache = CacheService.getScriptCache(), key = 'address:' + digest_(address);
-  if (cache.get(key)) return;
+  var cache = CacheService.getScriptCache(), key = 'address-v3:' + digest_(address);
+  var cached = cache.get(key);
+  if (cached) return JSON.parse(cached);
+  var data = sourceData_(), info = null;
+  Object.keys(data).some(function(s) { return Object.keys(data[s]).some(function(g) {
+    return Object.keys(data[s][g]).some(function(d) { return data[s][g][d].some(function(p) {
+      if (p[2] !== address) return false;
+      info = {province: s, district: g, dong: d}; return true;
+    }); });
+  }); });
+  if (!info) fail_('ADDRESS', '원자료에 없는 주소입니다. 지도에서 주소를 다시 선택하세요.');
+  cache.put(key, JSON.stringify(info), 21600);
+  return info;
+}
+var PHOTO_SOURCE_ = null;
+function sourceData_() {
+  if (PHOTO_SOURCE_) return PHOTO_SOURCE_;
   var response = fetch_(PHOTO_LIMITS_.sourceUrl, {muteHttpExceptions: true, followRedirects: false});
   if (response.getResponseCode() !== 200) fail_('SOURCE', '원주소 목록을 확인할 수 없습니다. 잠시 후 다시 시도하세요.');
   var source = response.getContentText('UTF-8').trim();
@@ -245,11 +276,7 @@ function assertAddress_(address) {
   var data;
   try { data = JSON.parse(source.slice(prefix.length).replace(/;\s*$/, '')); }
   catch (e) { fail_('SOURCE', '원주소 데이터를 읽지 못했습니다.'); }
-  var found = Object.keys(data).some(function(s) { return Object.keys(data[s]).some(function(g) {
-    return Object.keys(data[s][g]).some(function(d) { return data[s][g][d].some(function(p) { return p[2] === address; }); });
-  }); });
-  if (!found) fail_('ADDRESS', '원자료에 없는 주소입니다. 지도에서 주소를 다시 선택하세요.');
-  cache.put(key, '1', 21600);
+  PHOTO_SOURCE_ = data; return data;
 }
 function api_(path, method, body) {
   requireConfig_();
@@ -325,7 +352,8 @@ function photoFiles_(folder) {
 }
 function publicPhoto_(file) {
   var parts = file.name.split('__');
-  return {slot: Number(parts[0]), visitDate: parts[3], uploader: parts.slice(4).join('__').replace(/\.jpg$/, ''),
+  return {slot: Number(parts[0]), visitDate: parts[3], uploader: parts.slice(photoOwner_(file) ? 5 : 4).join('__').replace(/\.jpg$/, ''),
+    legacy: !photoOwner_(file),
     uploadedAt: file.createdAt || null, bytes: Number(file.size)};
 }
 function takeBudget_(kind, limit, alreadyLocked) {

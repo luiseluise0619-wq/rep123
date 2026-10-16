@@ -210,6 +210,7 @@
         <a class="hbtn" href="./duplicates.html" target="_blank" rel="noopener">🏬 같은주소 <b>1,001</b></a>
         <a class="hbtn warn" href="./check.html" target="_blank" rel="noopener">⚠ 좌표 확인 <b>100</b></a>
         <button class="hbtn" type="button" id="dataInfoBtn">한글 집계 기준</button>
+        <a class="hbtn" id="photoAdminLink" hidden target="_blank" rel="noopener noreferrer">사진 관리자</a>
       </div>
     </div>
   </div>
@@ -250,7 +251,7 @@
 
 <script src="./data-meta.js?v=20261015-admin"></script>
 <script src="./addresses.js?v=20261015-admin"></script>
-<script src="./photo-config.js?v=20261015-mybox"></script>
+<script src="./photo-config.js?v=20261016-mybox-v3"></script>
 <script>
 /* =======================================================================
    전국 주소 지도 — 동작 개요 (초보자용 설명)
@@ -430,9 +431,11 @@ function photoUrl(address){
   if(!/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(base)) return '';
   return base+'?address='+encodeURIComponent(address);
 }
+var adminPhotoEntry=photoUrl(''), adminPhotoLink=document.getElementById('photoAdminLink');
+if(adminPhotoEntry&&adminPhotoLink){adminPhotoLink.href=adminPhotoEntry.replace(/\?address=$/,'?page=admin');adminPhotoLink.hidden=false;}
 function photoLinkHtml(address){
   var url=photoUrl(address);
-  return url ? '<a class="pbtn search" href="'+url+'" target="_blank" rel="noopener noreferrer">📷 방문 사진 · 최대 2장</a>' :
+  return url ? '<a class="pbtn search" href="'+url+'" target="_blank" rel="noopener noreferrer">📷 현장 촬영 · 사진 2장</a>' :
     '<div class="popup-sub">📷 MYBOX 사진 연결 준비 중</div>';
 }
 
@@ -542,7 +545,7 @@ function appendAddrRow(p){
   };
   var photo=document.createElement('a'), photoHref=photoUrl(p[2]);
   photo.className='hbtn'; photo.style.alignSelf='flex-start'; photo.style.marginTop='5px';
-  photo.textContent=photoHref?'📷 방문 사진 · 최대 2장':'📷 MYBOX 사진 연결 준비 중';
+  photo.textContent=photoHref?'📷 현장 촬영 · 사진 2장':'📷 MYBOX 사진 연결 준비 중';
   if(photoHref){
     photo.href=photoHref; photo.target='_blank'; photo.rel='noopener noreferrer';
     photo.onclick=function(e){e.stopPropagation();};

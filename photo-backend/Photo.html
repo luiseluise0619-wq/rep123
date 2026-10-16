@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><base target="_top">
 <meta name="referrer" content="no-referrer"><title>현장 방문 사진 · MYBOX</title>
+<link rel="stylesheet" href="https://rep123-seven.vercel.app/lib/leaflet.css">
 <style>
 :root{color-scheme:light;--ink:#1b1a17;--mut:#6b6459;--line:#e4ddd0;--teal:#0e6e63}
 *{box-sizing:border-box}body{margin:0;background:#efebe3;color:var(--ink);font-family:system-ui,'Malgun Gothic',sans-serif;line-height:1.6}
@@ -9,6 +10,7 @@ main{max-width:720px;margin:auto;padding:22px 16px 60px}h1{font-size:26px;letter
 .card{background:#fbf9f3;border:1px solid var(--line);border-radius:17px;padding:18px;margin-top:14px}.address{font-weight:700;word-break:break-word}
 label{display:block;font-size:14px;font-weight:600;margin:12px 0 5px}input{font:inherit;width:100%;padding:11px;border:1px solid #bfb6a6;border-radius:9px;background:#fff}
 input[type=checkbox]{width:20px;height:20px;flex:none}button,.button{border:0;border-radius:10px;background:var(--teal);color:#fff;padding:11px 15px;min-height:44px;font:inherit;font-weight:650;cursor:pointer;text-decoration:none;display:inline-block}
+select{font:inherit;width:100%;padding:11px;border:1px solid #bfb6a6;border-radius:9px;background:#fff;min-height:44px}.select-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}#fieldMap{height:240px;border-radius:12px;background:#e3e7e0;margin-top:12px}#addressChoices{max-height:240px;overflow:auto;margin-top:12px}#addressChoices button{display:block;text-align:left;width:100%;margin:5px 0;background:#e7eee7;color:#134b43;font-size:14px}#cameraButton{width:100%;margin-top:12px;min-height:56px;font-size:18px}#adminLink{display:inline-block;margin-top:8px}.camera-note{padding:9px 12px;background:#e7eee7;border-radius:8px}
 button:disabled{opacity:.5;cursor:not-allowed}.secondary{background:#e9e2d6;color:#184f47}.danger{color:#a43b27}.hidden,[hidden]{display:none!important}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
 .status{white-space:pre-wrap;border-left:4px solid var(--teal);padding:12px 14px;background:#e2eee6;border-radius:8px;margin:14px 0;font-size:14px}.status.error{background:#fae5dc;border-color:#a43b27;color:#862d1c}
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.photo{min-width:0;border:1px solid var(--line);border-radius:12px;padding:10px;background:#fff}.photo img{display:block;max-width:100%;max-height:350px;object-fit:contain;margin:auto;border-radius:6px}.photo p{font-size:12px;word-break:break-word}.photo button{font-size:13px;width:100%;margin-top:6px}.photo .remove{background:transparent;color:#99412e;min-height:44px}.empty{border:1px dashed #c3b9a9;border-radius:12px;padding:22px 12px;text-align:center;color:var(--mut);font-size:14px;grid-column:1/-1}
@@ -23,36 +25,44 @@ button:disabled{opacity:.5;cursor:not-allowed}.secondary{background:#e9e2d6;colo
 <section class="card"><div class="small">원자료 주소</div><p id="address" class="address"></p><p class="small">동일 주소에 사업자가 여러 개 있어도 사진은 이 주소 전체에 2장입니다.</p></section>
 <div id="message" class="status" role="status" aria-live="polite">연결 상태를 확인하는 중…</div>
 <section id="loginCard" class="card" hidden><h2>현장 직원 로그인</h2>
-<form id="loginForm"><label for="name">이름 또는 담당자 표시명</label><input id="name" maxlength="24" autocomplete="nickname" required>
-<label for="password">팀 접속 암호</label><input id="password" type="password" minlength="8" maxlength="200" autocomplete="current-password" required>
-<p id="passwordHint" class="small">네이버 비밀번호가 아닙니다. 전달받은 팀 암호(8자 이상)를 입력하세요.</p>
+<div id="staffEntry" hidden><p>전달받은 직원 전용 링크입니다. 아래 버튼으로 시작하세요. 이 링크는 본인만 사용하고 공유하지 마세요.</p><button id="startStaff" type="button">내 직원 링크로 시작</button></div>
+<p class="small">직원은 관리자에게 받은 전용 링크를 열면 암호 입력 없이 시작할 수 있습니다. 기존 공용 팀 암호는 사용할 수 없습니다.</p>
 <label class="check"><input id="remember" type="checkbox"><span>이 기기에서 로그인 8시간 유지 <span class="small">(개인 기기만)</span></span></label>
-<p class="small">암호는 저장하지 않습니다. 공용 기기에서는 체크하지 마세요.</p>
-<button id="login" class="login-submit" type="submit">사진 관리 시작</button></form></section>
+<p class="small">암호·전용 링크는 저장하지 않고 서명 세션만 저장합니다. 공용 기기에서는 체크하지 마세요.</p>
+<details><summary>관리자 로그인 / 직원 수동 접속</summary>
+<form id="loginForm"><label for="name">아이디 (관리자는 admin)</label><input id="name" maxlength="32" autocomplete="username" required>
+<label for="password">관리자 암호 또는 직원 접속코드</label><input id="password" type="password" minlength="8" maxlength="200" autocomplete="current-password" required>
+<p id="passwordHint" class="small">네이버 비밀번호가 아닙니다. 직원별 링크·접속코드는 관리자에게 받으세요.</p>
+<button id="login" class="login-submit" type="submit">사진 관리 시작</button></form></details></section>
 <section id="workspace" hidden>
+<section id="pickAddress" class="card"><h2>방문 주소 선택</h2><details id="addressSelector" open><summary>방문 주소 선택 / 변경</summary><p class="small">지역을 고르고 목록의 주소를 누르세요. 지도 좌표는 참고용이며 원주소가 맞는지 확인하세요.</p><div class="select-grid"><label for="province">시도</label><label for="district">구·군</label><label for="dong">읍·면·동</label><select id="province"><option value="">선택</option></select><select id="district"><option value="">선택</option></select><select id="dong"><option value="">선택</option></select></div><label for="addressSearch">선택한 동의 주소 검색</label><input id="addressSearch" type="search" placeholder="도로·건물·지번"><div id="addressChoices"></div></details><div id="fieldMap" aria-label="선택한 주소 참고 지도"></div><a id="adminLink" hidden>관리자 전체 사진·직원 관리 →</a></section>
 <section class="card"><div class="section-head"><h2>이 주소의 방문 사진</h2><span id="count" class="counter" aria-live="polite">0 / 2장</span></div><p id="remaining" class="small"></p><div id="saved" class="grid"></div><div class="actions"><button id="refresh" class="secondary" type="button">새로고침</button><button id="logout" class="secondary" type="button">로그아웃</button></div>
 <p id="quota" class="small"></p></section>
 <section id="uploadCard" class="card"><h2>사진 추가</h2>
 <ol class="steps" aria-label="사진 저장 순서"><li id="step1" class="active">① 사진 선택</li><li id="step2">② 확대 확인</li><li id="step3">③ 저장 완료</li></ol>
 <label for="visitDate">방문일</label><input id="visitDate" type="date" required><p class="small">오늘 날짜가 기본값입니다. 다른 날 방문했다면 바꿔주세요.</p>
 <input id="files" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" multiple hidden aria-label="현장 사진 파일">
+<input id="camera" type="file" accept="image/*" capture="environment" hidden aria-label="현장 카메라 촬영">
+<button id="cameraButton" type="button">📷 지금 현장 촬영</button><p class="small camera-note">휴대폰에서는 카메라 촬영을 요청합니다. 기기에 따라 사진 선택 화면이 열릴 수도 있습니다. 사진 아래에 앱 기록시각(KST)·방문일(입력)·선택 주소를 원본을 가리지 않는 띠로 추가합니다. 앱 기록시각은 기기 시각이며 GPS·실제 촬영 증명이 아닙니다.</p>
 <button id="choose" class="choose" type="button">＋ 사진 선택 / 촬영<span id="chooseHint">최대 2장 · 자동 압축 · 원본 유지</span></button>
 <p id="compression" class="small"></p><div id="preview" class="grid"></div>
 <label class="check"><input id="readable" type="checkbox"><span>압축된 미리보기에서 날짜·현장·주소를 식별할 수 있고, 올바른 주소의 사진임을 확인했습니다.</span></label>
 <details class="details"><summary>압축·촬영일·무료 한도 안내</summary><p>원본은 기기에 남겨두세요. 사진을 자르지 않고 200KB 이하로 압축합니다. EXIF 촬영일·GPS는 제거되며, 사진에 인쇄된 날짜는 이미지에 남지만 가독성을 직접 확인해야 합니다.</p><p>방문일·담당자명은 직접 입력한 정보입니다. 실제 촬영·방문 시각을 보증하지 않으며 서버 저장 시각은 따로 표시합니다.</p><p>계정 사용량 24GB 이내·여유 1GB 확보·저장 시도 하루 1,000회에서 중단하며 자동 결제하지 않습니다. 서비스 자체 한도가 먼저 적용될 수 있습니다.</p></details>
 <div class="savebar"><p id="saveHint">사진을 먼저 선택하세요.</p><p id="progressText" role="status" aria-live="polite"></p><progress id="progress" max="2" value="0" hidden aria-label="사진 저장 진행"></progress><div class="actions"><button id="upload" type="button" disabled>MYBOX에 저장</button><button id="clear" class="secondary" type="button">선택 취소</button></div></div>
 </section></section>
-<p class="small">팀 공용 암호를 아는 사람은 이 사이트의 방문 사진을 볼 수 있습니다. 표시명·방문일은 사용자 입력값이며 본인 인증 정보가 아닙니다.</p>
+<p class="small">직원은 자신의 전용 링크로 올린 사진만 볼 수 있고 관리자는 전체 사진을 봅니다. 전용 링크는 접속키이므로 본인만 사용하세요. 이전 공용 로그인 사진은 관리자만 볼 수 있습니다.</p>
 <p><a href="https://rep123-seven.vercel.app/" rel="noreferrer">지도로 돌아가기</a></p>
 </main>
 <dialog id="photoZoom" aria-label="사진 원래 해상도로 확대"><button id="closeZoom" type="button">확대 닫기</button><p>날짜 부분까지 스크롤해 가독성을 확인하세요.</p><img id="zoomImage" alt="확대한 사진"></dialog>
 <script id="initial" type="application/json"><?!= initialJson ?></script>
+<script src="https://rep123-seven.vercel.app/addresses.js?v=20261016-photo"></script>
+<script src="https://rep123-seven.vercel.app/lib/leaflet.js"></script>
 <script>
 'use strict';
 const INITIAL = JSON.parse(document.getElementById('initial').textContent);
 const $ = id => document.getElementById(id);
 const MAX_BYTES = INITIAL.maxBytes;
-const REMEMBER_KEY = 'photoSession8h';
+const REMEMBER_KEY = 'photoSessionV3_8h';
 function storageGet(kind,key) { try { return window[kind].getItem(key); } catch(ignored) { return null; } }
 function storageRemove(kind,key) { try { window[kind].removeItem(key); } catch(ignored) {} }
 function storageSet(kind,key,value) { try { window[kind].setItem(key,value); return true; } catch(ignored) { return false; } }
@@ -63,15 +73,16 @@ function rememberedSession() {
   storageRemove('localStorage',REMEMBER_KEY); return '';
 }
 let remembered = rememberedSession();
-let session = remembered || storageGet('sessionStorage','photoSession') || '';
+let session = remembered || storageGet('sessionStorage','photoSessionV3') || '';
+let currentAddress=INITIAL.address||'', staffCredential=null, fieldMap=null, fieldMarker=null;
 let pending = [], savedCount = 0, busy = false, canUpload = false, phase = '';
 function saveSession(token, remember) {
-  storageRemove('sessionStorage','photoSession'); storageRemove('localStorage',REMEMBER_KEY);
+  storageRemove('sessionStorage','photoSessionV3'); storageRemove('localStorage',REMEMBER_KEY);
   remembered = remember && storageSet('localStorage',REMEMBER_KEY,JSON.stringify({token,expiresAt:Date.now()+8*3600000})) ? token : '';
-  if(!remembered) storageSet('sessionStorage','photoSession',token);
+  if(!remembered) storageSet('sessionStorage','photoSessionV3',token);
   return !remember || !!remembered;
 }
-$('address').textContent = INITIAL.address || '지도에서 주소를 선택한 후 사진 버튼을 눌러주세요.';
+$('address').textContent = INITIAL.address || '아래 지역 목록에서 방문 주소를 선택하세요.';
 const today = new Intl.DateTimeFormat('en-CA', {timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 $('visitDate').value = today; $('visitDate').max = today;
 function say(text, error = false) { $('message').textContent = text; $('message').classList.toggle('error', error); }
@@ -96,13 +107,14 @@ async function rpc(name,...args) {
   }
 }
 function updateControls() {
-  $('upload').disabled = busy || !pending.length || !$('readable').checked || !canUpload || pending.length + savedCount > 2;
-  ['files','choose','clear','refresh','logout','visitDate','readable'].forEach(id => { $(id).disabled = busy; });
-  $('choose').disabled = busy || pending.length + savedCount >= 2 || !canUpload;
+  $('upload').disabled = busy || !currentAddress || !pending.length || !$('readable').checked || !canUpload || pending.length + savedCount > 2;
+  ['files','camera','choose','cameraButton','clear','refresh','logout','visitDate','readable','province','district','dong','addressSearch'].forEach(id => { $(id).disabled = busy; });
+  $('choose').disabled = $('cameraButton').disabled = busy || !currentAddress || pending.length + savedCount >= 2 || !canUpload;
   $('clear').disabled = busy || !pending.length;
+  $('visitDate').disabled = busy || pending.length>0;
   $('upload').textContent = phase==='upload' ? '저장 중…' : pending.length ? '선택한 '+pending.length+'장 저장' : 'MYBOX에 저장';
   $('chooseHint').textContent = '추가 선택 가능 '+Math.max(0,2-savedCount-pending.length)+'장 · 자동 압축 · 원본 유지';
-  $('saveHint').textContent = busy ? (phase==='upload'?'저장 확인이 끝날 때까지 창을 닫지 마세요.':'사진을 압축하고 있습니다…') : !canUpload ? '저장 공간 한도로 사진을 추가할 수 없습니다.' : !pending.length ? '사진을 먼저 선택하세요.' : pending.length+savedCount>2 ? '다른 직원이 사진을 추가했습니다. 남은 칸만큼 선택해 주세요.' : !$('readable').checked ? '사진을 확대 확인한 뒤 위 확인란에 체크하세요.' : '준비 완료 · 아래 버튼을 누르면 저장됩니다.';
+  $('saveHint').textContent = busy ? (phase==='upload'?'저장 확인이 끝날 때까지 창을 닫지 마세요.':phase==='compress'?'사진을 압축하고 있습니다…':'저장 상태 확인 중…') : !currentAddress ? '위 목록에서 방문 주소를 선택하세요.' : !canUpload ? '저장 공간 한도로 사진을 추가할 수 없습니다.' : !pending.length ? '사진을 먼저 선택하세요.' : pending.length+savedCount>2 ? '다른 직원이 사진을 추가했습니다. 남은 칸만큼 선택해 주세요.' : !$('readable').checked ? '사진을 확대 확인한 뒤 위 확인란에 체크하세요.' : '준비 완료 · 아래 버튼을 누르면 저장됩니다.';
   $('step1').classList.toggle('active',!pending.length);
   $('step2').classList.toggle('active',!!pending.length && phase!=='upload');
   $('step3').classList.toggle('active',phase==='upload');
@@ -121,7 +133,7 @@ function renderPending() {
   $('compression').textContent=pending.length ? '선택한 '+pending.length+'장 압축 완료 · 확대해 날짜가 읽히는지 확인하세요.' : '';
 }
 function clearPending() { pending.forEach(p => URL.revokeObjectURL(p.url)); pending = []; $('files').value = ''; renderPending(); $('readable').checked = false; updateControls(); }
-function logout() { session = ''; remembered=''; storageRemove('sessionStorage','photoSession'); storageRemove('localStorage',REMEMBER_KEY); clearPending(); $('saved').replaceChildren(); $('photoZoom').close(); $('zoomImage').removeAttribute('src'); $('workspace').hidden = true; $('loginCard').hidden = false; say('로그아웃했습니다.'); }
+function logout() { session = ''; remembered=''; storageRemove('sessionStorage','photoSessionV3'); storageRemove('localStorage',REMEMBER_KEY); clearPending(); $('saved').replaceChildren(); $('photoZoom').close(); $('zoomImage').removeAttribute('src'); $('workspace').hidden = true; $('loginCard').hidden = false; say('로그아웃했습니다.'); }
 window.addEventListener('storage',event=>{if((event.key===REMEMBER_KEY || event.key===null) && remembered && rememberedSession()!==session) logout();});
 window.addEventListener('beforeunload',event=>{if(busy && (phase==='upload'||pending.length)){event.preventDefault();event.returnValue='';}});
 function handle(error) { if (error.code === 'AUTH') logout(); say(error.message, true); }
@@ -132,13 +144,14 @@ function photoCard(photo) {
   const box = document.createElement('article'); box.className = 'photo';
   const text = document.createElement('p'), details=document.createElement('details'), summary=document.createElement('summary');
   let time = '확인 불가'; if (photo.uploadedAt && !isNaN(Date.parse(photo.uploadedAt))) time = new Date(photo.uploadedAt).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'});
-  text.textContent = '저장 시각: ' + time + '\n담당자(입력): ' + photo.uploader + '\n크기: '+kb(photo.bytes);
+  text.textContent = '저장 시각: ' + time + (photo.legacy?'\n이전 입력명(본인 미확인): ':'\n담당 직원: ') + photo.uploader + '\n크기: '+kb(photo.bytes);
   text.style.whiteSpace = 'pre-line'; summary.textContent='저장 정보'; details.append(summary,text);
   const label=document.createElement('p'); label.textContent='✓ 사진 '+photo.slot+' · 방문일(입력) '+photo.visitDate; box.append(label,details);
   const button = document.createElement('button'); button.type = 'button'; button.className = 'secondary'; button.textContent = '사진 보기';
   button.onclick = async () => { const requestedSession=session; button.disabled = true; button.textContent='불러오는 중…'; try {
-    const result = await rpc('getPhoto',requestedSession,INITIAL.address,photo.slot);
-    if(requestedSession!==session) return;
+    const requestedAddress=currentAddress;
+    const result = await rpc('getPhoto',requestedSession,requestedAddress,photo.slot);
+    if(requestedSession!==session || requestedAddress!==currentAddress) return;
     const image = document.createElement('img'); image.alt = '저장된 현장 사진 ' + photo.slot; image.src = 'data:image/jpeg;base64,' + result.base64;
     box.prepend(image); box.appendChild(zoomButton(image.src,'사진 확대')); button.remove();
   } catch(error) { if(requestedSession===session) handle(error); button.disabled = false; button.textContent='사진 다시 불러오기'; } };
@@ -146,21 +159,24 @@ function photoCard(photo) {
 }
 async function refresh(message) {
   const requestedSession=session;
-  let data; try { data=await rpc('getStatus',requestedSession,INITIAL.address); } catch(error) {if(requestedSession!==session)return; throw error;}
-  if(requestedSession!==session) return;
+  const requestedAddress=currentAddress;
+  let data; try { data=await rpc('getStatus',requestedSession,requestedAddress); } catch(error) {if(requestedSession!==session || requestedAddress!==currentAddress)return; throw error;}
+  if(requestedSession!==session || requestedAddress!==currentAddress) return;
   if (!data.ready) { $('loginCard').hidden = true; $('workspace').hidden = true; say((data.setupProblems||['MYBOX 연결 설정이 아직 완료되지 않았습니다. 관리자 인증키 등록 후 사용할 수 있습니다.']).join(' '), true); return; }
-  if (!data.authenticated) { logout(); say('이름과 팀 접속 암호로 로그인하세요.'); return; }
+  if (!data.authenticated) { logout(); say('직원 전용 링크로 시작하거나 관리자 로그인을 하세요.'); return; }
   $('loginCard').hidden = true; $('workspace').hidden = false;
-  savedCount = data.photos.length; canUpload = data.quota.canUpload;
+  savedCount = Number.isInteger(data.totalCount)?data.totalCount:data.photos.length; canUpload = data.quota.canUpload;
+  $('adminLink').hidden=data.role!=='admin'; $('adminLink').href=(INITIAL.webAppUrl||'')+'?page=admin';
   $('count').textContent = savedCount + ' / 2장';
-  $('remaining').textContent = savedCount===2 ? '저장 완료 · 다른 사진으로 덮어쓰지 않습니다.' : '사진을 '+(2-savedCount)+'장 더 저장할 수 있습니다.';
+  $('remaining').textContent = (data.role==='admin'?'전체 사진':'내 사진')+' '+data.photos.length+'장 · 주소 전체 '+savedCount+'/2장. '+(savedCount===2?'추가 저장은 차단됩니다.':(2-savedCount)+'장 더 저장할 수 있습니다.');
   $('saved').replaceChildren(...data.photos.map(photoCard));
-  if(!savedCount){const empty=document.createElement('div');empty.className='empty';empty.textContent='아직 저장된 사진이 없습니다. 아래에서 추가하세요.';$('saved').append(empty);}
+  if(!data.photos.length){const empty=document.createElement('div');empty.className='empty';empty.textContent=savedCount?'다른 직원 또는 기존 공용 로그인 사진은 표시하지 않습니다.':'아직 저장된 사진이 없습니다. 아래에서 추가하세요.';$('saved').append(empty);}
   $('quota').textContent = 'MYBOX 사용량 ' + (data.quota.usedBytes/1e9).toFixed(2) + 'GB · 안전 한도까지 ' + (data.quota.remainingSafeBytes/1e9).toFixed(2) + 'GB';
-  $('uploadCard').hidden = savedCount >= 2;
-  say(message || (savedCount === 2 ? '사진 2장이 저장되어 있습니다. 추가·덮어쓰기는 차단됩니다.' : data.name + '님, 사진을 선택하고 압축 미리보기를 확인하세요.'));
+  $('uploadCard').hidden = savedCount >= 2 || !currentAddress;
+  say(message || (!currentAddress ? data.name+'님, 지역과 방문 주소를 먼저 선택하세요.' : savedCount === 2 ? '이 주소의 사진 2칸이 사용 중입니다. 본인 사진만 표시하며 추가·덮어쓰기는 차단됩니다.' : data.name + '님, 사진을 선택하고 압축 미리보기를 확인하세요.'));
   if (!canUpload) say('남은 저장 공간이 무료 운영 안전 한도에 도달해 업로드를 중단했습니다.',true);
   updateControls();
+  if(fieldMap)setTimeout(()=>fieldMap.invalidateSize(),0);
 }
 function readImage(file) { return new Promise((resolve,reject) => {
   const url = URL.createObjectURL(file), image = new Image();
@@ -173,21 +189,36 @@ async function compress(file) {
   if (file.size > 30 * 1024 * 1024) throw new Error('원본 사진은 장당 30MB 이하로 선택하세요.');
   const image = await readImage(file);
   if (!image.naturalWidth || !image.naturalHeight || image.naturalWidth*image.naturalHeight > 50000000) throw new Error('사진 크기가 너무 큽니다. 작은 해상도로 다시 선택하세요.');
+  if(Math.max(image.naturalWidth,image.naturalHeight)<640)throw new Error('시각·주소를 읽기에는 사진 해상도가 너무 작습니다. 더 큰 원본을 선택하세요.');
+  const stamped=stampImage(image,currentAddress,$('visitDate').value,new Date());
   const canvas = document.createElement('canvas');
-  let edge = Math.min(INITIAL.maxEdge, Math.max(image.naturalWidth,image.naturalHeight));
-  while (edge >= Math.min(800, Math.max(image.naturalWidth,image.naturalHeight))) {
-    const scale = Math.min(1,edge/Math.max(image.naturalWidth,image.naturalHeight));
-    canvas.width = Math.round(image.naturalWidth*scale); canvas.height = Math.round(image.naturalHeight*scale);
-    const context = canvas.getContext('2d'); context.fillStyle = '#fff'; context.fillRect(0,0,canvas.width,canvas.height); context.drawImage(image,0,0,canvas.width,canvas.height);
+  let edge = Math.min(INITIAL.maxEdge, Math.max(stamped.width,stamped.height));
+  while (edge >= Math.min(800, Math.max(stamped.width,stamped.height))) {
+    const scale = Math.min(1,edge/Math.max(stamped.width,stamped.height));
+    canvas.width = Math.round(stamped.width*scale); canvas.height = Math.round(stamped.height*scale);
+    const context = canvas.getContext('2d'); context.fillStyle = '#fff'; context.fillRect(0,0,canvas.width,canvas.height); context.drawImage(stamped,0,0,canvas.width,canvas.height);
     for (const quality of [0.86,0.76,0.66,0.56,0.46]) { const blob = await toJpeg(canvas,quality); if(blob.size<=MAX_BYTES) return {blob,url:URL.createObjectURL(blob),width:canvas.width,height:canvas.height,originalSize:file.size}; }
     edge = Math.floor(edge*0.8);
   }
   throw new Error('날짜 가독성을 해칠 만큼 압축해야 하는 사진입니다. 날짜가 더 크게 보이도록 다시 촬영해 주세요.');
 }
+function stampImage(image,address,visitDate,when) {
+  const scale=Math.min(1,INITIAL.maxEdge/Math.max(image.naturalWidth,image.naturalHeight));
+  const width=Math.round(image.naturalWidth*scale),height=Math.round(image.naturalHeight*scale),font=Math.max(16,Math.round(width/48)),pad=font,lineHeight=Math.ceil(font*1.5);
+  const canvas=document.createElement('canvas'),context=canvas.getContext('2d'); context.font=font+'px sans-serif';
+  const lines=[],available=width-pad*2; let line='선택 주소: ';
+  for(const char of address){if(context.measureText(line+char).width>available && line){lines.push(line);line=char;}else line+=char;}
+  if(line)lines.push(line);
+  const time=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(when);
+  lines.unshift('앱 기록(KST·기기 시각): '+time,'방문일(직접 입력): '+visitDate);
+  canvas.width=width;canvas.height=height+pad*2+lines.length*lineHeight;
+  context.fillStyle='#fff';context.fillRect(0,0,canvas.width,canvas.height);context.drawImage(image,0,0,width,height);
+  context.fillStyle='#143c35';context.fillRect(0,height,width,canvas.height-height);context.fillStyle='#fff';context.font=font+'px sans-serif';context.textBaseline='top';
+  lines.forEach((text,index)=>context.fillText(text,pad,height+pad+index*lineHeight));return canvas;
+}
 function base64(blob) { return new Promise((resolve,reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result).split(',')[1]); reader.onerror = () => reject(new Error('사진을 읽지 못했습니다.')); reader.readAsDataURL(blob); }); }
-$('files').onchange = async () => {
-  const files = Array.from($('files').files || []);
-  $('files').value='';
+async function selectFiles(files) {
+  $('files').value=''; $('camera').value='';
   if (files.length > 2 - savedCount - pending.length) { say('현재 선택한 사진 외에 ' + Math.max(0,2-savedCount-pending.length) + '장을 더 선택할 수 있습니다.',true); return; }
   if (!files.length) return;
   const previousCount=pending.length;
@@ -195,18 +226,22 @@ $('files').onchange = async () => {
   try { for (let index=0;index<files.length;index++) { say('사진 '+(index+1)+' / '+files.length+'장 압축 중… 원본은 변경하지 않습니다.'); pending.push(await compress(files[index])); }
     renderPending(); say('아직 저장되지 않았습니다. 미리보기를 확인하고 저장 버튼을 눌러주세요.');
   } catch(error) { pending.splice(previousCount).forEach(p=>URL.revokeObjectURL(p.url)); renderPending(); handle(error); } finally { busy=false; phase=''; updateControls(); }
-};
+}
+$('files').onchange=()=>selectFiles(Array.from($('files').files||[]));
+$('camera').onchange=()=>selectFiles(Array.from($('camera').files||[]));
 $('choose').onclick=()=>{if(!$('choose').disabled)$('files').click();};
+$('cameraButton').onclick=()=>{if(!$('cameraButton').disabled)$('camera').click();};
 $('upload').onclick = async () => {
   if ($('upload').disabled) return;
   if(!$('visitDate').reportValidity()) return;
   busy=true; phase='upload'; updateControls(); $('progress').hidden=false; $('progress').max=pending.length; $('progress').value=0;
-  let completed=0, newlySaved=0;
+  let completed=0, newlySaved=0, catalogPending=false;
   try { for (const p of pending) { $('progressText').textContent='사진 '+(completed+1)+' / '+pending.length+'장 저장 중…'; say((completed+1)+'번째 사진을 저장하는 중… 창을 닫지 마세요.');
-    const result = await rpc('uploadPhoto',session,INITIAL.address,{base64:await base64(p.blob),visitDate:$('visitDate').value,confirmReadable:$('readable').checked});
+    const result = await rpc('uploadPhoto',session,currentAddress,{base64:await base64(p.blob),visitDate:$('visitDate').value,confirmReadable:$('readable').checked});
+    if(result.catalogPending)catalogPending=true;
     if (!result.alreadySaved) newlySaved++;
     completed++; $('progress').value=completed;
-  } clearPending(); await refresh('새 사진 '+newlySaved+'장 저장을 확인했습니다. 이미 저장된 동일 사진은 중복으로 추가하지 않았습니다.');
+  } clearPending(); await refresh('새 사진 '+newlySaved+'장 저장을 확인했습니다. 이미 저장된 동일 사진은 중복으로 추가하지 않았습니다.'+(catalogPending?' 관리자 집계는 동기화 대기 중입니다. 사진 자체는 저장되었습니다.':''));
   } catch(error) {
     // Keep only unsaved images; server hash checks also make ambiguous retries idempotent.
     pending.splice(0,completed).forEach(p=>URL.revokeObjectURL(p.url)); renderPending();
@@ -217,5 +252,64 @@ $('upload').onclick = async () => {
 $('loginForm').onsubmit = async event => { event.preventDefault(); $('login').disabled=true; $('login').textContent='확인 중…'; say('로그인 확인 중…'); try { const result=await rpc('loginPhoto',$('name').value,$('password').value); session=result.session; const persisted=saveSession(session,$('remember').checked); $('password').value=''; await refresh(); if(!persisted)say('로그인했습니다. 브라우저의 저장 제한으로 8시간 유지 옵션은 적용되지 않았습니다.'); } catch(error) { handle(error); } finally { $('login').disabled=false; $('login').textContent='사진 관리 시작'; } };
 $('readable').onchange=updateControls; $('clear').onclick=()=>{clearPending();say('선택을 취소했습니다. 저장된 사진은 삭제되지 않습니다.');}; $('logout').onclick=logout;
 $('refresh').onclick=async()=>{if(busy)return;busy=true;updateControls();try{await refresh();}catch(error){handle(error);}finally{busy=false;updateControls();}};
-if (INITIAL.address) refresh().catch(handle); else say('지도에서 주소를 선택한 후 사진 버튼을 눌러주세요.',true);
+function setOptions(id,values) {
+  const placeholder=document.createElement('option');placeholder.value='';placeholder.textContent='선택';
+  $(id).replaceChildren(placeholder,...values.sort().map(value=>{const option=document.createElement('option');option.value=value;option.textContent=value;return option;}));$(id).value='';
+}
+function addressData(){return window.ADDR_DATA||{};}
+function renderAddressChoices(){
+  const p=addressData()[$('province').value]||{},d=p[$('district').value]||{},records=d[$('dong').value]||[],q=$('addressSearch').value.trim().toLowerCase();
+  const matches=records.filter(record=>record[2].toLowerCase().includes(q));
+  $('addressChoices').replaceChildren(...matches.slice(0,100).map(record=>{const button=document.createElement('button');button.type='button';button.textContent=record[2];button.onclick=()=>chooseAddress(record);return button;}));
+  if(matches.length>100){const note=document.createElement('p');note.className='small';note.textContent=matches.length+'개 중 100개 표시 · 검색어로 좁혀주세요.';$('addressChoices').append(note);}
+}
+function showPoint(record){
+  if(!window.L || !fieldMap || !record)return;
+  const lat=Number(record[0]),lon=Number(record[1]);
+  if(fieldMarker){fieldMarker.remove();fieldMarker=null;}
+  if(Number.isFinite(lat)&&Number.isFinite(lon)&&lat>=33&&lat<=39&&lon>=124&&lon<=132){
+    fieldMap.setView([lat,lon],17);fieldMarker=window.L.marker([lat,lon]).addTo(fieldMap);
+    const label=document.createElement('span');label.textContent=record[2];fieldMarker.bindPopup(label).openPopup();
+  }
+}
+async function chooseAddress(record){
+  if(busy)return;
+  if(pending.length){say('선택 사진을 저장하거나 선택 취소한 뒤 주소를 바꿔주세요.',true);return;}
+  currentAddress=record[2];$('address').textContent=currentAddress;$('addressSelector').open=false;showPoint(record);busy=true;updateControls();
+  try{await refresh('선택한 주소가 실제 방문 주소인지 확인하고 현장 촬영을 눌러주세요.');}catch(error){handle(error);}finally{busy=false;updateControls();}
+}
+function initPicker(){
+  const data=addressData();setOptions('province',Object.keys(data));
+  if(window.L){fieldMap=window.L.map('fieldMap',{preferCanvas:true}).setView([36.4,127.9],7);window.L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',{subdomains:['0','1','2','3'],maxZoom:20,attribution:'© Google Maps'}).addTo(fieldMap);}
+  $('province').onchange=()=>{setOptions('district',Object.keys(data[$('province').value]||{}));setOptions('dong',[]);renderAddressChoices();};
+  $('district').onchange=()=>{setOptions('dong',Object.keys((data[$('province').value]||{})[$('district').value]||{}));renderAddressChoices();};
+  $('dong').onchange=renderAddressChoices;$('addressSearch').oninput=renderAddressChoices;
+  if(currentAddress)Object.keys(data).some(p=>Object.keys(data[p]).some(g=>Object.keys(data[p][g]).some(d=>data[p][g][d].some(record=>{
+    if(record[2]!==currentAddress)return false;
+    $('province').value=p;$('province').onchange();$('district').value=g;$('district').onchange();$('dong').value=d;renderAddressChoices();showPoint(record);$('addressSelector').open=false;return true;
+  }))));
+}
+function parseStaffHash(hash){
+  if(/^#?\?/.test(String(hash||'')))return null;
+  const parts=new URLSearchParams(String(hash||'').replace(/^#/,'')),login=parts.get('staff')||'',key=parts.get('key')||'';
+  return /^[a-z0-9][a-z0-9._-]{2,31}$/.test(login)&&login!=='admin'&&/^[A-Za-z0-9_-]{16}$/.test(key)?{login,code:key}:null;
+}
+function locationHash(){return new Promise(resolve=>{
+  if(window.google&&google.script&&google.script.url)google.script.url.getLocation(location=>resolve(location.hash||''));
+  else resolve(window.location&&window.location.hash||'');
+});}
+$('startStaff').onclick=async()=>{
+  if(!staffCredential)return;$('startStaff').disabled=true;say('직원 전용 링크를 확인하는 중…');
+  try{const result=await rpc('loginPhoto',staffCredential.login,staffCredential.code);session=result.session;
+    const persisted=saveSession(session,$('remember').checked);staffCredential=null;$('staffEntry').hidden=true;
+    if(window.google&&google.script&&google.script.history)google.script.history.replace({},currentAddress?{address:currentAddress}:{},'');
+    await refresh();if(!persisted)say('브라우저 저장 제한으로 로그인 유지는 현재 화면에만 적용됩니다.');
+  }catch(error){handle(error);}finally{$('startStaff').disabled=false;}
+};
+async function initialize(){
+  initPicker();staffCredential=parseStaffHash(await locationHash());
+  if(staffCredential){logout();$('staffEntry').hidden=false;}
+  await refresh();
+}
+initialize().catch(handle);
 </script></body></html>
