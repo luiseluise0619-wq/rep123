@@ -3,11 +3,13 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const crypto=require('node:crypto');
 const html = fs.readFileSync(path.join(__dirname, '../photo-backend/Photo.html'), 'utf8');
 const script = html.match(/<script>\s*('use strict';[\s\S]*?)<\/script>/)[1].replace('initialize().catch(handle);','');
 
-function harness({blockedStorage = false, reply} = {}) {
+function harness({blockedStorage = false, reply,storedKey} = {}) {
   const elements = new Map(), local = new Map(), tab = new Map(), delays = [], calls = [], revoked = [], listeners = {};
+  if(storedKey)local.set('photoDeviceKeyV4',storedKey);
   function element() {
     return {textContent:'',value:'',checked:false,disabled:false,hidden:false,children:[],style:{},
       classList:{toggle(){}},append(...values){this.children.push(...values);},appendChild(value){this.children.push(value);},
@@ -25,7 +27,7 @@ function harness({blockedStorage = false, reply} = {}) {
     return (...args)=>{calls.push({name,args}); const ok=success,fail=failure;
       Promise.resolve().then(()=>reply ? reply(name,args,calls) : {ok:true,data:{}}).then(ok,fail);};
   }});
-  const window = {localStorage:storage(local),sessionStorage:storage(tab),addEventListener:(name,fn)=>{listeners[name]=fn;},google:{script:{run:runner}}};
+  const window = {crypto:crypto.webcrypto,confirm:()=>true,localStorage:storage(local),sessionStorage:storage(tab),addEventListener:(name,fn)=>{listeners[name]=fn;},google:{script:{run:runner}}};
   const context = vm.createContext({window,google:window.google,document:{getElementById:get,createElement:element,querySelectorAll:()=>[]},
     Date,Intl,JSON,Math,Promise,Error,Number,String,Array,URLSearchParams,URL:{revokeObjectURL:url=>revoked.push(url)},
     setTimeout:(callback,delay)=>{delays.push(delay);callback();}});
@@ -33,26 +35,19 @@ function harness({blockedStorage = false, reply} = {}) {
   return {context,get,local,tab,calls,delays,revoked,listeners,run:code=>vm.runInContext(code,context)};
 }
 
-test('UI starts even when all browser storage is blocked; keeps a memory session',()=>{
+test('blocked browser storage permits viewing but does not create a disposable upload/delete identity',async()=>{
   const h=harness({blockedStorage:true});
-  assert.equal(h.run("saveSession('signed-test',true)"),false);
-  h.run("session='signed-test'");
-  assert.equal(h.run('session'),'signed-test');
-  assert.equal(h.get('remember').checked,false,'remember must be opt-in');
+  assert.equal(h.run('deviceKey'),'');
+  assert.match(h.get('deviceNotice').textContent,/보기만/);
+  h.run('canUpload=false;updateControls()');assert.equal(h.get('choose').disabled,true);
 });
 
-test('remember stores only a signed token for eight hours; logout clears both stores and zoom',()=>{
+test('a secure random deletion key persists only in this browser and survives reopening',()=>{
   const h=harness();
-  assert.equal(h.run("saveSession('signed-test',true)"),true);
-  const record=JSON.parse(h.local.get('photoSessionV3_8h'));
-  assert.deepEqual(Object.keys(record).sort(),['expiresAt','token']);
-  assert.ok(record.expiresAt-Date.now()<=8*3600000);
-  assert.equal(h.run('rememberedSession()'),'signed-test');
-  h.run("session='signed-test'; logout()");
-  assert.equal(h.local.size,0); assert.equal(h.tab.size,0); assert.equal(h.run('session'),'');
-  assert.equal(h.get('photoZoom').open,false);
-  h.local.set('photoSessionV3_8h',JSON.stringify({token:'expired',expiresAt:Date.now()-1}));
-  assert.equal(h.run('rememberedSession()'),'');
+  const key=h.run('deviceKey');assert.match(key,/^[0-9a-f]{64}$/);
+  assert.equal(h.local.get('photoDeviceKeyV4'),key);assert.equal(h.local.size,1);assert.equal(h.tab.size,0);
+  assert.equal(harness({storedKey:key}).run('deviceKey'),key);
+  assert.notEqual(harness().run('deviceKey'),key);
 });
 
 test('only BUSY receives bounded automatic retries, never ambiguous upload failures',async()=>{
@@ -83,10 +78,10 @@ test('selection can be removed individually and appends without losing a prior p
 test('partial upload keeps only unsaved selection; ambiguous retry is left to user',async()=>{
   let uploaded=0;
   const h=harness({reply:name=>{
-    if(name==='uploadPhoto')return ++uploaded===1 ? {ok:true,data:{alreadySaved:false}} : {ok:false,code:'UPLOAD',message:'확인 필요'};
+    if(name==='uploadPublicPhoto')return ++uploaded===1 ? {ok:true,data:{alreadySaved:false}} : {ok:false,code:'UPLOAD',message:'확인 필요'};
     return {ok:true,data:{ready:true,authenticated:true,name:'테스트',photos:[{slot:1,bytes:100,visitDate:'2026-01-01',uploader:'테스트'}],quota:{canUpload:true,usedBytes:100,remainingSafeBytes:1000}}};
   }});
-  h.run("session='signed'; canUpload=true; pending=[{url:'one',blob:{}},{url:'two',blob:{}}]; base64=async()=>''");
+  h.run("canUpload=true; pending=[{url:'one',blob:{}},{url:'two',blob:{}}]; base64=async()=>''");
   h.get('readable').checked=true; h.get('visitDate').value='2026-01-01'; h.run('updateControls()');
   await h.get('upload').onclick();
   assert.equal(uploaded,2); assert.equal(h.run('pending.length'),1); assert.equal(h.run('pending[0].url'),'two');
@@ -94,21 +89,25 @@ test('partial upload keeps only unsaved selection; ambiguous retry is left to us
   assert.equal(h.get('message').textContent,'확인 필요');
 });
 
-test('stale status response after logout cannot reopen protected workspace',async()=>{
+test('a stale status response cannot replace a newly selected address',async()=>{
   let finish;
   const h=harness({reply:()=>new Promise(resolve=>{finish=resolve;})});
-  h.run("session='signed'"); const refresh=h.run('refresh()');
-  await Promise.resolve(); h.run('logout()');
+  h.get('workspace').hidden=true;const refresh=h.run('refresh()');
+  await Promise.resolve();h.run("currentAddress='new selected address';viewEpoch++");
   finish({ok:true,data:{ready:true,authenticated:true,photos:[],quota:{canUpload:true}}}); await refresh;
   assert.equal(h.get('workspace').hidden,true);
 });
 
-test('private entry accepts only a staff ID and a 16-character random key in the fragment',()=>{
-  const h=harness();
-  assert.equal(h.run("parseStaffHash('#staff=staff01&key=abcdefghijklmnop').login"),'staff01');
-  for(const hash of ['#staff=admin&key=abcdefghijklmnop','#staff=staff01&key=short','?staff=staff01&key=abcdefghijklmnop','#staff=<script>&key=abcdefghijklmnop']) {
-    assert.equal(h.run('parseStaffHash('+JSON.stringify(hash)+')'),null);
-  }
+test('only server-marked own photos have a delete control; user confirmation precedes deletion',async()=>{
+  const h=harness({reply:()=>({ok:true,data:{ready:true,totalCount:0,photos:[],quota:{canUpload:true}}})});
+  const other=h.run("photoCard({id:'a'.repeat(64),slot:1,bytes:100,canDelete:false})");
+  assert.equal(other.children.some(c=>c.textContent==='내가 올린 사진 삭제'),false);
+  const own=h.run("photoCard({id:'a'.repeat(64),slot:1,bytes:100,canDelete:true})");
+  const remove=own.children.at(-2),confirmation=own.children.at(-1);
+  remove.onclick();assert.equal(h.calls.length,0);assert.equal(confirmation.hidden,false);
+  confirmation.children.at(-1).onclick();assert.equal(confirmation.hidden,true);assert.equal(h.calls.length,0);
+  remove.onclick();await confirmation.children[1].onclick();
+  assert.equal(h.calls[0].name,'deletePhoto');assert.equal(h.calls[0].args[0],'');assert.equal(h.calls[0].args[1],h.run('deviceKey'));
 });
 
 test('timestamp footer preserves the whole original and distinguishes device time from entered visit date',()=>{

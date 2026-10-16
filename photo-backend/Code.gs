@@ -7,7 +7,7 @@ var PHOTO_LIMITS_ = Object.freeze({
   accountCeilingBytes: 24000000000, reserveBytes: 1000000000,
   dailyUploads: 1000, dailyReads: 2000, sessionHours: 8,
   sourceUrl: 'https://rep123-seven.vercel.app/addresses.js',
-  rootName: '현장방문_주소사진_v1', indexRootName: '현장방문_사진목록_v3', version: '2026-10-16-mybox-v3',
+  rootName: '현장방문_주소사진_v1', indexRootName: '현장방문_사진목록_v3', version: '2026-10-16-mybox-v4-public', publicEnabled: true,
   webAppUrl: 'https://script.google.com/macros/s/AKfycbxkluXWRelyVJ1D0XtuLHHo1GdF76Dzp4CLHQeC-hlvpW6WmctvD9_60WKqugmfN_PAQw/exec'
 });
 
@@ -71,7 +71,12 @@ function loginPhoto(name, password) {
 
 function uploadPhoto(session, address, photo) {
   return rpc_(function() {
-    var user = verifySession_(session);
+    var actor=verifySession_(session);
+    if(PHOTO_LIMITS_.publicEnabled===true&&(!photo||photo.publicShare!==true))fail_('PUBLIC_CONSENT','이전 사진 화면에서는 등록할 수 없습니다. 새 공개 안내 화면을 다시 여세요.');
+    return uploadForActor_(actor,address,photo);
+  });
+}
+function uploadForActor_(user,address,photo) {
     assertAddress_(address);
     if (!photo || photo.confirmReadable !== true) fail_('PREVIEW', '날짜와 현장이 잘 보이는지 미리보기를 확인해 주세요.');
     var visitDate = String(photo.visitDate || '');
@@ -97,7 +102,7 @@ function uploadPhoto(session, address, photo) {
       var slot = files.some(function(f) { return /^1__/.test(f.name); }) ? 2 : 1;
       var timestamp = new Date().toISOString();
       var filename = slot + '__' + hash + '__' + timestamp.replace(/[-:.]/g, '') +
-        '__' + visitDate + '__v3u-' + user.id + '__' + user.name.replace(/[^\p{L}\p{N} ._-]/gu, '_') + '.jpg';
+        '__' + visitDate + '__' + (user.role==='device'?'v4d-':'v3u-') + user.id + '__' + user.name.replace(/[^\p{L}\p{N} ._-]/gu, '_') + '.jpg';
       var target = api_('/drive/files', 'post', {parentId: folder, fileName: filename,
         fileSize: bytes.length, isOverwrite: false});
       var url = storageUrl_(target.uploadUrl, 'upload');
@@ -111,7 +116,6 @@ function uploadPhoto(session, address, photo) {
       if (!saved) fail_('VERIFY', '저장 응답을 받았지만 파일 확인이 지연됩니다. 새로고침 후 확인하세요.');
       return {saved: true, alreadySaved: false, photo: publicPhoto_(saved), count: after.length,
         catalogPending: !tryCatalogUpdate_(address, after)};
-  });
 }
 
 function getPhoto(session, address, slot) {
@@ -289,6 +293,7 @@ function api_(path, method, body) {
   if (status === 429) fail_('RATE_LIMIT', 'MYBOX 사용 한도에 도달했습니다. 잠시 후 다시 시도하세요.');
   if (status === 507) fail_('STORAGE', 'MYBOX 저장 공간이 부족합니다.');
   if (status < 200 || status >= 300) fail_('MYBOX', 'MYBOX 요청을 완료하지 못했습니다. 잠시 후 다시 시도하세요.');
+  if (status === 204) return {};
   try { return JSON.parse(response.getContentText()); }
   catch (e) { fail_('MYBOX', 'MYBOX 응답을 확인하지 못했습니다.'); }
 }
@@ -350,9 +355,10 @@ function photoFiles_(folder) {
     fail_('SLOT_CONFLICT', '같은 번호의 사진이 중복되어 관리자 확인이 필요합니다.');
   return files.sort(function(a, b) { return a.name.localeCompare(b.name); });
 }
+function photoId_(file){return digest_(String(file.resourceId)+'\n'+file.name);}
 function publicPhoto_(file) {
   var parts = file.name.split('__');
-  return {slot: Number(parts[0]), visitDate: parts[3], uploader: parts.slice(photoOwner_(file) ? 5 : 4).join('__').replace(/\.jpg$/, ''),
+  return {id:photoId_(file),slot: Number(parts[0]), visitDate: parts[3], uploader: parts.slice(photoOwner_(file) ? 5 : 4).join('__').replace(/\.jpg$/, ''),
     legacy: !photoOwner_(file),
     uploadedAt: file.createdAt || null, bytes: Number(file.size)};
 }

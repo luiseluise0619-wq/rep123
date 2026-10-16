@@ -50,9 +50,9 @@ function requireAdmin_(token) {
 function photoOwner_(file) {
   var owner = String(file.name || '').split('__')[4];
   // A legacy display name was at most 24 characters, so it cannot impersonate this 36-character marker.
-  return /^v3u-[0-9a-f]{32}$/.test(owner) ? owner.slice(4) : null;
+  return /^(v3u|v4d)-[0-9a-f]{32}$/.test(owner) ? owner.slice(4) : null;
 }
-function canSeePhoto_(user, file) { return user.role === 'admin' || photoOwner_(file) === user.id; }
+function canSeePhoto_(user, file) { return user.role === 'admin' || user.role==='device' && String(file.name).split('__')[4]==='v4d-'+user.id || user.role==='staff' && String(file.name).split('__')[4]==='v3u-'+user.id; }
 function accountPublic_(record) {
   return {id: record.id, login: record.login, name: record.name, enabled: record.enabled, createdAt: record.createdAt};
 }
@@ -91,6 +91,6 @@ function manageEmployee(session, action, input) {
       record.codeHash = authMac_('employee-code-v3\n' + record.salt + '\n' + code);
     }
     props.setProperty('PHOTO_EMP_' + login, JSON.stringify(record));
-    return {employee: accountPublic_(record), employeeLink: code ? PHOTO_LIMITS_.webAppUrl + '#staff=' + encodeURIComponent(login) + '&key=' + encodeURIComponent(code) : null};
+    return {employee: accountPublic_(record), employeeLink: code ? PHOTO_LIMITS_.webAppUrl + '?build=' + encodeURIComponent(PHOTO_LIMITS_.version) + '#staff=' + encodeURIComponent(login) + '&key=' + encodeURIComponent(code) : null};
   });
 }

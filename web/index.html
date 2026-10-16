@@ -251,7 +251,7 @@
 
 <script src="./data-meta.js?v=20261015-admin"></script>
 <script src="./addresses.js?v=20261015-admin"></script>
-<script src="./photo-config.js?v=20261016-mybox-v3"></script>
+<script src="./photo-config.js?v=20261016-mybox-v4-public"></script>
 <script>
 /* =======================================================================
    전국 주소 지도 — 동작 개요 (초보자용 설명)
@@ -429,10 +429,10 @@ function openPopup(marker, rec){
 function photoUrl(address){
   var config=window.PHOTO_CONFIG||{}, base=String(config.webAppUrl||'');
   if(!/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(base)) return '';
-  return base+'?address='+encodeURIComponent(address);
+  return base+'?address='+encodeURIComponent(address)+'&build='+encodeURIComponent(config.build||'v3');
 }
 var adminPhotoEntry=photoUrl(''), adminPhotoLink=document.getElementById('photoAdminLink');
-if(adminPhotoEntry&&adminPhotoLink){adminPhotoLink.href=adminPhotoEntry.replace(/\?address=$/,'?page=admin');adminPhotoLink.hidden=false;}
+if(adminPhotoEntry&&adminPhotoLink){adminPhotoLink.href=adminPhotoEntry.replace('?address=&','?page=admin&');adminPhotoLink.hidden=false;}
 function photoLinkHtml(address){
   var url=photoUrl(address);
   return url ? '<a class="pbtn search" href="'+url+'" target="_blank" rel="noopener noreferrer">📷 현장 촬영 · 사진 2장</a>' :

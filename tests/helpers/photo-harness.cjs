@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const crypto = require('node:crypto');
-const source = ['Code.gs','Access.gs','Catalog.gs'].map(name=>fs.readFileSync(path.join(__dirname,'../../photo-backend',name),'utf8')).join('\n');
+const source = ['Code.gs','Access.gs','Catalog.gs','Public.gs'].map(name=>fs.readFileSync(path.join(__dirname,'../../photo-backend',name),'utf8')).join('\n');
 const html = fs.readFileSync(path.join(__dirname, '../../photo-backend/Photo.html'), 'utf8');
 const ADDRESS = '서울특별시 영등포구 당산동 1가 1';
 const PASSWORD = 'test-only-not-a-real-password';
@@ -17,7 +17,8 @@ function fakeJpeg(seed = 1, edge = 100) {
 function harness({sourceText} = {}) {
   const props = new Map([['MYBOX_TOKEN','mbx_pat_unit_test_fake_123456789'],['PHOTO_ADMIN_PASSWORD',PASSWORD],['PHOTO_TEAM_PASSWORD','old-team-password']]);
   const cache = new Map(), resources = [], reservations = new Map();
-  let locked = false, calls = 0, next = 0, used = 0, dropUploadResponse = false, failCatalog=false;
+  let locked = false, calls = 0, next = 0, used = 0, dropUploadResponse = false, failCatalog=false, dropDeleteResponse=false;
+  const trash=[];
   const response = (value, status = 200, bytes) => ({getResponseCode:()=>status,
     getContentText:()=>bytes?bytes.toString('utf8'):typeof value==='string'?value:JSON.stringify(value), getContent:()=>signed(bytes||Buffer.alloc(0))});
   const sandbox = {
@@ -56,6 +57,13 @@ function harness({sourceText} = {}) {
       assert.equal(options.headers.Authorization,'Bearer '+props.get('MYBOX_TOKEN'));
       assert.equal(options.followRedirects,false,'PAT must never follow redirects');
       if (pathname === '/drive/storage') return response({quotaBytes:30*1024**3,usedBytes:used});
+      if (/^\/drive\/resources\/[^/]+$/.test(pathname)&&options.method==='delete'){
+        const id=decodeURIComponent(pathname.split('/')[3]),index=resources.findIndex(r=>r.resourceId===id);
+        assert.ok(index>=0);const file=resources[index];assert.equal(file.type,'file');assert.ok(file.name.endsWith('.jpg'));
+        trash.push(file);resources.splice(index,1);
+        if(dropDeleteResponse){dropDeleteResponse=false;throw Error('ambiguous delete SECRET');}
+        return response('',204);
+      }
       if (pathname === '/drive/folders' && options.method==='post') {
         const body=JSON.parse(options.payload),folder={resourceId:'folder'+(++next),parentId:body.parentId||'',name:body.folderName,type:'folder'};
         resources.push(folder); return response(folder,201);
@@ -78,9 +86,9 @@ function harness({sourceText} = {}) {
   };
   vm.createContext(sandbox); vm.runInContext(source,sandbox);
   const login=sandbox.loginPhoto('admin',PASSWORD); assert.equal(login.ok,true);
-  return {app:sandbox,props,cache,resources,session:login.data.session,
+  return {app:sandbox,props,cache,resources,trash,session:login.data.session,
     setUsed:value=>{used=value;},setLocked:value=>{locked=value;},
-    dropNextUploadResponse:()=>{dropUploadResponse=true;},failCatalog:value=>{failCatalog=value;},calls:()=>calls,
+    dropNextUploadResponse:()=>{dropUploadResponse=true;},dropNextDeleteResponse:()=>{dropDeleteResponse=true;},failCatalog:value=>{failCatalog=value;},calls:()=>calls,
     staff(username,name='같은 이름') { const created=sandbox.manageEmployee(login.data.session,'create',{login:username,name});assert.equal(created.ok,true);const parts=new URLSearchParams(new URL(created.data.employeeLink).hash.slice(1));const result=sandbox.loginPhoto(parts.get('staff'),parts.get('key'));assert.equal(result.ok,true);return {session:result.data.session,employee:created.data.employee,code:parts.get('key'),link:created.data.employeeLink}; }};
 }
 module.exports={harness,fakeJpeg,ADDRESS,PASSWORD,source};

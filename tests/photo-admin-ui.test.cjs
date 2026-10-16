@@ -40,3 +40,12 @@ test('ending a busy operation does not enable pagination beyond the last page',(
   const h=harness();h.run('controls(false)');
   assert.equal(h.get('prev').disabled,true);assert.equal(h.get('next').disabled,true);
 });
+test('administrator deletion requires inline confirmation and sends the exact displayed photo ID',async()=>{
+  const h=harness(name=>({ok:true,data:name==='deletePhoto'?{deleted:true}:name==='getStatus'?{ready:true,authenticated:true,role:'admin'}:{addresses:0,photos:0,legacy:0,pending:0,chunks:[],updatedAt:null,scan:{active:false},scanComplete:true,quota:{usedBytes:0,remainingSafeBytes:24000000000}}}));
+  h.run("session='admin-session';selectedPhoto={address:'test source address',id:'a'.repeat(64)}");
+  h.get('deletePhoto').onclick();assert.equal(h.calls.length,0);assert.equal(h.get('deleteConfirm').hidden,false);
+  h.get('cancelDelete').onclick();assert.equal(h.get('deleteConfirm').hidden,true);
+  h.get('deletePhoto').onclick();await h.get('confirmDelete').onclick();
+  assert.equal(h.calls[0].name,'deletePhoto');assert.deepEqual(Array.from(h.calls[0].args),['admin-session','','test source address','a'.repeat(64)]);
+  assert.equal(h.run('selectedPhoto'),null);assert.equal(h.get('photoDialog').open,false);
+});

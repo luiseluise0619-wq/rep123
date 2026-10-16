@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const {harness,fakeJpeg,ADDRESS,PASSWORD,source}=require('./helpers/photo-harness.cjs');
-const photo=(seed=1)=>({base64:fakeJpeg(seed).toString('base64'),visitDate:'2026-01-01',confirmReadable:true});
+const photo=(seed=1)=>({base64:fakeJpeg(seed).toString('base64'),visitDate:'2026-01-01',confirmReadable:true,publicShare:true});
 test('unconfigured service is closed; no PAT or raw upstream error is exposed',()=>{
   const h=harness(); h.props.delete('MYBOX_TOKEN');
   assert.equal(h.app.getStatus('',ADDRESS).data.ready,false);
@@ -101,7 +101,7 @@ test('doGet escapes script tags in user-controlled address; helper functions sta
   assert.ok(!template.initialJson.includes('<'));
   assert.ok(template.initialJson.includes('\\u003c'));
   const exposed=[...source.matchAll(/^function (\w+)\(/gm)].map(m=>m[1]).filter(n=>!n.endsWith('_'));
-  assert.deepEqual(exposed,['doGet','getStatus','loginPhoto','uploadPhoto','getPhoto','listEmployees','manageEmployee','getAdminOverview','getAdminChunk','syncAdminCatalog']);
+  assert.deepEqual(exposed,['doGet','getStatus','loginPhoto','uploadPhoto','getPhoto','listEmployees','manageEmployee','getAdminOverview','getAdminChunk','syncAdminCatalog','getPublicStatus','uploadPublicPhoto','getPublicPhoto','deletePhoto']);
 });
 
 test('staff with identical display names see only immutable account-owned photos; admin sees both',()=>{
@@ -149,6 +149,7 @@ test('legacy photos are admin-only, and v1/v2 shared-name sessions never survive
 test('private links are returned once, hashed at rest, and reset/disable immediately revoke sessions',()=>{
   const h=harness(),a=h.staff('staff-a');h.app.uploadPhoto(a.session,ADDRESS,photo());
   assert.equal(new URL(a.link).searchParams.has('key'),false,'credential must be in fragment, never query');
+  assert.equal(new URL(a.link).searchParams.get('build'),h.app.PHOTO_LIMITS_.version,'old shared-login HTML must not be reused from cache');
   assert.equal(a.code.length,16);assert.ok(!JSON.stringify(Object.fromEntries(h.props)).includes(a.code));
   assert.ok(!JSON.stringify(h.app.listEmployees(h.session)).includes(a.code));
   const reset=h.app.manageEmployee(h.session,'reset',{login:'staff-a',id:a.employee.id}).data;
