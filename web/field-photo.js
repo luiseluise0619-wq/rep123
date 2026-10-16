@@ -28,14 +28,17 @@ function controls(){
   $('startCamera').hidden=!!stream||needsReview||full;
   $('startCamera').textContent=pending.length||savedCount?'한 장 더 찍기':'사진 찍기';
   $('startCamera').disabled=busy||!!stream||needsReview||!canUpload||!deviceKey||full;
+  $('confirmNext').hidden=!!stream||!needsReview||full;
+  $('confirmNext').disabled=busy||!needsReview||full||!canUpload||!deviceKey;
   $('take').disabled=busy||!stream||savedCount+pending.length>=2;$('stopCamera').disabled=busy;
-  $('publicConsent').disabled=busy||needsReview||!!stream;
-  $('upload').disabled=busy||!!stream||needsReview||!pending.length||!$('publicConsent').checked||!canUpload||pending.length+savedCount>2;
-  $('upload').textContent=busy?'처리 중…':pending.length?pending.length+'장 전송':'사진 전송';
+  $('publicConsent').disabled=busy||!!stream;
+  $('upload').disabled=busy||!!stream||!pending.length||!$('publicConsent').checked||!canUpload||pending.length+savedCount>2;
+  $('upload').textContent=busy?'전송 중…':full?'확인하고 전송':'확인하고 1장만 전송';
+  $('upload').classList.toggle('secondary',!full);
   $('refresh').disabled=busy;$('remaining').textContent=Math.max(0,2-savedCount-pending.length)+'장 더 등록 가능';
   $('reviewPanel').hidden=!pending.length||!!stream;
-  $('reviewHint').textContent=needsReview?'사진을 확인한 뒤 아래의 ‘확인’을 눌러주세요.':'확인한 사진입니다. 한 장 더 찍거나 전송해 주세요.';
-  $('saveControls').hidden=!pending.length||needsReview||!!stream;$('captureCard').hidden=savedCount>=2&&!pending.length;
+  $('reviewHint').textContent=needsReview?(full?'사진을 확인하고 아래에서 전송해 주세요.':'사진을 확인한 뒤 한 장 더 찍거나 전송해 주세요.'):'확인한 사진입니다. 한 장 더 찍거나 전송해 주세요.';
+  $('saveControls').hidden=!pending.length||!!stream;$('captureCard').hidden=savedCount>=2&&!pending.length;
   document.querySelectorAll('#pending button').forEach(button=>{button.disabled=busy;});
 }
 function stopCamera(){if(stream)stream.getTracks().forEach(track=>track.stop());stream=null;$('cameraVideo').srcObject=null;$('cameraPanel').hidden=true;controls();}
@@ -74,16 +77,25 @@ async function capture(){await withBusy(async()=>{
   const canvas=stamp($('cameraVideo'),address,when);stopCamera();
   const blob=await compress(canvas),hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',await blob.arrayBuffer())),b=>b.toString(16).padStart(2,'0')).join('');
   pending.push({blob,url:URL.createObjectURL(blob),hash,ticket:permit.ticket,capturedAt:when.getTime(),visitDate:kstDate(when),confirmed:false});$('publicConsent').checked=false;renderPending();
-  say('찍은 사진을 확인해 주세요. 확인을 눌러도 아직 전송되지 않습니다.');$('reviewPanel').scrollIntoView({block:'start'});
+  say('찍은 사진을 확인하고 다음 촬영 또는 전송을 선택해 주세요.');$('reviewPanel').scrollIntoView({block:'start'});
 });}
 function zoom(src){$('zoomImage').src=src;$('zoom').showModal();}
 function discardPending(photo){const index=pending.indexOf(photo);if(index<0)return;pending.splice(index,1);URL.revokeObjectURL(photo.url);$('publicConsent').checked=false;renderPending();}
 function renderPending(){const cards=pending.map((photo,index)=>{
   const card=document.createElement('article');card.className='photo '+(photo.confirmed?'confirmed':'reviewing');const image=document.createElement('img');image.src=photo.url;image.alt='촬영 사진 '+(index+1);image.onclick=()=>zoom(photo.url);
   const info=document.createElement('p');info.style.whiteSpace='pre-line';info.textContent=(photo.confirmed?'확인 완료 · ':'')+'사진 '+(index+1)+' · '+(photo.blob.size/1000).toFixed(1)+'KB';card.append(image,info);
-  if(!photo.confirmed){const confirm=document.createElement('button');confirm.type='button';confirm.textContent='확인';confirm.onclick=()=>{if(busy)return;photo.confirmed=true;$('publicConsent').checked=false;renderPending();say(pending.length+savedCount<2?'확인했습니다. 한 장 더 찍거나 전송해 주세요.':'확인했습니다. 공개 등록 안내에 체크한 뒤 전송해 주세요.');};card.append(confirm);}
   const remove=document.createElement('button');remove.type='button';remove.className='secondary';remove.textContent=photo.confirmed?'이 사진 빼기':'다시 찍기';remove.onclick=async()=>{if(busy)return;const retake=!photo.confirmed;discardPending(photo);if(retake)await openCamera();};card.append(remove);return card;
 });$('pending').replaceChildren(...cards);controls();}
+async function confirmAndNext(){
+  if(busy)return;const photo=pending.find(item=>!item.confirmed);
+  if(!photo||savedCount+pending.length>=2)return;
+  photo.confirmed=true;renderPending();await openCamera();
+}
+async function confirmAndSend(){
+  if(busy||!pending.length||stream)return;
+  if(!$('publicConsent').checked){say('공개 등록 안내에 체크한 뒤 전송해 주세요.',true);return;}
+  pending.forEach(photo=>{photo.confirmed=true;});renderPending();await upload();
+}
 function savedCard(photo){const card=document.createElement('article');card.className='photo';const title=document.createElement('p');title.textContent='사진 '+photo.slot+' · 등록 '+(photo.uploadedAt?new Date(photo.uploadedAt).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'}):'시각 기록 없음');card.append(title);
   const view=document.createElement('button');view.type='button';view.className='secondary';view.textContent='사진 보기';view.onclick=()=>withBusy(async()=>{const result=await rpc('getPublicPhoto',address,photo.id);const src='data:image/jpeg;base64,'+result.base64;const image=document.createElement('img');image.src=src;image.alt='등록 사진 '+photo.slot;image.onclick=()=>zoom(src);card.prepend(image);view.remove();});card.append(view);
   if(photo.canDelete){const remove=document.createElement('button'),confirm=document.createElement('div'),yes=document.createElement('button'),no=document.createElement('button'),notice=document.createElement('p');remove.type=yes.type=no.type='button';remove.className='danger';remove.textContent='내 사진 삭제';yes.textContent='삭제';yes.className='danger';no.textContent='취소';no.className='secondary';notice.textContent='MYBOX 휴지통으로 이동할까요?';confirm.hidden=true;confirm.append(notice,yes,no);remove.onclick=()=>{if(!busy){confirm.hidden=false;remove.hidden=true;}};no.onclick=()=>{confirm.hidden=true;remove.hidden=false;};yes.onclick=()=>withBusy(async()=>{await rpc('deletePhoto','',deviceKey,address,photo.id);await refresh();say('사진을 삭제했습니다.');});card.append(remove,confirm);}return card;
@@ -101,7 +113,7 @@ async function upload(){await withBusy(async()=>{
   }await refresh();say(saved+'장을 등록했습니다.');
   }catch(error){try{await refresh();}catch(ignored){}throw error;}finally{$('saveProgress').textContent='';}
 });}
-$('publicConsent').onchange=controls;$('startCamera').onclick=openCamera;$('take').onclick=capture;$('stopCamera').onclick=stopCamera;$('upload').onclick=upload;
+$('publicConsent').onchange=controls;$('startCamera').onclick=openCamera;$('take').onclick=capture;$('stopCamera').onclick=stopCamera;$('confirmNext').onclick=confirmAndNext;$('upload').onclick=confirmAndSend;
 $('refresh').onclick=()=>withBusy(async()=>{await refresh();say('등록 현황을 확인했습니다.');});$('closeZoom').onclick=()=>{$('zoom').close();$('zoomImage').removeAttribute('src');};
 document.addEventListener('visibilitychange',()=>{if(document.hidden)stopCamera();});window.addEventListener('pagehide',stopCamera);
 window.addEventListener('beforeunload',event=>{if(busy||pending.length){event.preventDefault();event.returnValue='';}});

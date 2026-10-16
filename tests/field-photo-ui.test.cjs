@@ -60,22 +60,23 @@ function captureHarness(){
  return {...h,calls,stops:()=>stops};
 }
 
-test('each photo stops the camera, requires review, then allows one more capture and a single send action',async()=>{
+test('combined review actions open the next camera and send both photos without separate confirmation clicks',async()=>{
  const h=captureHarness();await h.api.openCamera();await h.api.capture();
  assert.equal(h.stops(),1);assert.equal(h.api.photoState().stream,null);assert.equal(h.get('cameraPanel').hidden,true);
  assert.equal(h.api.photoState().pending.length,1);assert.equal(h.api.photoState().pending[0].confirmed,false);
- assert.equal(h.get('reviewPanel').hidden,false);assert.equal(h.get('startCamera').hidden,true);assert.equal(h.get('saveControls').hidden,true);
+ assert.equal(h.get('reviewPanel').hidden,false);assert.equal(h.get('startCamera').hidden,true);assert.equal(h.get('saveControls').hidden,false);
+ assert.equal(h.get('confirmNext').hidden,false);assert.equal(h.get('upload').textContent,'확인하고 1장만 전송');
+ assert.match(html,/>확인하고 한 장 더 찍기<\/button>/);assert.equal(h.get('pending').children[0].children.length,3);
  assert.deepEqual(h.calls,['beginPublicCapture']);
  assert.ok(!Object.hasOwn(h.api.photoState().pending[0],'gps'));
- h.get('pending').children[0].children[2].onclick();assert.equal(h.api.photoState().pending[0].confirmed,true);
- assert.equal(h.get('startCamera').textContent,'한 장 더 찍기');assert.equal(h.get('startCamera').hidden,false);
- assert.deepEqual(h.calls,['beginPublicCapture'],'confirmation alone never uploads');
- await h.api.openCamera();assert.equal(h.get('reviewPanel').hidden,true);assert.equal(h.get('saveControls').hidden,true);
+ await h.get('confirmNext').onclick();assert.equal(h.api.photoState().pending[0].confirmed,true);assert.ok(h.api.photoState().stream);
+ assert.deepEqual(h.calls,['beginPublicCapture'],'confirm-and-next never uploads');
+ assert.equal(h.get('reviewPanel').hidden,true);assert.equal(h.get('saveControls').hidden,true);
  await h.api.capture();assert.equal(h.stops(),2);assert.equal(h.api.photoState().pending.length,2);
  assert.equal(h.api.photoState().pending[0].confirmed,true);assert.equal(h.api.photoState().pending[1].confirmed,false);
- h.get('pending').children[1].children[2].onclick();assert.equal(h.get('startCamera').hidden,true);
+ assert.equal(h.get('confirmNext').hidden,true);assert.equal(h.get('startCamera').hidden,true);
  assert.equal(h.get('upload').disabled,true);h.get('publicConsent').checked=true;h.api.controls();assert.equal(h.get('upload').disabled,false);
- assert.equal(h.get('upload').textContent,'2장 전송');await h.api.upload();
+ assert.equal(h.get('upload').textContent,'확인하고 전송');await h.get('upload').onclick();
  assert.equal(h.api.photoState().pending.length,0);assert.equal(h.get('count').textContent,'2 / 2');
  assert.equal(h.calls.filter(name=>name==='uploadPublicPhoto').length,2);assert.equal(h.api.photoState().stream,null);
 });
@@ -84,17 +85,39 @@ test('an unconfirmed photo cannot be uploaded or skipped, and retake preserves a
  const h=captureHarness();await h.api.openCamera();await h.api.capture();
  h.get('publicConsent').checked=true;await h.api.upload();assert.match(h.get('message').textContent,/사진마다.*확인/);
  const before=h.calls.length;await h.api.openCamera();assert.equal(h.calls.length,before);assert.match(h.get('message').textContent,/먼저 확인/);
- h.get('pending').children[0].children[2].onclick();const first=h.api.photoState().pending[0];
- await h.api.openCamera();await h.api.capture();await h.get('pending').children[1].children[3].onclick();
+ await h.get('confirmNext').onclick();const first=h.api.photoState().pending[0];
+ await h.api.capture();await h.get('pending').children[1].children[2].onclick();
  assert.equal(h.api.photoState().pending.length,1);assert.equal(h.api.photoState().pending[0],first);
  assert.equal(first.confirmed,true);assert.ok(h.api.photoState().stream);h.api.stopCamera();
 });
 
-test('one confirmed photo can still be sent, and a failed compression does not leave the camera running',async()=>{
- const h=captureHarness();await h.api.openCamera();await h.api.capture();h.get('pending').children[0].children[2].onclick();
- h.get('publicConsent').checked=true;await h.api.upload();assert.equal(h.calls.filter(name=>name==='uploadPublicPhoto').length,1);
+test('one photo can be confirmed and sent in a single action, and compression failure stops the camera',async()=>{
+ const h=captureHarness();await h.api.openCamera();await h.api.capture();
+ h.get('publicConsent').checked=true;await h.get('upload').onclick();assert.equal(h.calls.filter(name=>name==='uploadPublicPhoto').length,1);
  const failed=captureHarness(),original=failed.sandbox.document.createElement;
  failed.sandbox.document.createElement=name=>{const el=original(name);if(name==='canvas')el.toBlob=fn=>fn(null);return el;};
  await failed.api.openCamera();await failed.api.capture();assert.equal(failed.stops(),1);assert.equal(failed.api.photoState().stream,null);
  assert.equal(failed.api.photoState().pending.length,0);assert.match(failed.get('message').textContent,/사진 변환에 실패/);
+});
+
+test('combined send still requires explicit public consent and does not approve or send without it',async()=>{
+ const h=captureHarness();await h.api.openCamera();await h.api.capture();await h.get('upload').onclick();
+ assert.equal(h.api.photoState().pending[0].confirmed,false);assert.equal(h.calls.filter(name=>name==='uploadPublicPhoto').length,0);
+ assert.match(h.get('message').textContent,/공개 등록 안내/);
+});
+
+test('denying the next camera preserves the first approved photo and allows retry or single-photo send',async()=>{
+ const h=captureHarness();await h.api.openCamera();await h.api.capture();const first=h.api.photoState().pending[0];
+ h.sandbox.navigator.mediaDevices.getUserMedia=async()=>{throw Error('camera denied');};await h.get('confirmNext').onclick();
+ assert.equal(h.api.photoState().pending[0],first);assert.equal(first.confirmed,true);assert.equal(h.api.photoState().stream,null);
+ assert.equal(h.get('startCamera').hidden,false);assert.equal(h.get('startCamera').disabled,false);assert.equal(h.get('saveControls').hidden,false);
+ h.get('publicConsent').checked=true;await h.get('upload').onclick();assert.equal(h.calls.filter(name=>name==='uploadPublicPhoto').length,1);
+});
+
+test('double-clicking combined actions cannot open duplicate cameras or upload a photo twice',async()=>{
+ const h=captureHarness();await h.api.openCamera();await h.api.capture();let openCount=0,release;
+ h.sandbox.navigator.mediaDevices.getUserMedia=()=>{openCount++;return new Promise(resolve=>{release=()=>resolve({getTracks:()=>[{stop(){}}]});});};
+ const next=h.get('confirmNext').onclick();await new Promise(setImmediate);await h.get('confirmNext').onclick();assert.equal(openCount,1);release();await next;
+ await h.api.capture();h.get('publicConsent').checked=true;
+ await Promise.all([h.get('upload').onclick(),h.get('upload').onclick()]);assert.equal(h.calls.filter(name=>name==='uploadPublicPhoto').length,2);
 });
