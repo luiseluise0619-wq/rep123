@@ -86,10 +86,10 @@ async function refresh(){const token=++epoch,data=await rpc('getPublicStatus',ad
 async function encode(blob){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(',')[1]);reader.onerror=()=>reject(Error('사진을 읽지 못했습니다.'));reader.readAsDataURL(blob);});}
 async function upload(){await withBusy(async()=>{
   if(!$('publicConsent').checked)throw Error('공개 등록 안내에 체크해 주세요.');stopCamera();let saved=0;
-  try{while(pending.length){const photo=pending[0];$('saveProgress').textContent=(saved+1)+'번째 사진 저장 중… 최대 90초 안에 상태를 안내합니다.';say('사진을 저장하는 중…');
+  try{while(pending.length){const photo=pending[0];$('saveProgress').textContent=(saved+1)+'번째 사진 처리 중…';say('기존 저장 여부를 먼저 확인하는 중…');
     // Resolve a previous ambiguous reply before replaying any mutation.
     const receipt=await rpc('getPublicUploadReceipt',deviceKey,address,photo.hash);
-    if(!receipt.saved)await rpc('uploadPublicPhoto',deviceKey,address,{base64:await encode(photo.blob),visitDate:photo.visitDate,confirmReadable:true,publicShare:true,captureTicket:photo.ticket,capturedAt:photo.capturedAt});
+    if(!receipt.saved){say('사진을 저장하는 중… 응답이 늦어지면 저장 상태를 다시 확인합니다.');await rpc('uploadPublicPhoto',deviceKey,address,{base64:await encode(photo.blob),visitDate:photo.visitDate,confirmReadable:true,publicShare:true,captureTicket:photo.ticket,capturedAt:photo.capturedAt});}
     pending.shift();URL.revokeObjectURL(photo.url);saved++;renderPending();
   }await refresh();say(saved+'장을 등록했습니다.');
   }catch(error){try{await refresh();}catch(ignored){}throw error;}finally{$('saveProgress').textContent='';}

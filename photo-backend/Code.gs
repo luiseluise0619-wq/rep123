@@ -294,12 +294,13 @@ function sourceData_() {
 }
 function api_(path, method, body) {
   requireConfig_();
-  PHOTO_STAGE_=String(method||'get').toUpperCase()+' '+path.split('?')[0].replace(/\/[A-Za-z0-9_-]{15,}/g,'/:id');
+  PHOTO_STAGE_=String(method||'get').toUpperCase()+' '+path.split('?')[0].replace(/\/(folders|files|resources)\/[^/]+/g,'/$1/:id');
   var options = {method: method || 'get', headers: {Authorization: 'Bearer ' + secret_('MYBOX_TOKEN')},
     followRedirects: false, muteHttpExceptions: true};
   if (body) { options.contentType = 'application/json'; options.payload = JSON.stringify(body); }
   var response = fetch_('https://open-api.mybox.naver.com/v1' + path, options);
   var status = response.getResponseCode();
+  if(status<200||status>=300)console.warn(JSON.stringify({event:'mybox_http_error',http:status,stage:PHOTO_STAGE_}));
   if (status === 401 || status === 403) fail_('MYBOX_AUTH', 'MYBOX 인증키가 만료되었거나 접근이 제한됐습니다. 관리자에게 알려주세요.');
   if (status === 429) fail_('RATE_LIMIT', 'MYBOX 사용 한도에 도달했습니다. 잠시 후 다시 시도하세요.');
   if (status === 507) fail_('STORAGE', 'MYBOX 저장 공간이 부족합니다.');
