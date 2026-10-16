@@ -5,225 +5,42 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5.0"/>
 <title>현장 방문 지도</title>
 
-<!-- 폰트(Pretendard) — 로드 실패해도 시스템 폰트로 자연 대체 -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css"/>
-
 <!-- 지도 라이브러리 (로컬 동봉 · API 키 불필요) -->
 <link rel="stylesheet" href="./lib/leaflet.css"/>
 <link rel="stylesheet" href="./lib/MarkerCluster.css"/>
 <script src="./lib/leaflet.js"></script>
 <script src="./lib/leaflet.markercluster.js"></script>
 
-<style>
-  :root{
-    --bg:#EFEBE3; --surface:#F7F4EC; --surface2:#FBF9F3;
-    --ink:#1B1A17; --mut:#6B6459; --line:#E4DDD0;
-    --teal:#0E6E63; --teal-d:#0A544B; --teal-soft:rgba(14,110,99,.12);
-    --amber:#C77D2E; --amber-soft:rgba(199,125,46,.14);
-    --red:#D5573B;
-  }
-  *{ -webkit-tap-highlight-color:transparent; box-sizing:border-box; }
-  html,body{ margin:0; height:100%; overscroll-behavior:none;
-    font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Malgun Gothic','Apple SD Gothic Neo',sans-serif;
-    color:var(--ink); background:var(--bg); -webkit-font-smoothing:antialiased; letter-spacing:-.01em; }
-  #map{ position:absolute; inset:0; background:var(--bg); }
-  .leaflet-container{ font-family:inherit; background:var(--bg); }
-  /* 첫 로딩(데이터 다운로드 중) 표시 */
-  #loading{ position:absolute; inset:0; z-index:900; background:var(--bg);
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px;
-    color:var(--mut); font-size:14px; font-weight:600; }
-  #loading .ld-spin{ width:38px; height:38px; border:4px solid var(--line);
-    border-top-color:var(--teal); border-radius:50%; animation:spin .8s linear infinite; }
-
-  /* ── 상단 헤더 (지도 위에 크림 그라데이션) ── */
-  .header{ position:absolute; top:0; left:0; right:0; z-index:600; pointer-events:none;
-    padding:calc(env(safe-area-inset-top) + 10px) 14px 20px;
-    background:linear-gradient(var(--bg) 30%, rgba(239,235,227,.86) 66%, rgba(239,235,227,0)); }
-  .brand{ max-width:560px; margin:0 auto; display:flex; align-items:center; gap:11px; }
-  .logo{ width:38px; height:38px; border-radius:12px; background:var(--teal); flex:none;
-    display:flex; align-items:center; justify-content:center; box-shadow:0 5px 16px rgba(14,110,99,.32); }
-  .logo .d{ width:10px; height:10px; border-radius:50%; background:var(--surface);
-    box-shadow:0 0 0 4px rgba(247,244,236,.28); }
-  .titles{ min-width:0; }
-  .t1{ font-size:17px; font-weight:700; line-height:1.15; letter-spacing:-.03em; }
-  .t2{ font-size:12px; color:var(--mut); margin-top:3px; display:flex; align-items:center; flex-wrap:wrap; gap:3px 8px; }
-  .t2 b{ color:var(--ink); font-weight:600; font-variant-numeric:tabular-nums; }
-  .lg{ display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:3px; vertical-align:middle; }
-  .lg.teal{ background:#E5007E; } .lg.amber{ background:#FF6A00; }
-  .hbtns{ display:flex; gap:7px; margin-top:8px; flex-wrap:wrap; }
-  .hbtn{ pointer-events:auto; display:inline-flex; align-items:center; gap:5px;
-    background:var(--surface); color:var(--teal-d); border:1px solid var(--line);
-    border-radius:999px; padding:5px 11px; font-size:12px; font-weight:600; text-decoration:none;
-    box-shadow:0 2px 8px rgba(27,26,23,.08); }
-  .hbtn:active{ transform:scale(.96); }
-  .hbtn b{ font-variant-numeric:tabular-nums; }
-  .hbtn.warn{ color:var(--amber); }
-
-  /* ── GPS(내 위치) 버튼 — 상단 우측(하단 패널에 안 가림 → 항상 클릭됨) ── */
-  .gps-btn{ position:absolute; right:16px; top:calc(env(safe-area-inset-top) + 64px); z-index:660;
-    width:52px; height:52px; border:none; border-radius:16px; background:var(--surface);
-    box-shadow:0 6px 18px rgba(27,26,23,.22); cursor:pointer; color:var(--teal);
-    display:flex; align-items:center; justify-content:center; transition:transform .12s; }
-  .gps-btn:active{ transform:scale(.93); }
-  .gps-btn svg{ width:26px; height:26px; display:block; }
-  .gps-btn .spin{ display:none; width:22px; height:22px; border:3px solid var(--teal-soft);
-    border-top-color:var(--teal); border-radius:50%; animation:spin .7s linear infinite; }
-  .gps-btn.loading svg{ display:none; } .gps-btn.loading .spin{ display:block; }
-  @keyframes spin{ to{ transform:rotate(360deg); } }
-
-  /* ── 하단 시트(드릴다운) · 손잡이 드래그로 크기 조절 ── */
-  #panel{ position:absolute; left:0; right:0; bottom:0; z-index:640;
-    background:var(--surface); border-radius:20px 20px 0 0;
-    box-shadow:0 -6px 26px rgba(27,26,23,.18);
-    height:46vh; min-height:52px; max-height:90vh;
-    display:flex; flex-direction:column; padding-bottom:env(safe-area-inset-bottom);
-    transition:height .26s cubic-bezier(.4,0,.2,1); }
-  #panel.dragging{ transition:none; }               /* 드래그 중엔 부드럽게 따라오도록 */
-  .panel-handle{ position:relative; height:52px; flex:none; display:flex; align-items:center;
-    justify-content:center; gap:8px; cursor:grab; font-weight:600; font-size:14px; color:var(--teal);
-    touch-action:none; user-select:none; -webkit-user-select:none; }
-  .panel-handle:active{ cursor:grabbing; }
-  .panel-handle .bar{ position:absolute; top:9px; left:50%; transform:translateX(-50%);
-    width:44px; height:5px; border-radius:3px; background:var(--line); }
-  #crumb{ flex:none; padding:8px 16px; font-size:13px; color:var(--mut);
-    background:var(--surface2); border-top:1px solid var(--line); border-bottom:1px solid var(--line);
-    white-space:nowrap; overflow-x:auto; }
-  #crumb b{ color:var(--teal); cursor:pointer; font-weight:600; }
-  #crumb .sep{ color:var(--line); margin:0 6px; }
-  #panelTools{ flex:none; display:flex; gap:8px; padding:10px 16px; border-bottom:1px solid var(--line);
-    background:var(--surface); flex-wrap:wrap; }
-  .ptool{ display:inline-flex; align-items:center; gap:5px; flex:1; justify-content:center; min-width:130px;
-    background:var(--card2, #FBF9F3); color:var(--teal-d); border:1px solid var(--line);
-    border-radius:12px; padding:9px 12px; font-size:13px; font-weight:600; text-decoration:none; }
-  .ptool:active{ transform:scale(.97); }
-  .ptool b{ font-variant-numeric:tabular-nums; }
-  .ptool.warn{ color:var(--amber); }
-  #list{ overflow-y:auto; -webkit-overflow-scrolling:touch; padding:6px 0 16px; }
-  .row{ display:flex; align-items:center; gap:10px; padding:13px 16px; cursor:pointer;
-    border-bottom:1px solid var(--line); font-size:15px; }
-  .row:active{ background:var(--teal-soft); }
-  .row .name{ flex:1; font-weight:500; }
-  .row .badge{ font-size:12px; color:var(--teal-d); background:var(--teal-soft);
-    border-radius:999px; padding:2px 9px; font-weight:600; font-variant-numeric:tabular-nums; }
-  .row .chev{ color:#C3B9A6; font-size:17px; }
-  .addr-row{ flex-direction:column; align-items:stretch; gap:4px; }
-  .addr-row .a{ font-size:14px; color:var(--ink); word-break:keep-all; line-height:1.45; }
-  .addr-row .sub{ font-size:12px; color:var(--mut); display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
-  .tag-check{ display:inline-block; background:var(--amber-soft); color:var(--amber);
-    border-radius:999px; padding:1px 8px; font-size:11px; font-weight:700; }
-  .tag-biz{ color:var(--red); font-weight:600; }
-  .back{ padding:12px 16px; color:var(--teal); font-weight:600; cursor:pointer;
-    border-bottom:1px solid var(--line); font-size:14px; }
-  .back:active{ background:var(--teal-soft); }
-  .row:focus-visible, .back:focus-visible, .ptool:focus-visible, .hbtn:focus-visible, .gps-btn:focus-visible{
-    outline:3px solid #E5007E; outline-offset:-3px; }
-
-  /* ── 태블릿에서만: 하단 시트를 '왼쪽 플로팅 카드'로 ──
-     조건 = 넓은 화면(≥820px) + 터치기기(pointer:coarse).
-     → 이렇게 하면 PC(마우스)와 휴대폰(좁은 화면)은 전혀 안 바뀌고, 태블릿만 적용된다. */
-  @media (min-width: 820px) and (pointer: coarse){
-    #panel{ left:18px; right:auto; bottom:18px; width:400px;
-      border-radius:20px; max-height:calc(100% - 36px);
-      box-shadow:0 12px 44px rgba(27,26,23,.24); }
-    .panel-handle{ border-radius:20px 20px 0 0; }
-    .header{ padding-left:18px; }
-    .brand{ margin-left:0; }                 /* 헤더 제목도 왼쪽 정렬 */
-    #list{ padding-bottom:10px; }
-  }
-
-  /* ── 마커 점 — 지도 위에서 확 튀는 고대비 색 + 퍼지는 효과 ── */
-  .addr-dot{ width:17px; height:17px; border-radius:50%; background:#E5007E;   /* 정밀 = 자홍(마젠타) */
-    border:3px solid #fff; box-shadow:0 2px 8px rgba(0,0,0,.5); }
-  .addr-dot.approx{ background:#FF6A00; border-color:#fff;                       /* 확인필요 = 선명 주황 */
-    animation:spread 1.7s ease-out infinite; }
-  @keyframes spread{
-    0%  { box-shadow:0 2px 8px rgba(0,0,0,.5), 0 0 0 0   rgba(255,106,0,.65); }
-    70% { box-shadow:0 2px 8px rgba(0,0,0,.5), 0 0 0 14px rgba(255,106,0,0); }
-    100%{ box-shadow:0 2px 8px rgba(0,0,0,.5), 0 0 0 0   rgba(255,106,0,0); } }
-  /* 선택(클릭)한 지점 — 크게 퍼지는 물결 링 */
-  .sel-dot{ position:relative; width:22px; height:22px; border-radius:50%; background:#E5322B;
-    border:3px solid #fff; box-shadow:0 3px 11px rgba(0,0,0,.5); }
-  .sel-dot::after{ content:''; position:absolute; left:50%; top:50%; width:22px; height:22px;
-    margin:-11px 0 0 -11px; border-radius:50%; border:3px solid #E5322B;
-    animation:ripple 1.3s ease-out infinite; }
-  @keyframes ripple{ 0%{transform:scale(1);opacity:.75} 100%{transform:scale(4.2);opacity:0} }
-  .my-dot{ width:20px; height:20px; border-radius:50%; background:var(--red);
-    border:3px solid #fff; animation:spreadRed 1.5s ease-out infinite; }
-  @keyframes spreadRed{
-    0%  { box-shadow:0 0 0 0   rgba(213,87,59,.6); }
-    70% { box-shadow:0 0 0 18px rgba(213,87,59,0); }
-    100%{ box-shadow:0 0 0 0   rgba(213,87,59,0); } }
-  /* 화면목록 헤더 */
-  .vis-head{ padding:9px 16px; font-size:12px; font-weight:700; color:var(--teal-d);
-    background:var(--teal-soft); }
-
-  /* ── 클러스터 (참고 디자인 톤) ── */
-  .kc{ background:rgba(229,0,126,.20); border-radius:50%;
-    display:flex; align-items:center; justify-content:center; }
-  .kc .kc-inner{ width:100%; height:100%; border-radius:50%; background:#E5007E; color:#fff;
-    display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12px;
-    letter-spacing:-.02em; box-shadow:0 3px 12px rgba(229,0,126,.45); }
-
-  /* ── 팝업 ── */
-  .leaflet-popup-content-wrapper{ border-radius:16px; box-shadow:0 14px 36px rgba(27,26,23,.24); }
-  .leaflet-popup-content{ margin:13px 15px; font-family:inherit; }
-  .popup-addr{ font-size:14px; font-weight:700; margin-bottom:6px; color:var(--ink); word-break:keep-all; line-height:1.45; }
-  .popup-sub{ font-size:12px; margin-bottom:4px; }
-  .popup-warn{ font-size:12px; color:var(--amber); font-weight:700; margin-bottom:6px; }
-  .pbtn{ display:block; text-align:center; margin-top:7px; padding:9px 12px; border-radius:11px;
-    text-decoration:none; font-weight:600; font-size:13px; color:#fff; }
-  .pbtn.search{ background:var(--teal); } .pbtn.nav{ background:var(--teal-d); }
-  .leaflet-bar a{ color:var(--ink); }
-  .data-dialog{ width:min(720px,calc(100% - 24px)); max-height:88vh; overflow:auto;
-    padding:22px; border:1px solid var(--line); border-radius:18px;
-    color:var(--ink); background:var(--surface); box-shadow:0 20px 70px #0004; }
-  .data-dialog::backdrop{ background:#0007; }
-  .data-dialog h2{ font-size:18px; margin:0 0 12px; }
-  .data-dialog p,.data-dialog li{ font-size:13px; line-height:1.6; }
-  .data-dialog ul{ padding-left:20px; }
-  .data-dialog button{ float:right; border:1px solid var(--line); background:var(--surface2);
-    color:var(--teal-d); border-radius:8px; padding:7px 13px; cursor:pointer; }
-  .data-scroll{ overflow-x:auto; }
-  .data-dialog table{ width:100%; border-collapse:collapse; font-size:12px; }
-  .data-dialog th,.data-dialog td{ padding:8px 5px; border-bottom:1px solid var(--line); text-align:right; white-space:nowrap; }
-  .data-dialog th:first-child,.data-dialog td:first-child{ text-align:left; }
-  .scope-note{ padding:10px 16px; font-size:12px; line-height:1.6; color:var(--mut);
-    border-bottom:1px solid var(--line); background:var(--surface2); }
-  .searchbar{display:flex;gap:8px;align-items:center;padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--line);flex:none}
-  .searchbar label{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
-  .searchbar input{width:100%;min-width:0;min-height:44px;padding:11px 12px;border:1px solid #c9c2b6;border-radius:11px;background:#fff;font:inherit;font-size:16px;color:var(--ink)}
-  .searchbar button{flex:none;min-height:44px;border:1px solid var(--line);border-radius:10px;background:var(--surface2);color:var(--teal-d);font:inherit;font-size:13px;padding:9px 12px;cursor:pointer}
-  .searchbar input:focus-visible,.searchbar button:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
-  .addr-row .photo-action{min-height:44px;justify-content:center;border-radius:10px;margin-top:6px;background:var(--teal);color:#fff;border-color:var(--teal);font-size:13px;padding:11px 16px;align-self:flex-start}
-  [hidden]{display:none!important}
-  @media(max-width:600px){.header{padding-left:56px;padding-right:72px}.brand{gap:0}.logo{display:none}.hbtns{gap:5px}.hbtn{padding:6px 9px}.t1{font-size:16px}.gps-btn{right:12px;top:16px;width:44px;height:44px}.leaflet-top.leaflet-left{top:8px}.panel-handle{font-size:13px}}
-  @media(prefers-reduced-motion:reduce){.addr-dot.approx,.sel-dot::after,.my-dot{animation:none}}
-</style>
+<link rel="stylesheet" href="./map-ui.css?v=20261016-simple-map"/>
 </head>
 <body>
 <div id="map"></div>
 <div id="loading"><div class="ld-spin"></div><div>지도를 불러오는 중…</div></div>
 
-<div class="header">
+<header class="header" id="mapHeader">
   <div class="brand">
-    <div class="logo"><span class="d"></span></div>
     <div class="titles">
-      <div class="t1">현장 방문 지도</div>
+      <h1 class="t1">현장 방문 지도</h1>
       <div class="t2">
         <span>사업자 <b id="businessCnt">-</b>개</span>
         <span>주소 <b id="totalCnt">-</b>건</span>
-        <span><span class="lg amber"></span>좌표 확인 <b id="nApprox">-</b>건</span>
         <span hidden id="nReal">-</span>
       </div>
-      <div class="hbtns">
-        <a class="hbtn" href="./duplicates.html" target="_blank" rel="noopener">같은 주소 <b>1,001</b></a>
-        <a class="hbtn warn" href="./check.html" target="_blank" rel="noopener">위치 확인 <b>100</b></a>
-        <button class="hbtn" type="button" id="dataInfoBtn">집계 기준</button>
-        <a class="hbtn" id="photoAdminLink" hidden target="_blank" rel="noopener noreferrer">사진 관리자</a>
-      </div>
     </div>
+    <details class="map-menu" id="mapMenu">
+      <summary id="menuTrigger" aria-label="지도 메뉴">더보기</summary>
+      <div class="menu-content">
+        <nav class="hbtns" aria-label="지도 보조 기능">
+          <a class="hbtn" href="./duplicates.html" target="_blank" rel="noopener">같은 주소 <b>1,001곳</b></a>
+          <a class="hbtn" href="./check.html" target="_blank" rel="noopener">위치 확인 <span><b id="nApprox">-</b>곳</span></a>
+          <button class="hbtn" type="button" id="dataInfoBtn">집계 기준</button>
+          <a class="hbtn" id="photoAdminLink" hidden target="_blank" rel="noopener noreferrer">사진 관리</a>
+        </nav>
+        <div class="map-legend"><span><i class="lg teal" aria-hidden="true"></i>주소 위치</span><span><i class="lg amber" aria-hidden="true"></i>좌표 확인 필요</span><p>지도에 표시된 숫자는 주소 수입니다.</p></div>
+      </div>
+    </details>
   </div>
-</div>
+</header>
 
 <button class="gps-btn" id="gpsBtn" title="내 위치" aria-label="내 위치">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -233,12 +50,14 @@
   <div class="spin"></div>
 </button>
 
-<div id="panel">
-  <div class="panel-handle" id="panelHandle"><span class="bar"></span>방문할 주소 찾기</div>
+<section id="panel" aria-label="방문 주소 목록">
+  <div class="panel-handle" id="panelHandle"><span class="bar" aria-hidden="true"></span><span>주소 찾기</span><button id="panelToggle" type="button" aria-controls="panelContent" aria-expanded="true">목록 접기</button></div>
+  <div id="panelContent" class="panel-content">
   <form class="searchbar" id="addressSearchForm" role="search"><label for="mapSearch">주소 또는 동 이름</label><input id="mapSearch" type="search" maxlength="100" placeholder="주소·동 이름 검색" autocomplete="off" enterkeyhint="search"><button id="clearMapSearch" type="button" hidden>지우기</button></form>
-  <div id="crumb"></div>
+  <nav id="crumb" aria-label="선택한 지역"></nav>
   <div id="list"></div>
-</div>
+  </div>
+</section>
 
 <dialog class="data-dialog" id="dataDialog" aria-labelledby="dataDialogTitle">
   <button type="button" id="closeDataDialog" aria-label="집계 기준 닫기">닫기</button>
@@ -258,7 +77,7 @@
 <script src="./data-meta.js?v=20261015-admin"></script>
 <script src="./addresses.js?v=20261015-admin"></script>
 <script src="./address-search.js?v=20261016-ux"></script>
-<script src="./photo-config.js?v=20261016-mybox-v5-gps"></script>
+<script src="./photo-config.js?v=20261016-simple-ui"></script>
 <script>
 /* =======================================================================
    전국 주소 지도 — 동작 개요 (초보자용 설명)
@@ -266,7 +85,7 @@
    [데이터] addresses.js 가 window.ADDR_DATA 라는 큰 객체를 만들어 둡니다.
      구조: { 시도 : { 구군 : { 동 : [ 주소배열, 주소배열, ... ] } } }
      주소배열 한 개 = [ 위도, 경도, "주소글자", 사업장수, 정밀여부 ]
-        · 정밀여부 1 = 정확한 좌표(지도에 마젠타 점)
+        · 정밀여부 1 = 기존 정밀 좌표(지도에 파란 점)
         · 정밀여부 0 = 대략 위치(주황 점 · '확인필요')
      예) ADDR_DATA["서울특별시"]["강남구"]["역삼동"][0]
          = [37.49, 127.03, "서울특별시 강남구 …", 1, 1]
@@ -344,8 +163,9 @@ function getMarker(rec){
 }
 
 function initMap(){
+  setPanel(defaultH());
   map = L.map('map', { zoomControl:true, preferCanvas:true }).setView([36.4,127.9], 7);
-  L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+  L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&hl=ko&x={x}&y={y}&z={z}', {
     subdomains:['0','1','2','3'], maxZoom:20, attribution:'&copy; Google Maps'
   }).addTo(map);
 
@@ -392,6 +212,7 @@ function initMap(){
 var _curKey = null;
 function showMarkers(filter, key){
   if(key != null && key === _curKey) return;
+  if(selMarker){var previous=selMarker;selMarker=null;map.removeLayer(previous);}
   _curKey = key;
   var token = ++_showToken;
   cluster.clearLayers();
@@ -422,17 +243,17 @@ function openPopup(marker, rec){
     admin +
     (rec[6] && !rec[5] ? '<div class="popup-warn">행정동 미확정 · 시군구 합계에는 포함</div>' : '') +
     (!rec[6] ? '<div class="popup-sub">원주소 분류 · 한글 행정동 대조 대상 외</div>' : '') +
-    (approx ? '<div class="popup-warn">⚠ 대략 위치 · 확인필요</div>' : '') +
+    (approx ? '<div class="popup-warn">근사 좌표 · 위치 확인 필요</div>' : '') +
     '<div class="popup-sub tag-biz">이 주소 사업자수 ' + cnt + '개</div>' +
     photoLinkHtml(rec[2])+
-    '<a class="pbtn search" href="' + search + '" target="_blank" rel="noopener">구글 지도</a>' +
-    '<a class="pbtn nav" href="' + nav + '" target="_blank" rel="noopener">길찾기</a>';
+    '<div class="popup-links"><a class="pbtn" href="' + search + '" target="_blank" rel="noopener">구글 지도</a>' +
+    '<a class="pbtn" href="' + nav + '" target="_blank" rel="noopener">길찾기</a></div>';
   // 팝업이 항상 '보이는 영역'(헤더 아래·패널 위)에 뜨도록 자동 이동 여백 지정
-  var ph = Math.max(60, panel.getBoundingClientRect().height);
+  var inset=mapInsets();
   suppressAutoUntil = Date.now() + 900;   // 이 자동 이동은 화면목록 갱신 대상 아님
   marker.bindPopup(html, {maxWidth:264, autoPan:true,
-    autoPanPaddingTopLeft: L.point(24, 96),
-    autoPanPaddingBottomRight: L.point(24, ph + 24)}).openPopup();
+    autoPanPaddingTopLeft: inset.topLeft,
+    autoPanPaddingBottomRight: inset.bottomRight}).openPopup();
 }
 
 // Public endpoint only; credentials are never included in the map or its links.
@@ -454,20 +275,28 @@ function fitToRecords(records){
   if(!pts.length) return;
   suppressAutoUntil = Date.now() + 900;   // 드릴다운이 지도 옮기는 건 '화면 목록' 자동표시 대상 아님
   if(pts.length===1){ map.setView(pts[0], 16); }
-  else { map.fitBounds(L.latLngBounds(pts), {padding:[40,40]}); }
+  else { var inset=mapInsets();map.fitBounds(L.latLngBounds(pts), {paddingTopLeft:inset.topLeft,paddingBottomRight:inset.bottomRight}); }
+}
+
+// 지도 위 목록과 헤더를 피해서 주소·팝업이 보이도록 한다.
+function mapInsets(){
+  var wide=window.innerWidth>=900,collapsed=panel.classList.contains('is-collapsed');
+  var height=collapsed?56:panelPx();
+  return {topLeft:L.point(wide?panel.getBoundingClientRect().right+16:16,wide?16:document.getElementById('mapHeader').getBoundingClientRect().bottom+12),
+    bottomRight:L.point(wide?76:16,wide?16:height+16)};
 }
 
 // ── 드릴다운(단계별 좁히기): 시도 → 구 → 동 → 주소 ──
 //   각 render* 함수가 목록을 다시 그리고, 지도도 해당 범위 점만 보여준다.
 //   setCrumb=경로표시줄, navRow=목록 한 줄, addBack=뒤로 버튼.
 function setCrumb(){
-  var h='<b onclick="renderSido()">전체</b>';
-  if(sel.sido) h+='<span class="sep">›</span><b onclick="renderGugun()">'+esc(sel.sido)+'</b>';
-  if(sel.gugun) h+='<span class="sep">›</span><b onclick="renderDong()">'+esc(sel.gugun)+'</b>';
-  if(sel.dong) h+='<span class="sep">›</span><b>'+esc(sel.dong)+'</b>';
-  crumbEl.innerHTML=h;
+  var steps=[{label:'전체',action:'renderSido()'}];
+  if(sel.sido)steps.push({label:sel.sido,action:'renderGugun()'});
+  if(sel.gugun)steps.push({label:sel.gugun,action:'renderDong()'});
+  if(sel.dong)steps.push({label:sel.dong,action:'renderAddr()'});
+  crumbEl.innerHTML=steps.map(function(step,index){return (index?'<span class="sep" aria-hidden="true">›</span>':'')+'<button type="button" onclick="'+step.action+'"'+(index===steps.length-1?' aria-current="location"':'')+'>'+esc(step.label)+'</button>';}).join('');
 }
-function clearList(){ listEl.innerHTML=''; }
+function clearList(){listEl.innerHTML='';listEl.scrollTop=0;}
 function addBack(fn){ var b=document.createElement('div'); b.className='back'; b.tabIndex=0; b.setAttribute('role','button'); b.textContent='‹ 뒤로'; b.onclick=fn; listEl.appendChild(b); }
 function navRow(label, count, onClick){
   var r=document.createElement('div'); r.className='row'; r.tabIndex=0; r.setAttribute('role','button');
@@ -542,20 +371,20 @@ function renderAddr(){
 
 // 주소 한 줄(확인필요·사업장수 태그 + 클릭 시 그 지점으로 이동 + 빨간 물결 마커)
 function appendAddrRow(p){
-  var r=document.createElement('div'); r.className='row addr-row'; r.tabIndex=0; r.setAttribute('role','button');
+  var r=document.createElement('article'); r.className='row addr-row';
+  var select=document.createElement('button');select.type='button';select.className='addr-select';select.textContent=p[2];select.setAttribute('aria-label',p[2]+' 지도에서 보기');
   var sub=[];
   if(!p[4]) sub.push('<span class="tag-check">좌표 확인필요</span>');
   if(p[6] && !p[5]) sub.push('<span class="tag-check">행정동 미확정</span>');
   sub.push('<span class="tag-biz">사업자수 '+(p[3]||1)+'개</span>');
-  r.innerHTML='<div class="a">'+esc(p[2])+'</div>'+(sub.length?'<div class="sub">'+sub.join('')+'</div>':'');
-  r.onclick=function(){
+  var info=document.createElement('div');info.className='sub';info.innerHTML=sub.join('');r.append(select,info);
+  select.onclick=function(){
     if(!hasCoordinates(p)){ alert('이 주소는 좌표가 없습니다. 원주소와 사업자수는 집계에 포함되어 있습니다.'); return; }
-    suppressAutoUntil = Date.now() + 900; map.setView([p[0],p[1]], 18);
+    collapsePanel();suppressAutoUntil = Date.now() + 900; map.setView([p[0],p[1]], 18);
     showSelected(p);
-    collapsePanel();
   };
   var photo=document.createElement('a'), photoHref=photoUrl(p[2]);
-  photo.className='hbtn photo-action';
+  photo.className='photo-action';
   photo.textContent=photoHref?'사진 등록·보기':'사진 등록 준비 중';
   if(photoHref){
     photo.href=photoHref; photo.target='_blank'; photo.rel='noopener noreferrer';
@@ -586,7 +415,7 @@ function renderVisible(){
     var q=ALL[i].p;
     if(q[0]!=null && b.contains([q[0],q[1]])) pts.push(q);
   }
-  crumbEl.innerHTML='<b onclick="exitVisible()">전체</b><span class="sep">›</span><b>🔍 화면에 보이는 주소</b>';
+  crumbEl.innerHTML='<button type="button" onclick="exitVisible()">전체</button><span class="sep" aria-hidden="true">›</span><span aria-current="location">화면에 보이는 주소</span>';
   clearList();
   var back=document.createElement('div'); back.className='back'; back.tabIndex=0; back.setAttribute('role','button');
   back.textContent='‹ 지역 선택으로'; back.onclick=exitVisible; listEl.appendChild(back);
@@ -611,18 +440,28 @@ function initDataInfo(){
   var dialog=document.getElementById('dataDialog');
   document.getElementById('dataInfoBtn').onclick=function(){dialog.showModal();};
   document.getElementById('closeDataDialog').onclick=function(){dialog.close();};
+  dialog.addEventListener('close',function(){document.getElementById('menuTrigger').focus();});
 }
 
 // ── 패널: 손잡이 드래그로 크기 조절 + 톡 누르면 접기/펴기 ──
 function panelPx(){ return panel.getBoundingClientRect().height; }
-function setPanel(px){ panel.style.height = Math.round(px) + 'px'; }
-function defaultH(){ return Math.round(window.innerHeight * 0.46); }
-function expandPanel(){ if(panelPx() < 120) setPanel(defaultH()); }   // 접혀 있으면 중간 크기로
-function collapsePanel(){ setPanel(52); }                            // 손잡이만 남김
+function panelMax(){return Math.max(56,window.innerHeight-(window.innerWidth>=900?128:100));}
+function setPanel(px){
+  px=Math.min(panelMax(),Math.max(56,Math.round(px)));var collapsed=px<=64;
+  panel.style.height=px+'px';panel.classList.toggle('is-collapsed',collapsed);
+  document.getElementById('map').style.setProperty('--map-footer-bottom',window.innerWidth>=900?'4px':(px+4)+'px');
+  document.getElementById('panelContent').hidden=collapsed;
+  var toggle=document.getElementById('panelToggle');toggle.textContent=collapsed?'목록 열기':'목록 접기';toggle.setAttribute('aria-expanded',String(!collapsed));
+}
+function defaultH(){return window.innerWidth>=900?panelMax():Math.min(panelMax(),Math.round(window.innerHeight*.48));}
+function expandPanel(){if(panel.classList.contains('is-collapsed')||panelPx()<120)setPanel(defaultH());}
+function collapsePanel(){setPanel(56);}
+document.getElementById('panelToggle').onclick=function(e){e.stopPropagation();if(panel.classList.contains('is-collapsed'))setPanel(defaultH());else collapsePanel();};
 (function(){
   var handle=document.getElementById('panelHandle');
   var startY=0, startH=0, dragging=false, moved=false;
   function down(e){
+    if(window.innerWidth>=900||(e.target&&e.target.closest&&e.target.closest('button')))return;
     dragging=true; moved=false;
     startY=(e.touches?e.touches[0].clientY:e.clientY); startH=panelPx();
     panel.classList.add('dragging');
@@ -633,14 +472,14 @@ function collapsePanel(){ setPanel(52); }                            // 손잡�
     var y=(e.touches?e.touches[0].clientY:e.clientY);
     var dy=startY-y;
     if(Math.abs(dy)>5) moved=true;
-    var h=Math.min(window.innerHeight*0.90, Math.max(52, startH+dy));
+    var h=Math.min(panelMax(), Math.max(56, startH+dy));
     setPanel(h);
     if(e.cancelable) e.preventDefault();
   }
   function up(){
     if(!dragging) return;
     dragging=false; panel.classList.remove('dragging');
-    if(!moved){ setPanel(panelPx()>120 ? 52 : defaultH()); }   // 안 끌고 톡 누르면 토글
+    if(!moved){setPanel(panelPx()>120?56:defaultH());}
   }
   handle.addEventListener('pointerdown', down);
   window.addEventListener('pointermove', move, {passive:false});
@@ -653,6 +492,19 @@ function collapsePanel(){ setPanel(52); }                            // 손잡�
   window.addEventListener('pointercancel', up);
   window.addEventListener('touchcancel', up);
 })();
+
+var mapMenu=document.getElementById('mapMenu');
+window.addEventListener('pointerdown',function(e){if(mapMenu.open&&!mapMenu.contains(e.target))mapMenu.open=false;});
+window.addEventListener('keydown',function(e){if(e.key==='Escape'&&mapMenu.open){mapMenu.open=false;document.getElementById('menuTrigger').focus();}});
+mapMenu.addEventListener('click',function(e){if(e.target.closest('a,button'))mapMenu.open=false;});
+var wideLayout=window.innerWidth>=900,layoutTimer=null;
+window.addEventListener('resize',function(){
+  clearTimeout(layoutTimer);layoutTimer=setTimeout(function(){
+    var nextWide=window.innerWidth>=900;
+    if(nextWide!==wideLayout){wideLayout=nextWide;setPanel(panel.classList.contains('is-collapsed')?56:defaultH());}
+    else document.getElementById('map').style.setProperty('--map-footer-bottom',nextWide?'4px':(Math.min(parseFloat(panel.style.height)||panelPx(),panelMax())+4)+'px');
+  },100);
+});
 document.getElementById('gpsBtn').addEventListener('click', function(){
   if(!navigator.geolocation){ alert('위치 기능을 지원하지 않습니다.'); return; }
   var btn=this;
