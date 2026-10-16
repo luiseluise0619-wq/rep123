@@ -2,7 +2,8 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const root = path.resolve(__dirname, '..');
-const gs = ['Code.gs','Access.gs','Catalog.gs','Public.gs','Capture.gs','Diagnostics.gs'].map(name=>fs.readFileSync(path.join(root,'photo-backend',name),'utf8')).join('\n');
+const distance = fs.readFileSync(path.join(root,'web/lib/visit-distance.js'),'utf8');
+const gs = distance+'\n'+['Code.gs','Access.gs','Catalog.gs','Public.gs','Capture.gs','Diagnostics.gs'].map(name=>fs.readFileSync(path.join(root,'photo-backend',name),'utf8')).join('\n');
 const html = fs.readFileSync(path.join(root, 'photo-backend/Photo.html'), 'utf8');
 const admin = fs.readFileSync(path.join(root, 'photo-backend/Admin.html'), 'utf8');
 const out = path.resolve(process.argv[2] || path.join(root, '../work/mybox-photo-bundle.gs'));

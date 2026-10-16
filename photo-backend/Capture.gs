@@ -24,7 +24,8 @@ function verifyCapture_(ticket,actor,address,capturedAt){
      capturedAt>now+30000||now-capturedAt>600000)fail_('CAPTURE','촬영 정보가 만료되었거나 주소가 바뀌었습니다. 위치 확인 후 다시 촬영하세요.');
   return {source:'device-reported-live-camera',latitude:value.latitude,longitude:value.longitude,accuracy:value.accuracy,
     positionAt:new Date(value.positionAt).toISOString(),capturedAt:new Date(capturedAt).toISOString(),
-    receivedAt:new Date(now).toISOString(),destination:value.destination,proofOfVisit:false};
+    receivedAt:new Date(now).toISOString(),destination:value.destination,
+    distanceMeters:PHOTO_DISTANCE_.metres(value,value.destination),distanceMethod:'haversine-map-coordinate',proofOfVisit:false};
 }
 function evidenceShard_(key){
   var value=indexRead_('evidence-'+key+'.json',{v:1,rows:{}});

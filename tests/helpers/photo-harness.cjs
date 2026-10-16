@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const crypto = require('node:crypto');
-const source = ['Code.gs','Access.gs','Catalog.gs','Public.gs','Capture.gs','Diagnostics.gs'].map(name=>fs.readFileSync(path.join(__dirname,'../../photo-backend',name),'utf8')).join('\n');
+const source = fs.readFileSync(path.join(__dirname,'../../web/lib/visit-distance.js'),'utf8')+'\n'+['Code.gs','Access.gs','Catalog.gs','Public.gs','Capture.gs','Diagnostics.gs'].map(name=>fs.readFileSync(path.join(__dirname,'../../photo-backend',name),'utf8')).join('\n');
 const html = fs.readFileSync(path.join(__dirname, '../../photo-backend/Photo.html'), 'utf8');
 const ADDRESS = '서울특별시 영등포구 당산동 1가 1';
 const PASSWORD = 'test-only-not-a-real-password';

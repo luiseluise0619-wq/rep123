@@ -51,3 +51,12 @@ test('real-storage diagnostic is admin-only and never enters visit counts',()=>{
  assert.equal(h.trash.length,1);assert.ok(h.trash[0].name.includes('NOT_A_FIELD_VISIT'));
  assert.equal(h.app.getAdminOverview(h.session).data.photos,0);
 });
+
+test('server stores distance from signed current coordinates to the original destination, not client accuracy',()=>{
+ const sourceText='window.ADDR_DATA = '+JSON.stringify({서울:{영등포구:{당산동:[[37.5665,126.978,ADDRESS,2,1,'code','서울']]}}})+';';
+ const h=harness({sourceText,requireCapture:true}),gps={latitude:34.8118,longitude:126.3922,accuracy:24,timestamp:Date.now()};
+ const permit=h.app.beginPublicCapture(KEY,ADDRESS,gps);assert.equal(permit.ok,true);
+ const uploaded=h.app.uploadPublicPhoto(KEY,ADDRESS,{...sample(h),captureTicket:permit.data.ticket,distanceMeters:24});assert.equal(uploaded.ok,true);
+ const evidence=h.app.getPhoto(h.session,ADDRESS,1).data.photo.evidence;assert.ok(evidence.distanceMeters>300000&&evidence.distanceMeters<320000);assert.equal(evidence.accuracy,24);assert.equal(evidence.destination.latitude,37.5665);
+ assert.ok(!JSON.stringify(uploaded).includes('distanceMeters'));assert.ok(!JSON.stringify(h.app.getPublicStatus(ADDRESS,KEY)).includes('distanceMeters'));
+});
