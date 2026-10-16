@@ -3,7 +3,7 @@ const source=fs.readFileSync(require('node:path').join(__dirname,'../web/field-p
 const html=fs.readFileSync(require('node:path').join(__dirname,'../web/photo.html'),'utf8');
 function harness(){const elements=new Map(),events={},stored=new Map(),timers=new Map();let seq=0,frames=0;
  const context={measureText:value=>({width:String(value).length*8}),drawImage(){},fillRect(){},fillText(){}};
- const element=()=>({textContent:'',hidden:false,disabled:false,checked:false,value:'',style:{},children:[],classList:{toggle(){}},append(...x){this.children.push(...x);},prepend(x){this.children.unshift(x);},replaceChildren(...x){this.children=x;},remove(){},removeAttribute(){},scrollIntoView(){this.scrolled=true;},getTracks(){return [];},play:async()=>{},getContext:()=>context,toBlob:fn=>fn(new Blob(['test-jpeg-'+(++frames)],{type:'image/jpeg'}))});
+ const element=()=>({textContent:'',hidden:false,disabled:false,checked:false,value:'',style:{},children:[],attributes:{},classList:{toggle(){}},setAttribute(k,v){this.attributes[k]=v;},showModal(){this.open=true;},close(){this.open=false;},append(...x){this.children.push(...x);},prepend(x){this.children.unshift(x);},replaceChildren(...x){this.children=x;},remove(){},removeAttribute(){},scrollIntoView(){this.scrolled=true;},getTracks(){return [];},play:async()=>{},getContext:()=>context,toBlob:fn=>fn(new Blob(['test-jpeg-'+(++frames)],{type:'image/jpeg'}))});
  const get=id=>{if(!elements.has(id))elements.set(id,element());return elements.get(id);};
  const window={PHOTO_CONFIG:{webAppUrl:'https://script.google.com/macros/s/test/exec'},addEventListener:(name,fn)=>events[name]=fn};
  const sandbox={window,document:{getElementById:get,querySelectorAll:()=>[],createElement:element,addEventListener(){}},location:{search:'?address=test'},navigator:{},
@@ -50,9 +50,12 @@ test('camera flow has no GPS UI or permission gate and the photo route blocks ge
  const policy=routes.headers.find(r=>r.source==='/photo').headers.find(h=>h.key==='Permissions-Policy').value;assert.match(policy,/geolocation=\(\)/);
 });
 
-function captureHarness(){
- const h=harness(),calls=[];let saved=0,stops=0;
- const remote={postMessage:message=>{calls.push(message.name);const data=message.name==='getPublicUploadReceipt'?{saved:false}:message.name==='uploadPublicPhoto'?(saved++,{}):message.name==='getPublicStatus'?{ready:true,totalCount:saved,photos:[],quota:{canUpload:true}}:{ticket:'test-only-ticket'};queueMicrotask(()=>h.events.message({origin:'https://safe-script.googleusercontent.com',source:remote,data:{channel:h.api.channel,type:'reply',id:message.id,result:{ok:true,data}}}));}};
+function captureHarness({failUploadAt=0}={}){
+ const h=harness(),calls=[];let saved=0,stops=0,attempts=0;
+ const remote={postMessage:message=>{calls.push(message.name);let result;
+  if(message.name==='uploadPublicPhoto'&&++attempts===failUploadAt)result={ok:false,code:'STORAGE_ERROR',message:'모의 저장 실패'};
+  else {const data=message.name==='getPublicUploadReceipt'?{saved:false}:message.name==='uploadPublicPhoto'?(saved++,{}):message.name==='getPublicStatus'?{ready:true,totalCount:saved,photos:[],quota:{canUpload:true}}:{ticket:'test-only-ticket'};result={ok:true,data};}
+  queueMicrotask(()=>h.events.message({origin:'https://safe-script.googleusercontent.com',source:remote,data:{channel:h.api.channel,type:'reply',id:message.id,result}}));}};
  h.events.message({origin:'https://safe-script.googleusercontent.com',source:remote,data:{channel:h.api.channel,type:'ready'}});
  h.api.setReady();h.get('cameraVideo').videoWidth=100;h.get('cameraVideo').videoHeight=100;
  h.sandbox.navigator.geolocation={getCurrentPosition:()=>{throw Error('GPS must never be requested');}};
@@ -64,7 +67,7 @@ test('combined review actions open the next camera and send both photos without 
  const h=captureHarness();await h.api.openCamera();await h.api.capture();
  assert.equal(h.stops(),1);assert.equal(h.api.photoState().stream,null);assert.equal(h.get('cameraPanel').hidden,true);
  assert.equal(h.api.photoState().pending.length,1);assert.equal(h.api.photoState().pending[0].confirmed,false);
- assert.equal(h.get('reviewPanel').hidden,false);assert.equal(h.get('startCamera').hidden,true);assert.equal(h.get('saveControls').hidden,false);
+ assert.equal(h.get('reviewPanel').hidden,false);assert.equal(h.get('startCamera').hidden,true);assert.equal(h.get('saveControls').hidden,true);
  assert.equal(h.get('confirmNext').hidden,false);assert.equal(h.get('upload').textContent,'확인하고 1장만 전송');
  assert.match(html,/>확인하고 한 장 더 찍기<\/button>/);assert.equal(h.get('pending').children[0].children.length,3);
  assert.deepEqual(h.calls,['beginPublicCapture']);
@@ -74,6 +77,7 @@ test('combined review actions open the next camera and send both photos without 
  assert.equal(h.get('reviewPanel').hidden,true);assert.equal(h.get('saveControls').hidden,true);
  await h.api.capture();assert.equal(h.stops(),2);assert.equal(h.api.photoState().pending.length,2);
  assert.equal(h.api.photoState().pending[0].confirmed,true);assert.equal(h.api.photoState().pending[1].confirmed,false);
+ assert.equal(h.get('saveControls').hidden,false);assert.equal(h.get('singlePhotoToggle').hidden,true);
  assert.equal(h.get('confirmNext').hidden,true);assert.equal(h.get('startCamera').hidden,true);
  assert.equal(h.get('upload').disabled,true);h.get('publicConsent').checked=true;h.api.controls();assert.equal(h.get('upload').disabled,false);
  assert.equal(h.get('upload').textContent,'확인하고 전송');await h.get('upload').onclick();
@@ -93,7 +97,9 @@ test('an unconfirmed photo cannot be uploaded or skipped, and retake preserves a
 
 test('one photo can be confirmed and sent in a single action, and compression failure stops the camera',async()=>{
  const h=captureHarness();await h.api.openCamera();await h.api.capture();
+ h.get('singlePhotoToggle').onclick();assert.equal(h.get('saveControls').hidden,false);
  h.get('publicConsent').checked=true;await h.get('upload').onclick();assert.equal(h.calls.filter(name=>name==='uploadPublicPhoto').length,1);
+ assert.equal(h.get('startCamera').hidden,false,'single-photo mode must reset after a successful send');
  const failed=captureHarness(),original=failed.sandbox.document.createElement;
  failed.sandbox.document.createElement=name=>{const el=original(name);if(name==='canvas')el.toBlob=fn=>fn(null);return el;};
  await failed.api.openCamera();await failed.api.capture();assert.equal(failed.stops(),1);assert.equal(failed.api.photoState().stream,null);
@@ -110,7 +116,7 @@ test('denying the next camera preserves the first approved photo and allows retr
  const h=captureHarness();await h.api.openCamera();await h.api.capture();const first=h.api.photoState().pending[0];
  h.sandbox.navigator.mediaDevices.getUserMedia=async()=>{throw Error('camera denied');};await h.get('confirmNext').onclick();
  assert.equal(h.api.photoState().pending[0],first);assert.equal(first.confirmed,true);assert.equal(h.api.photoState().stream,null);
- assert.equal(h.get('startCamera').hidden,false);assert.equal(h.get('startCamera').disabled,false);assert.equal(h.get('saveControls').hidden,false);
+ assert.equal(h.get('startCamera').hidden,false);assert.equal(h.get('startCamera').disabled,false);h.get('singlePhotoToggle').onclick();assert.equal(h.get('saveControls').hidden,false);
  h.get('publicConsent').checked=true;await h.get('upload').onclick();assert.equal(h.calls.filter(name=>name==='uploadPublicPhoto').length,1);
 });
 
@@ -120,4 +126,31 @@ test('double-clicking combined actions cannot open duplicate cameras or upload a
  const next=h.get('confirmNext').onclick();await new Promise(setImmediate);await h.get('confirmNext').onclick();assert.equal(openCount,1);release();await next;
  await h.api.capture();h.get('publicConsent').checked=true;
  await Promise.all([h.get('upload').onclick(),h.get('upload').onclick()]);assert.equal(h.calls.filter(name=>name==='uploadPublicPhoto').length,2);
+});
+
+test('single-photo controls are folded by default, reversible without losing a capture, and never silently consent',async()=>{
+ const h=captureHarness();await h.api.openCamera();await h.api.capture();const photo=h.api.photoState().pending[0];
+ assert.equal(h.get('captureTitle').textContent,'사진 확인');assert.equal(h.get('remaining').textContent,'1 / 2장');
+ assert.equal(h.get('singlePhotoToggle').hidden,false);assert.equal(h.get('saveControls').hidden,true);assert.equal(h.get('publicConsent').checked,false);
+ h.get('singlePhotoToggle').onclick();assert.equal(h.get('singlePhotoToggle').attributes['aria-expanded'],'true');
+ assert.equal(h.get('confirmNext').hidden,true);assert.equal(h.get('saveControls').hidden,false);assert.equal(h.get('upload').disabled,true);
+ h.get('singlePhotoToggle').onclick();assert.equal(h.get('singlePhotoToggle').attributes['aria-expanded'],'false');
+ assert.equal(h.get('confirmNext').hidden,false);assert.equal(h.get('saveControls').hidden,true);assert.equal(h.api.photoState().pending[0],photo);
+ assert.deepEqual(h.calls,['beginPublicCapture']);
+});
+
+test('partially failed combined send retains the unsaved photo and offers retry without re-uploading the first',async()=>{
+ const h=captureHarness({failUploadAt:2});await h.api.openCamera();await h.api.capture();await h.get('confirmNext').onclick();await h.api.capture();
+ h.get('publicConsent').checked=true;await h.get('upload').onclick();assert.match(h.get('message').textContent,/모의 저장 실패/);
+ assert.equal(h.api.photoState().pending.length,1);assert.equal(h.api.photoState().pending[0].confirmed,true);
+ assert.equal(h.get('saveControls').hidden,false);assert.equal(h.get('upload').disabled,false);assert.equal(h.get('upload').textContent,'확인하고 전송');
+ await h.get('upload').onclick();assert.equal(h.api.photoState().pending.length,0);assert.equal(h.get('count').textContent,'2 / 2');
+ assert.equal(h.calls.filter(name=>name==='uploadPublicPhoto').length,3,'first success, second failure, second retry only');
+});
+
+test('photo preview is keyboard-accessible and the condensed page preserves consent, status and deletion notices',async()=>{
+ const h=captureHarness();await h.api.openCamera();await h.api.capture();const image=h.get('pending').children[0].children[0];
+ assert.equal(image.tabIndex,0);let prevented=false;image.onkeydown({key:'Enter',preventDefault(){prevented=true;}});assert.equal(prevented,true);assert.equal(h.get('zoom').open,true);
+ assert.match(html,/color-scheme:light/);assert.match(html,/--accent:#2563eb/);assert.doesNotMatch(html,/#efebe3|#fbf9f3|--teal|class="pill"/);
+ assert.match(html,/role="status" aria-live="polite"/);assert.match(html,/누구나 볼 수 있도록 등록/);assert.match(html,/삭제는 올린 브라우저 또는 관리자만/);
 });
