@@ -7,7 +7,7 @@ var PHOTO_LIMITS_ = Object.freeze({
   accountCeilingBytes: 24000000000, reserveBytes: 1000000000,
   dailyUploads: 1000, dailyReads: 2000, sessionHours: 8,
   sourceUrl: 'https://rep123-seven.vercel.app/addresses.js',
-  rootName: '현장방문_주소사진_v1', indexRootName: '현장방문_사진목록_v3', version: '2026-10-16-mybox-v7-no-gps', publicEnabled: true, requireCapture: true, requireLocation: false,
+  rootName: '현장방문_주소사진_v1', indexRootName: '현장방문_사진목록_v3', version: '2026-10-16-mybox-v8-admin-loading', publicEnabled: true, requireCapture: true, requireLocation: false,
   webAppUrl: 'https://script.google.com/macros/s/AKfycbxkluXWRelyVJ1D0XtuLHHo1GdF76Dzp4CLHQeC-hlvpW6WmctvD9_60WKqugmfN_PAQw/exec'
 });
 
@@ -26,12 +26,13 @@ function doGet(e) {
   return output;
 }
 
-function getStatus(session, address) {
+function getStatus(session, address, identityOnly) {
   return rpc_(function() {
     var ready = configured_();
     if (!ready) return {ready: false, authenticated: false, setupProblems: setupProblems_()};
     var user = verifySession_(session, true);
     if (!user) return {ready: true, authenticated: false};
+    if(identityOnly===true&&!address)return {ready:true,authenticated:true,name:user.name,role:user.role};
     if (address) assertAddress_(address);
     var folder = address ? addressFolder_(address, false) : null;
     var resources = folder ? photoFiles_(folder) : [];
@@ -155,7 +156,7 @@ function rpc_(fn) {
     if (!lock.tryLock(1000)) fail_('BUSY', '다른 요청을 처리 중입니다. 잠시 후 다시 시도하세요.');
     locked = true;
     PHOTO_STAGE_='start';
-    PHOTO_INDEX_CONTEXT_ = null; PHOTO_SOURCE_ = null;
+    PHOTO_INDEX_CONTEXT_ = null; PHOTO_SOURCE_ = null; PHOTO_SOURCE_INDEX_ = null;
     var props = PropertiesService.getScriptProperties();
     var today = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd');
     var previous = JSON.parse(props.getProperty('BUDGET_fetch') || '{}');
@@ -170,7 +171,7 @@ function rpc_(fn) {
   } finally {
     if (locked) {
       try { if (PHOTO_FETCH_BUDGET_) PropertiesService.getScriptProperties().setProperty('BUDGET_fetch', JSON.stringify(PHOTO_FETCH_BUDGET_)); }
-      finally { PHOTO_FETCH_BUDGET_ = null; PHOTO_INDEX_CONTEXT_ = null; PHOTO_SOURCE_ = null; lock.releaseLock(); }
+      finally { PHOTO_FETCH_BUDGET_ = null; PHOTO_INDEX_CONTEXT_ = null; PHOTO_SOURCE_ = null; PHOTO_SOURCE_INDEX_ = null; lock.releaseLock(); }
     }
   }
 }
@@ -268,18 +269,23 @@ function assertAddress_(address) {
   var cache = CacheService.getScriptCache(), key = 'address-v5:' + digest_(address);
   var cached = cache.get(key);
   if (cached) return JSON.parse(cached);
-  var data = sourceData_(), info = null;
-  Object.keys(data).some(function(s) { return Object.keys(data[s]).some(function(g) {
-    return Object.keys(data[s][g]).some(function(d) { return data[s][g][d].some(function(p) {
-      if (p[2] !== address) return false;
-      info = {province: s, district: g, dong: d, latitude:p[0],longitude:p[1],coordinateVerified:!!p[4]}; return true;
-    }); });
-  }); });
+  var info = sourceAddressIndex_()[address];
   if (!info) fail_('ADDRESS', '원자료에 없는 주소입니다. 지도에서 주소를 다시 선택하세요.');
   cache.put(key, JSON.stringify(info), 21600);
   return info;
 }
 var PHOTO_SOURCE_ = null;
+var PHOTO_SOURCE_INDEX_ = null;
+function sourceAddressIndex_() {
+  if(PHOTO_SOURCE_INDEX_)return PHOTO_SOURCE_INDEX_;
+  var data=sourceData_(),index=Object.create(null);
+  Object.keys(data).forEach(function(s){Object.keys(data[s]).forEach(function(g){Object.keys(data[s][g]).forEach(function(d){data[s][g][d].forEach(function(p){
+    var address=p[2];
+    if(typeof address!=='string'||!address||address.length>1000||Object.prototype.hasOwnProperty.call(index,address))fail_('SOURCE','원주소 목록의 형식이나 중복을 확인해야 합니다.');
+    index[address]={province:s,district:g,dong:d,latitude:p[0],longitude:p[1],coordinateVerified:!!p[4]};
+  });});});});
+  PHOTO_SOURCE_INDEX_=index;return index;
+}
 function sourceData_() {
   if (PHOTO_SOURCE_) return PHOTO_SOURCE_;
   var response = fetch_(PHOTO_LIMITS_.sourceUrl, {muteHttpExceptions: true, followRedirects: false});

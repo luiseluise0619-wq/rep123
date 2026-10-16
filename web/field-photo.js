@@ -3,7 +3,7 @@
 const $=id=>document.getElementById(id),config=window.PHOTO_CONFIG||{},address=new URLSearchParams(location.search).get('address')||'';
 const random=bytes=>Array.from(crypto.getRandomValues(new Uint8Array(bytes)),b=>b.toString(16).padStart(2,'0')).join('');
 const channel=random(32),requests=new Map(),KEY='photoDeviceKeyV4';
-let remote=null,remoteOrigin='',deviceKey='',busy=false,sending=false,singlePhotoMode=false,savedCount=0,canUpload=false,stream=null,pending=[],epoch=0;
+let remote=null,remoteOrigin='',deviceKey='',busy=false,sending=false,singlePhotoMode=false,addressReady=false,savedCount=0,canUpload=false,stream=null,pending=[],epoch=0;
 let connectResolve,connectReject;
 const connected=new Promise((resolve,reject)=>{connectResolve=resolve;connectReject=reject;});
 const connectionTimer=setTimeout(()=>connectReject(Error('저장 서버에 연결되지 않았습니다. 잠시 후 이 화면을 다시 열어 주세요.')),30000);
@@ -43,12 +43,13 @@ function controls(){
   $('refresh').disabled=busy;$('remaining').textContent=(savedCount+pending.length)+' / 2장';
   $('reviewPanel').hidden=!pending.length||!!stream;
   $('reviewHint').textContent=needsReview?(full?'사진을 확인하고 아래에서 전송해 주세요.':'사진을 확인한 뒤 한 장 더 찍거나 전송해 주세요.'):'확인한 사진입니다. 한 장 더 찍거나 전송해 주세요.';
-  $('saveControls').hidden=!pending.length||!!stream||(!full&&!singlePhotoMode&&!sending);$('captureCard').hidden=savedCount>=2&&!pending.length;
+  $('saveControls').hidden=!pending.length||!!stream||(!full&&!singlePhotoMode&&!sending);$('captureCard').hidden=!addressReady||(savedCount>=2&&!pending.length);
   document.querySelectorAll('#pending button').forEach(button=>{button.disabled=busy;});
 }
 function stopCamera(){if(stream)stream.getTracks().forEach(track=>track.stop());stream=null;$('cameraVideo').srcObject=null;$('cameraPanel').hidden=true;controls();}
 async function withBusy(fn){if(busy)return;busy=true;controls();try{await fn();}catch(error){say(error.message,true);}finally{busy=false;controls();}}
 async function openCamera(){await withBusy(async()=>{
+  if(!addressReady||!canUpload||!deviceKey)throw Error('주소와 저장 연결을 먼저 확인해 주세요.');
   if(stream)return;
   if(pending.some(photo=>!photo.confirmed))throw Error('찍은 사진을 먼저 확인해 주세요.');
   if(savedCount+pending.length>=2)throw Error('주소당 사진은 2장까지 등록할 수 있습니다.');
@@ -106,7 +107,7 @@ function savedCard(photo){const card=document.createElement('article');card.clas
   const view=document.createElement('button');view.type='button';view.className='secondary';view.textContent='사진 보기';view.onclick=()=>withBusy(async()=>{const result=await rpc('getPublicPhoto',address,photo.id);const src='data:image/jpeg;base64,'+result.base64;const image=document.createElement('img');image.src=src;image.alt='등록 사진 '+photo.slot;image.onclick=()=>zoom(src);card.prepend(image);view.remove();});card.append(view);
   if(photo.canDelete){const remove=document.createElement('button'),confirm=document.createElement('div'),yes=document.createElement('button'),no=document.createElement('button'),notice=document.createElement('p');remove.type=yes.type=no.type='button';remove.className='danger';remove.textContent='내 사진 삭제';yes.textContent='삭제';yes.className='danger';no.textContent='취소';no.className='secondary';notice.textContent='MYBOX 휴지통으로 이동할까요?';confirm.hidden=true;confirm.append(notice,yes,no);remove.onclick=()=>{if(!busy){confirm.hidden=false;remove.hidden=true;}};no.onclick=()=>{confirm.hidden=true;remove.hidden=false;};yes.onclick=()=>withBusy(async()=>{await rpc('deletePhoto','',deviceKey,address,photo.id);await refresh();say('사진을 삭제했습니다.');});card.append(remove,confirm);}return card;
 }
-async function refresh(){const token=++epoch,data=await rpc('getPublicStatus',address,deviceKey);if(token!==epoch)return;if(!data.ready)throw Error('사진 저장 설정을 확인해야 합니다.');savedCount=data.totalCount;canUpload=!!data.quota.canUpload&&!!deviceKey;$('count').textContent=savedCount+' / 2';$('gallery').hidden=false;$('saved').replaceChildren(...data.photos.map(savedCard));controls();return data;}
+async function refresh(){const token=++epoch,data=await rpc('getPublicStatus',address,deviceKey);if(token!==epoch)return;if(!data.ready)throw Error('사진 저장 설정을 확인해야 합니다.');addressReady=true;savedCount=data.totalCount;canUpload=!!data.quota.canUpload&&!!deviceKey;$('count').textContent=savedCount+' / 2';$('gallery').hidden=false;$('saved').replaceChildren(...data.photos.map(savedCard));controls();return data;}
 async function encode(blob){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(',')[1]);reader.onerror=()=>reject(Error('사진을 읽지 못했습니다.'));reader.readAsDataURL(blob);});}
 async function upload(){await withBusy(async()=>{
   if(!pending.length||pending.some(photo=>!photo.confirmed))throw Error('사진마다 ‘확인’을 누른 뒤 전송해 주세요.');
@@ -126,13 +127,16 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden)stopCamera(
 window.addEventListener('beforeunload',event=>{if(busy||pending.length){event.preventDefault();event.returnValue='';}});
 window.addEventListener('storage',event=>{if(event.key===KEY||event.key===null){deviceKey=readKey();canUpload=false;stopCamera();say('브라우저 삭제키가 변경됐습니다. 이 화면을 다시 열어 주세요.',true);controls();}});
 async function init(){
+  $('entryLoading').hidden=false;$('retryConnection').hidden=true;
   $('address').textContent=address;$('admin').href=config.webAppUrl+'?page=admin&build='+encodeURIComponent(config.build||'v5');
-  let record;findAddress:for(const groups of Object.values(window.ADDR_DATA||{}))for(const dongs of Object.values(groups))for(const records of Object.values(dongs)){record=records.find(p=>p[2]===address);if(record)break findAddress;} // Exact source address only; server checks it independently.
-  if(!address||!record)throw Error('지도에서 방문 주소를 다시 선택해 주세요.');
+  // The server verifies exact source membership before enabling capture. Do not download the 4.8MB map dataset here.
+  if(!address||address.length>1000||/[\u0000-\u001f]/.test(address))throw Error('지도에서 방문 주소를 다시 선택해 주세요.');
   $('addressMap').href='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(address);$('addressMap').hidden=false;
   const bridgeUrl=new URL(config.webAppUrl);bridgeUrl.searchParams.set('page','bridge');bridgeUrl.searchParams.set('channel',channel);bridgeUrl.searchParams.set('build',config.build||'v5');$('bridge').src=bridgeUrl.toString();
-  await connected;await refresh();$('captureCard').hidden=savedCount>=2;
+  await connected;$('entryDetail').textContent='주소와 등록된 사진을 확인하고 있습니다.';await refresh();$('captureCard').hidden=savedCount>=2;$('entryLoading').hidden=true;
   if(!deviceKey)say('이 브라우저에서는 보기만 가능합니다. 브라우저 저장을 허용해 주세요.',true);else say('');controls();
 }
-init().catch(error=>say(error.message,true));
+$('retryConnection').onclick=()=>location.reload();
+function entryError(error){addressReady=false;canUpload=false;$('entryLoading').hidden=true;$('retryConnection').hidden=false;controls();say(error.message,true);}
+init().catch(entryError);
 })();

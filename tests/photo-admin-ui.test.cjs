@@ -4,10 +4,10 @@ const fs=require('node:fs');
 const path=require('node:path');
 const vm=require('node:vm');
 const html=fs.readFileSync(path.join(__dirname,'../photo-backend/Admin.html'),'utf8');
-const script=html.match(/<script>\s*('use strict';[\s\S]*?)<\/script>/)[1].replace('openAdmin().catch(handle);','');
+const script=html.match(/<script>\s*('use strict';[\s\S]*?)<\/script>/)[1].replace(/openAdmin\(\)\.catch\(handle\);\s*$/,'');
 function harness(reply=()=>({ok:true,data:{}}),timers={setTimeout,clearTimeout}){
   const elements=new Map(),calls=[],local=new Map(),tab=new Map();
-  function element(){return {textContent:'',value:'',checked:false,disabled:false,hidden:false,children:[],style:{},classList:{toggle(){}},
+  function element(){return {textContent:'',value:'',checked:false,disabled:false,hidden:false,children:[],attributes:{},style:{},classList:{toggle(){}},setAttribute(k,v){this.attributes[k]=v;},
     append(...v){this.children.push(...v);},replaceChildren(...v){this.children=v;},addEventListener(){},removeAttribute(){},close(){this.open=false;},showModal(){this.open=true;}};}
   const get=id=>{if(!elements.has(id))elements.set(id,element());return elements.get(id);};
   get('initial').textContent='{}';
@@ -120,4 +120,22 @@ test('administrator shows timestamps without GPS fields, while the original evid
   const text=h.run('captureMeta(selectedPhoto)');assert.match(text,/촬영 기록/);assert.match(text,/서버 수신/);assert.doesNotMatch(text,/37\.5665|126\.978|GPS|거리|정확도/);
   assert.equal(h.run('selectedPhoto.evidence.latitude'),37.5665);assert.match(h.run('captureMeta({})'),/촬영 기록 없음/);
   assert.doesNotMatch(html,/positionMap|visit-distance\.js|GPS 추정|현재 위도|직선거리/);
+});
+
+test('admin entry shows loading before authentication and hides it only after the address list has loaded',async()=>{
+ let finish;const h=harness(name=>name==='getStatus'?new Promise(resolve=>{finish=resolve;}):{ok:true,data:name==='getAdminOverview'?overview():{rows:[row]}});h.run("session='admin-session'");
+ const loading=h.run('openAdmin()');await Promise.resolve();assert.equal(h.get('entryLoading').hidden,false);assert.equal(h.get('refresh').disabled,true);assert.match(h.get('entryDetail').textContent,/권한/);
+ finish({ok:true,data:identity});await loading;assert.equal(h.get('entryLoading').hidden,true);assert.equal(h.get('workspace').hidden,false);assert.equal(h.run('rows.length'),1);assert.equal(h.get('refresh').disabled,false);
+});
+
+test('admin entry failure releases controls, hides the spinner, and offers a bounded retry',async()=>{
+ const h=harness(()=>({ok:false,code:'CONNECTION',message:'모의 연결 실패'}));h.run("session='admin-session'");await assert.rejects(h.run('openAdmin()'),/모의 연결 실패/);
+ assert.equal(h.get('entryLoading').hidden,true);assert.equal(h.get('retryAdmin').hidden,false);assert.equal(h.get('refresh').disabled,false);
+});
+
+test('admin view switch exposes its selected state without automatically downloading private photo bodies',()=>{
+ const h=harness();h.run('rows=[{address:"원주소",province:"서울",district:"구",dong:"동",photos:[{slot:1,uploadedAt:"2026-10-16T04:00:00Z"}]}]');
+ h.get('galleryView').onclick();assert.equal(h.get('galleryView').attributes['aria-pressed'],'true');assert.equal(h.get('tableView').attributes['aria-pressed'],'false');assert.equal(h.calls.length,0);assert.equal(h.get('loadPhotos').hidden,false);
+ h.get('tableView').onclick();assert.equal(h.get('tableView').attributes['aria-pressed'],'true');assert.equal(h.get('loadPhotos').hidden,true);
+ assert.match(html,/--accent:#2563eb/);assert.doesNotMatch(html,/#efebe3|#fbf9f3|#e5007e/i);assert.match(html,/관리자 화면을 여는 중…/);
 });

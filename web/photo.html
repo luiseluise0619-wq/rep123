@@ -31,6 +31,11 @@ button:disabled{background:#e5e7eb;color:#6b7280;cursor:not-allowed}
 .full{width:100%;margin-top:12px}
 #message{font-size:14px;white-space:pre-line;padding:12px;background:var(--soft);border-radius:10px;margin:16px 0}
 #message.error{background:#fff1f0;color:#9f241b;border:1px solid #f2c9c5}
+.entry-loading{display:flex;align-items:flex-start;gap:12px;padding:16px 0 24px;font-size:15px}
+.entry-loading p{font-size:13px;color:var(--mut);margin:4px 0 0}
+.entry-spinner{flex:none;width:22px;height:22px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:entry-spin .8s linear infinite}
+@keyframes entry-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.entry-spinner{animation:none}}
 #captureHint{margin:6px 0 16px}
 #cameraPanel,#reviewPanel{scroll-margin-top:12px}
 video{display:block;width:100%;max-height:54dvh;object-fit:contain;background:#111827;border-radius:10px;margin:16px 0 12px}
@@ -85,7 +90,9 @@ dialog img{display:block;max-width:100%;margin:12px auto}
   <div class="head"><span class="small">방문 주소</span><a id="addressMap" target="_blank" rel="noopener noreferrer" hidden>지도 보기</a></div>
   <p id="address" class="address"></p>
 </section>
-<div id="message" role="status" aria-live="polite">저장 서버에 연결하는 중…</div>
+<section id="entryLoading" class="entry-loading" role="status" aria-live="polite"><span class="entry-spinner" aria-hidden="true"></span><div><strong>사진 화면을 여는 중…</strong><p id="entryDetail">저장 서버에 연결하고 있습니다.</p></div></section>
+<div id="message" role="status" aria-live="polite" hidden></div>
+<button id="retryConnection" class="secondary full" type="button" hidden>다시 열기</button>
 <section id="captureCard" class="card" hidden aria-labelledby="captureTitle">
   <div class="head"><h2 id="captureTitle">사진 촬영</h2><span id="remaining" class="small">0 / 2장</span></div>
   <p id="captureHint" class="small">날짜와 방문 주소가 사진에 표시됩니다.</p>
@@ -120,8 +127,7 @@ dialog img{display:block;max-width:100%;margin:12px auto}
 </main>
 <dialog id="zoom"><button id="closeZoom" class="secondary" type="button">닫기</button><img id="zoomImage" alt="현장 사진 확대"></dialog>
 <iframe id="bridge" title="사진 저장 연결" referrerpolicy="no-referrer"></iframe>
-<script src="/photo-config.js?v=20261016-simple-ui"></script>
-<script src="/addresses.js?v=20261015-admin"></script>
-<script src="/field-photo.js?v=20261016-simple-ui"></script>
+<script src="/photo-config.js?v=20261016-admin-loading"></script>
+<script src="/field-photo.js?v=20261016-admin-loading"></script>
 </body>
 </html>

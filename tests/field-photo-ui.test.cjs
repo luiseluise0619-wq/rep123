@@ -10,7 +10,7 @@ function harness(){const elements=new Map(),events={},stored=new Map(),timers=ne
  crypto:crypto.webcrypto,URL,URLSearchParams,Uint8Array,Date,Intl,JSON,Number,Math,Array,Error,Promise,Set,Map,
  FileReader:class {readAsDataURL(blob){blob.arrayBuffer().then(value=>{this.result='data:image/jpeg;base64,'+Buffer.from(value).toString('base64');this.onload();});}},
  localStorage:{getItem:k=>stored.get(k)||null,setItem:(k,v)=>stored.set(k,v)},setTimeout:(fn,ms)=>{const id=++seq;timers.set(id,{fn,ms});return id;},clearTimeout:id=>timers.delete(id)};
- vm.createContext(sandbox);vm.runInContext(source.replace('init().catch(error=>say(error.message,true));','window.test={once,controls,bridgeOrigin,connected,channel,requests,keepKey,renderPending,capture,openCamera,upload,stopCamera,setPending:value=>{pending=value;},setReady:()=>{canUpload=true;deviceKey="a".repeat(64);},photoState:()=>({deviceKey,busy,stream,pending})};'),sandbox);
+ vm.createContext(sandbox);vm.runInContext(source.replace('init().catch(entryError);','window.test={init,entryError,once,controls,bridgeOrigin,connected,channel,requests,keepKey,renderPending,capture,openCamera,upload,stopCamera,setPending:value=>{pending=value;},setReady:()=>{addressReady=true;canUpload=true;deviceKey="a".repeat(64);},photoState:()=>({deviceKey,busy,stream,pending})};'),sandbox);
  return {sandbox,get,events,timers,run:s=>vm.runInContext(s,sandbox),api:window.test};
 }
 test('only live camera capture exists; album/file selection and GPS in public stamp are absent',()=>{
@@ -153,4 +153,18 @@ test('photo preview is keyboard-accessible and the condensed page preserves cons
  assert.equal(image.tabIndex,0);let prevented=false;image.onkeydown({key:'Enter',preventDefault(){prevented=true;}});assert.equal(prevented,true);assert.equal(h.get('zoom').open,true);
  assert.match(html,/color-scheme:light/);assert.match(html,/--accent:#2563eb/);assert.doesNotMatch(html,/#efebe3|#fbf9f3|--teal|class="pill"/);
  assert.match(html,/role="status" aria-live="polite"/);assert.match(html,/누구나 볼 수 있도록 등록/);assert.match(html,/삭제는 올린 브라우저 또는 관리자만/);
+});
+
+test('photo entry shows a static loader and needs no map dataset before authoritative server validation',async()=>{
+ assert.doesNotMatch(html,/<script[^>]*addresses\.js/);assert.doesNotMatch(source,/ADDR_DATA/);assert.match(html,/사진 화면을 여는 중…/);
+ const h=harness();h.get('captureCard').hidden=true;const sent=[],remote={postMessage:message=>{sent.push(message.name);queueMicrotask(()=>h.events.message({origin:'https://safe-script.googleusercontent.com',source:remote,data:{channel:h.api.channel,type:'reply',id:message.id,result:{ok:true,data:{ready:true,totalCount:0,photos:[],quota:{canUpload:true}}}}}));}};
+ const pending=h.api.init();assert.equal(h.get('entryLoading').hidden,false);assert.equal(h.get('captureCard').hidden,true);
+ h.events.message({origin:'https://safe-script.googleusercontent.com',source:remote,data:{channel:h.api.channel,type:'ready'}});await pending;
+ assert.deepEqual(sent,['getPublicStatus']);assert.equal(h.get('entryLoading').hidden,true);assert.equal(h.get('captureCard').hidden,false);assert.equal(h.get('startCamera').disabled,false);
+});
+
+test('a rejected source address never enables capture and shows retry instead of a permanent loading message',async()=>{
+ const h=harness();h.get('captureCard').hidden=true;const remote={postMessage:message=>queueMicrotask(()=>h.events.message({origin:'https://safe-script.googleusercontent.com',source:remote,data:{channel:h.api.channel,type:'reply',id:message.id,result:{ok:false,code:'ADDRESS',message:'원자료에 없는 주소'}}}))};
+ const pending=h.api.init().catch(h.api.entryError);h.events.message({origin:'https://safe-script.googleusercontent.com',source:remote,data:{channel:h.api.channel,type:'ready'}});await pending;h.api.controls();
+ assert.equal(h.get('entryLoading').hidden,true);assert.equal(h.get('retryConnection').hidden,false);assert.equal(h.get('captureCard').hidden,true);assert.equal(h.get('startCamera').disabled,true);assert.match(h.get('message').textContent,/원자료에 없는 주소/);
 });
