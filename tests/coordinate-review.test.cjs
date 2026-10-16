@@ -22,10 +22,25 @@ test('all 145 review records have explicit statuses and unresolved coordinates r
  const review=JSON.parse(fs.readFileSync(path.join(root,'web/coordinate-review.json'),'utf8')),context={window:{}};
  vm.runInNewContext(fs.readFileSync(path.join(root,'web/addresses.js'),'utf8'),context);
  const points=new Map();for(const groups of Object.values(context.window.ADDR_DATA))for(const dongs of Object.values(groups))for(const records of Object.values(dongs))for(const p of records)points.set(p[2],p);
- assert.equal(Object.keys(review.records).length,145);assert.deepEqual(review.summary.statuses,{'address-mismatch':84,unverified:39,verified:17,'insufficient-address':5});
- let remaining=0;for(const[address,r]of Object.entries(review.records)){assert.ok(points.has(address));assert.equal(new URL(r.sourceUrl).hostname,'www.google.com');
-  if(r.status==='verified'){assert.equal(points.get(address)[4],1);assert.ok(r.plusCode);assert.match(r.note,/층·호수/);}
+ assert.equal(Object.keys(review.records).length,145);assert.deepEqual(review.summary.statuses,{'address-mismatch':84,unverified:32,verified:22,'representative-only':2,'insufficient-address':5});
+ let remaining=0;for(const[address,r]of Object.entries(review.records)){assert.ok(points.has(address));assert.ok(['www.google.com','map.kakao.com'].includes(new URL(r.sourceUrl).hostname));
+  if(r.status==='verified'){assert.equal(points.get(address)[4],1);assert.ok(r.plusCode||r.coordinateMethod==='kakao-place-wcongnamul');assert.match(r.note,/층·호수/);}
   else{remaining++;assert.equal(points.get(address)[4],0);if(r.status==='address-mismatch')assert.ok(r.matchedAddress);}
  }
- assert.equal(remaining,review.summary.remaining);assert.equal([...points.values()].filter(p=>!p[4]).length,128);
+ assert.equal(remaining,review.summary.remaining);assert.equal([...points.values()].filter(p=>!p[4]).length,123);
+});
+
+test('Kakao place conversion matches official examples and independent pyproj results',()=>{
+ const {kakaoPoint,validateCorrection}=require('../scripts/apply-map-coordinate-followup.cjs');
+ const golden=kakaoPoint(500000,972532.3892234056);assert.ok(Math.abs(golden.latitude-37)<1e-8);assert.ok(Math.abs(golden.longitude-127)<1e-10);
+ const jeju=kakaoPoint(160082.538257218*2.5,-4680.975749087054*2.5);assert.ok(Math.abs(jeju.latitude-33.450701)<1e-8);assert.ok(Math.abs(jeju.longitude-126.570667)<1e-8);
+ const receipt=JSON.parse(fs.readFileSync(path.join(root,'data/coordinate-followup-20261016.json'),'utf8'));
+ for(const row of receipt.records.filter(r=>r.correction)){validateCorrection(row.correction);const c={...row.correction,latitude:row.correction.latitude+.01};assert.throws(()=>validateCorrection(c));}
+ assert.throws(()=>validateCorrection({status:'verified',latitude:37,longitude:127,note:'층·호수',matchedTitle:'generic map',sourceUrl:'https://map.kakao.com/?urlX=500000&urlY=972532'}));
+});
+test('all 35 retries have outcomes, and representative points cannot clear warnings',()=>{
+ const receipt=JSON.parse(fs.readFileSync(path.join(root,'data/coordinate-followup-20261016.json'),'utf8')),review=JSON.parse(fs.readFileSync(path.join(root,'web/coordinate-review.json'),'utf8'));
+ assert.equal(receipt.records.length,35);assert.equal(new Set(receipt.records.map(r=>r.address)).size,35);
+ assert.deepEqual(receipt.records.reduce((a,r)=>(a[r.outcome]=(a[r.outcome]||0)+1,a),{}),{unresolved:28,verified:5,'representative-only':2});
+ for(const r of receipt.records){const live=review.records[r.address];assert.equal(live.followUp.note,r.note);assert.ok(r.sources.some(s=>s.provider==='네이버지도'));if(r.outcome!=='verified')assert.notEqual(live.status,'verified');}
 });

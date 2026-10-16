@@ -67,6 +67,29 @@ python 웹데이터_생성.py     # → web/addresses.js 갱신
 ```
 > `geocode_cache.json`(실주소_지오코딩.py 결과)이 있으면 실제 좌표, 없으면 근사좌표를 씁니다.
 
+## 좌표 추가 대조 (2026-10-16)
+
+`coordinate-review.html`에서 원래 검토한 145곳과 이번에 재검색한 35곳을 구분합니다.
+이번 35곳은 같은 대표 번지가 보였던 15곳과 상세 확인을 못 했던 20곳입니다.
+건물·지번 위치 5곳을 확정하고, 실리콘앨리 2곳은 단지 대표점만 반영했습니다.
+나머지 28곳과 단지 대표점 2곳의 경고는 유지합니다. 기존 대조 완료 17곳을 합해
+대조 완료는 22곳, 확인 필요는 123곳입니다. 전국 모든 주소를 검증했다는 뜻은 아닙니다.
+
+근거와 수동 판정은 `../data/coordinate-followup-20261016.json`에 있습니다.
+카카오 장소 상세의 ‘지도’ 버튼이 연 **실제 장소 URL의 urlX/urlY**를 사용했으며,
+일반 검색 화면의 지도 중심·화면 픽셀·인근 번지는 좌표로 사용하지 않았습니다.
+WCONGNAMUL을 EPSG:5181 및 WGS84로 변환하고 공식 예제와 pyproj 결과로 대조했습니다.
+하동 122-8은 정확히 일치하는 지번 결과의 전체 Plus Code를 사용했습니다.
+층·호수의 실제 위치나 현장 방문 사실은 검증 범위가 아닙니다.
+
+```powershell
+node scripts/apply-map-coordinate-followup.cjs
+node --test tests/coordinate-review.test.cjs tests/map-ui.test.cjs tests/address-data.test.cjs
+```
+
+원주소 문자열·사업자수·행정동 집계·사진 등록 주소 키는 변경하지 않았습니다.
+이전 좌표 생성기를 다시 실행하면 이번 수정이 덮일 수 있으므로 검토 내역을 함께 보존해야 합니다.
+
 ## Vercel 배포
 
 **방법 A — 대시보드**

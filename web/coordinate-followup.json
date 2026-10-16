@@ -1,0 +1,650 @@
+{
+  "asOf": "2026-10-16",
+  "grain": "고유 원주소 1개",
+  "scope": {
+    "samePrimary": 15,
+    "detailRetry": 20,
+    "total": 35
+  },
+  "summary": {
+    "verified": 5,
+    "representativeOnly": 2,
+    "unresolved": 28,
+    "coordinateUpdates": 7
+  },
+  "conversion": {
+    "source": "카카오 장소 상세의 지도 버튼이 연 실제 장소 좌표 URL. 검색 지도 중심은 사용하지 않음.",
+    "method": "urlX/urlY (WCONGNAMUL) ÷ 2.5 → EPSG:5181 → EPSG:4326, pyproj 3.8.0",
+    "references": [
+      "https://apis.map.kakao.com/web/documentation/",
+      "https://apis.map.kakao.com/android_v2/reference/com/kakao/vectormap/CoordConverter.html"
+    ],
+    "golden": {
+      "wcongnamul": [
+        500000,
+        972532.3892234056
+      ],
+      "wgs84": [
+        127,
+        37
+      ]
+    },
+    "floorRoomVerified": false
+  },
+  "records": [
+    {
+      "index": 5,
+      "address": "서울특별시 영등포구 신길동 4664",
+      "previousGroup": "same-primary-address",
+      "outcome": "unresolved",
+      "checkedAt": "2026-10-16T08:10:21.763Z",
+      "note": "네이버에는 신길동 4664가 표시됐지만 다른 지도는 동 단위 부분 일치나 인접 번지를 반환했습니다. 같은 검색 문구만으로 좌표를 확정하지 않았습니다.",
+      "sources": [
+        {
+          "provider": "네이버지도",
+          "url": "https://map.naver.com/p/search/%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C%20%EC%98%81%EB%93%B1%ED%8F%AC%EA%B5%AC%20%EC%8B%A0%EA%B8%B8%EB%8F%99%204664?c=15.00,0,0,0,dh"
+        },
+        {
+          "provider": "Google 지도",
+          "url": "https://www.google.com/maps/search/?api=1&query=%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C%20%EC%98%81%EB%93%B1%ED%8F%AC%EA%B5%AC%20%EC%8B%A0%EA%B8%B8%EB%8F%99%204664"
+        }
+      ]
+    },
+    {
+      "index": 6,
+      "address": "서울특별시 영등포구 영등포동3가 618-3 지하상가86,87-1",
+      "previousGroup": "detail-unconfirmed",
+      "outcome": "unresolved",
+      "checkedAt": "2026-10-16T08:10:21.764Z",
+      "note": "영등포동3가 618-3 및 지하상가 번호로 상세 검색을 다시 열었으나 해당 상가의 단일 위치를 확인하지 못했습니다. 주소 자체가 틀렸다는 판정은 아닙니다.",
+      "sources": [
+        {
+          "provider": "네이버지도",
+          "url": "https://map.naver.com/p/search/%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C%20%EC%98%81%EB%93%B1%ED%8F%AC%EA%B5%AC%20%EC%98%81%EB%93%B1%ED%8F%AC%EB%8F%993%EA%B0%80%20618-3%20%EC%A7%80%ED%95%98%EC%83%81%EA%B0%8086%2C87-1?c=15.00,0,0,0,dh"
+        }
+      ]
+    },
+    {
+      "index": 9,
+      "address": "서울특별시 은평구 응암로16길 38-1(응암동)",
+      "previousGroup": "detail-unconfirmed",
+      "outcome": "unresolved",
+      "checkedAt": "2026-10-16T08:10:21.764Z",
+      "note": "응암로16길 38-1로 상세 검색을 다시 열었으나 해당 건물의 확정 좌표를 얻지 못했습니다. 업체 검색 결과 없음은 주소가 없다는 의미가 아닙니다.",
+      "sources": [
+        {
+          "provider": "네이버지도",
+          "url": "https://map.naver.com/p/search/%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C%20%EC%9D%80%ED%8F%89%EA%B5%AC%20%EC%9D%91%EC%95%94%EB%A1%9C16%EA%B8%B8%2038-1(%EC%9D%91%EC%95%94%EB%8F%99)?c=15.00,0,0,0,dh"
+        }
+      ]
+    },
+    {
+      "index": 10,
+      "address": "서울특별시 은평구 응암동 295-40",
+      "previousGroup": "detail-unconfirmed",
+      "outcome": "unresolved",
+      "checkedAt": "2026-10-16T08:10:21.764Z",
+      "note": "응암동 295-40으로 상세 검색을 다시 열었으나 해당 번지의 확정 좌표를 얻지 못했습니다. 인근 번지는 대체 좌표로 사용하지 않았습니다.",
+      "sources": [
+        {
+          "provider": "네이버지도",
+          "url": "https://map.naver.com/p/search/%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C%20%EC%9D%80%ED%8F%89%EA%B5%AC%20%EC%9D%91%EC%95%94%EB%8F%99%20295-40?c=15.00,0,0,0,dh"
+        }
+      ]
+    },
+    {
+      "index": 13,
+      "address": "대구광역시 동구 방촌동 1113-327",
+      "previousGroup": "same-primary-address",
+      "outcome": "unresolved",
+      "checkedAt": "2026-10-16T08:10:21.764Z",
+      "note": "네이버는 방촌동 1113-327을 표시했으나 다른 지도는 1113-229 또는 인근 326·329번지를 반환했습니다. 번지 불일치가 해소되지 않아 기존 좌표를 유지했습니다.",
+      "sources": [
+        {
+          "provider": "네이버지도",
+          "url": "https://map.naver.com/p/search/%EB%8C%80%EA%B5%AC%EA%B4%91%EC%97%AD%EC%8B%9C%20%EB%8F%99%EA%B5%AC%20%EB%B0%A9%EC%B4%8C%EB%8F%99%201113-327?c=15.00,0,0,0,dh"
+        },
+        {
+          "provider": "Google 지도",
+          "url": "https://www.google.com/maps/search/?api=1&query=%EB%8C%80%EA%B5%AC%EA%B4%91%EC%97%AD%EC%8B%9C%20%EB%8F%99%EA%B5%AC%20%EB%B0%A9%EC%B4%8C%EB%8F%99%201113-327"
+        }
+      ]
+    },
+    {
+      "index": 14,
+      "address": "인천광역시 서구 가정동 루원시티 주상복합 7블록 앨리스빌 상가 B021호",
+      "previousGroup": "detail-unconfirmed",
+      "outcome": "unresolved",
+      "checkedAt": "2026-10-16T08:10:21.764Z",
+      "note": "루원 앨리스빌은 현재 서곶로 45·가정동 710의 시설로 검색됐습니다. 원자료의 7블록 B021호와 같은 점인지 확인하지 못해 다른 입점업체 좌표를 대신 쓰지 않았습니다.",
+      "sources": [
+        {
+          "provider": "네이버지도",
+          "url": "https://map.naver.com/p/search/%EC%9D%B8%EC%B2%9C%EA%B4%91%EC%97%AD%EC%8B%9C%20%EC%84%9C%EA%B5%AC%20%EA%B0%80%EC%A0%95%EB%8F%99%20%EB%A3%A8%EC%9B%90%EC%8B%9C%ED%8B%B0%20%EC%A3%BC%EC%83%81%EB%B3%B5%ED%95%A9%207%EB%B8%94%EB%A1%9D%20%EC%95%A8%EB%A6%AC%EC%8A%A4%EB%B9%8C%20%EC%83%81%EA%B0%80%20B021%ED%98%B8?c=15.00,0,0,0,dh"
+        }
+      ]
+    },
+    {
+      "index": 15,
+      "address": "인천광역시 서구 원당동 인천검단 택지개발지구 C-5-1-1BL 909호",
+      "previousGroup": "detail-unconfirmed",
+      "outcome": "unresolved",
+      "checkedAt": "2026-10-16T08:10:21.764Z",
+      "note": "검단 C-5-1-1BL 909호는 블록·호수만 있고 건물명이 없어 상세 검색에서도 단일 건물을 특정하지 못했습니다.",
+      "sources": [
+        {
+          "provider": "네이버지도",
+          "url": "https://map.naver.com/p/search/%EC%9D%B8%EC%B2%9C%EA%B4%91%EC%97%AD%EC%8B%9C%20%EC%84%9C%EA%B5%AC%20%EC%9B%90%EB%8B%B9%EB%8F%99%20%EC%9D%B8%EC%B2%9C%EA%B2%80%EB%8B%A8%20%ED%83%9D%EC%A7%80%EA%B0%9C%EB%B0%9C%EC%A7%80%EA%B5%AC%20C-5-1-1BL%20909%ED%98%B8?c=15.00,0,0,0,dh"
+        }
+      ]
+    },
+    {
+      "index": 16,
+      "address": "인천광역시 서구 불로동 불로지구 35블럭 3,4롯트  한호프라자 201, 202호",
+      "previousGroup": "detail-unconfirmed",
+      "outcome": "verified",
+      "checkedAt": "2026-10-16T08:10:21.764Z",
+      "note": "원주소의 한호프라자와 201~202호가 현재 검단로744번1길 26·불로동 794-3으로 확인돼 해당 건물 지도 위치를 반영했습니다. 층·호수의 실제 위치나 방문 사실을 검증한 것은 아닙니다.",
+      "sources": [
+        {
+          "provider": "네이버지도",
+          "url": "https://map.naver.com/p/search/%EC%9D%B8%EC%B2%9C%EA%B4%91%EC%97%AD%EC%8B%9C%20%EC%84%9C%EA%B5%AC%20%EB%B6%88%EB%A1%9C%EB%8F%99%20%EB%B6%88%EB%A1%9C%EC%A7%80%EA%B5%AC%2035%EB%B8%94%EB%9F%AD%203%2C4%EB%A1%AF%ED%8A%B8%20%ED%95%9C%ED%98%B8%ED%94%84%EB%9D%BC%EC%9E%90%20201%2C%20202%ED%98%B8?c=15.00,0,0,0,dh"
+        }
+      ],
+      "correction": {
+        "status": "verified",
+        "matchedAddress": "인천 검단구 검단로744번1길 26 한호프라자 2층 201~202호 (불로동 794-3)",
+        "matchedTitle": "한호프라자 201~202호",
+        "sourceUrl": "https://map.kakao.com/?urlX=430804.9999999995&urlY=1142572.0000000042&urlLevel=3&itemId=19849802&q=%EC%95%A0%ED%94%8C%ED%9C%98%ED%8A%B8%EB%8B%88%EC%8A%A4%20%EB%B3%B8%EC%A0%90&srcid=19849802&map_type=TYPE_MAP",
+        "latitude": 37.61243066,
+        "longitude": 126.68652033,
+        "note": "원주소의 한호프라자와 201~202호가 현재 검단로744번1길 26·불로동 794-3으로 확인돼 해당 건물 지도 위치를 반영했습니다. 층·호수의 실제 위치나 방문 사실을 검증한 것은 아닙니다."
+      }
+    },
+    {
+      "index": 17,
+      "address": "인천광역시 서구 마전동 검단2지구  24B 20-29L  검단2차풍림아이원아파트 202동 102호",
+      "previousGroup": "detail-unconfirmed",
+      "outcome": "verified",
+      "checkedAt": "2026-10-16T08:10:21.764Z",
+      "note": "원주소의 검단2차풍림아이원아파트 202동이 현재 완정로64번길 23·마전동 999-18로 확인돼 단지 전체가 아닌 202동 지도 위치를 반영했습니다. 층·호수의 실제 위치나 방문 사실을 검증한 것은 아닙니다.",
+      "sources": [
+        {
+          "provider": "네이버지도",
+          "url": "https://map.naver.com/p/search/%EC%9D%B8%EC%B2%9C%EA%B4%91%EC%97%AD%EC%8B%9C%20%EC%84%9C%EA%B5%AC%20%EB%A7%88%EC%A0%84%EB%8F%99%20%EA%B2%80%EB%8B%A82%EC%A7%80%EA%B5%AC%2024B%2020-29L%20%EA%B2%80%EB%8B%A82%EC%B0%A8%ED%92%8D%EB%A6%BC%EC%95%84%EC%9D%B4%EC%9B%90%EC%95%84%ED%8C%8C%ED%8A%B8%20202%EB%8F%99%20102%ED%98%B8?c=15.00,0,0,0,dh"
+        }
+      ],
+      "correction": {
+        "status": "verified",
+        "matchedAddress": "인천 검단구 완정로64번길23 (마전동999-18)",
+        "matchedTitle": "검단풍림아이원2차아파트 202동",
+        "sourceUrl": "https://map.kakao.com/?urlX=427141.9999999995&urlY=1138384.9999999988&urlLevel=3&itemId=26728383&q=%EA%B2%80%EB%8B%A8%ED%92%8D%EB%A6%BC%EC%95%84%EC%9D%B4%EC%9B%902%EC%B0%A8%EC%95%84%ED%8C%8C%ED%8A%B8%20202%EB%8F%99&srcid=26728383&map_type=TYPE_MAP",
+        "latitude": 37.59729588,
+        "longitude": 126.66999246,
+        "note": "원주소의 검단2차풍림아이원아파트 202동이 현재 완정로64번길 23·마전동 999-18로 확인돼 단지 전체가 아닌 202동 지도 위치를 반영했습니다. 층·호수의 실제 위치나 방문 사실을 검증한 것은 아닙니다."
+      }
+    },
+    {
+      "index": 23,
+      "address": "대전광역시 유성구 구암동 680-66  지상1층",
+      "previousGroup": "detail-unconfirmed",
+      "outcome": "unresolved",
+      "checkedAt": "2026-10-16T08:10:21.764Z",
+      "note": "구암동 680-66으로 상세 검색을 다시 확인했으나 해당 번지의 숫자 좌표를 확정하지 못했습니다. 인근 번지로 옮기지 않았습니다.",
+      "sources": [
+        {
+          "provider": "네이버지도",
+          "url": "https://map.naver.com/p/search/%EB%8C%80%EC%A0%84%EA%B4%91%EC%97%AD%EC%8B%9C%20%EC%9C%A0%EC%84%B1%EA%B5%AC%20%EA%B5%AC%EC%95%94%EB%8F%99%20680-66%20%EC%A7%80%EC%83%811%EC%B8%B5?c=15.00,0,0,0,dh"
+        }
+      ]
+    },
+    {
+      "index": 28,
+      "address": "경기도 고양시 덕양구 덕은동 덕은도시개발구역 내 업2,3블럭 2동 1401호",
+      "previousGroup": "detail-unconfirmed",
+      "outcome": "unresolved",
+      "checkedAt": "2026-10-16T08:10:21.764Z",
+      "note": "덕은 도시개발구역 업2·3블록 2동 1401호는 현재 도로명·건물명을 연결할 근거가 부족하여 좌표를 확정하지 못했습니다.",
+      "sources": [
+        {
+          "provider": "네이버지도",
+          "url": "https://map.naver.com/p/search/%EA%B2%BD%EA%B8%B0%EB%8F%84%20%EA%B3%A0%EC%96%91%EC%8B%9C%20%EB%8D%95%EC%96%91%EA%B5%AC%20%EB%8D%95%EC%9D%80%EB%8F%99%20%EB%8D%95%EC%9D%80%EB%8F%84%EC%8B%9C%EA%B0%9C%EB%B0%9C%EA%B5%AC%EC%97%AD%20%EB%82%B4%20%EC%97%852%2C3%EB%B8%94%EB%9F%AD%202%EB%8F%99%201401%ED%98%B8?c=15.00,0,0,0,dh"
+        }
+      ]
+    },
+    {
+      "index": 29,
+      "address": "경기도 과천시 갈현동 과천지식정보타운 6블럭 내 근린생활시설 지하1층 B107호",
+      "previousGroup": "detail-unconfirmed",
+      "outcome": "unresolved",
+      "checkedAt": "2026-10-16T08:10:21.764Z",
+      "note": "과천 지식정보타운 검색은 과천대로6가길 52·갈현동 828의 입점업체를 반환했습니다. 원주소의 6블록 B107호와 동일 건물인지 확인되지 않아 반영하지 않았습니다.",
+      "sources": [
+        {
+          "provider": "네이버지도",
+          "url": "https://map.naver.com/p/search/%EA%B2%BD%EA%B8%B0%EB%8F%84%20%EA%B3%BC%EC%B2%9C%EC%8B%9C%20%EA%B0%88%ED%98%84%EB%8F%99%20%EA%B3%BC%EC%B2%9C%EC%A7%80%EC%8B%9D%EC%A0%95%EB%B3%B4%ED%83%80%EC%9A%B4%206%EB%B8%94%EB%9F%AD%20%EB%82%B4%20%EA%B7%BC%EB%A6%B0%EC%83%9D%ED%99%9C%EC%8B%9C%EC%84%A4%20%EC%A7%80%ED%95%981%EC%B8%B5%20B107%ED%98%B8?c=15.00,0,0,0,dh"
+        }
+      ]
+    },
+    {
+      "index": 34,
+      "address": "경기도 시흥시 조남동 916",
+      "previousGroup": "detail-unconfirmed",
+      "outcome": "unresolved",
+      "checkedAt": "2026-10-16T08:10:21.764Z",
+      "note": "조남동 916의 상세 검색을 다시 열었으나 단일 위치를 확정하지 못했습니다. 검색 미확인은 주소 오류 확정이 아닙니다.",
+      "sources": [
+        {
+          "provider": "네이버지도",
+          "url": "https://map.naver.com/p/search/%EA%B2%BD%EA%B8%B0%EB%8F%84%20%EC%8B%9C%ED%9D%A5%EC%8B%9C%20%EC%A1%B0%EB%82%A8%EB%8F%99%20916?c=15.00,0,0,0,dh"
+        }
+      ]
+    },
+    {
+      "index": 37,
+      "address": "경기도 화성시 청계동 동탄(2)택지개발지구 C-5블록 반도유보라   동탄역 카림애비뉴 2차판매시설 1층 W130호",
+      "previousGroup": "detail-unconfirmed",
+      "outcome": "unresolved",
+      "checkedAt": "2026-10-16T08:10:21.764Z",
+      "note": "동탄역 카림애비뉴 2차는 현재 동탄광역환승로 73·오산동 973으로 검색돼 원자료의 청계동과 다릅니다. W130호의 연결도 확인되지 않아 좌표·행정동을 임의 변경하지 않았습니다.",
+      "sources": [
+        {
+          "provider": "네이버지도",
+          "url": "https://map.naver.com/p/search/%EA%B2%BD%EA%B8%B0%EB%8F%84%20%ED%99%94%EC%84%B1%EC%8B%9C%20%EC%B2%AD%EA%B3%84%EB%8F%99%20%EB%8F%99%ED%83%84(2)%ED%83%9D%EC%A7%80%EA%B0%9C%EB%B0%9C%EC%A7%80%EA%B5%AC%20C-5%EB%B8%94%EB%A1%9D%20%EB%B0%98%EB%8F%84%EC%9C%A0%EB%B3%B4%EB%9D%BC%20%EB%8F%99%ED%83%84%EC%97%AD%20%EC%B9%B4%EB%A6%BC%EC%95%A0%EB%B9%84%EB%89%B4%202%EC%B0%A8%ED%8C%90%EB%A7%A4%EC%8B%9C%EC%84%A4%201%EC%B8%B5%20W130%ED%98%B8?c=15.00,0,0,0,dh"
+        }
+      ]
+    },
+    {
+      "index": 38,
+      "address": "경기도 화성시 영천동  동탄테크노밸리 내 25-1,2,3,4,5 블록 현대 실리콘앨리 동탄 지식산업센터 S01동 0186호",
+      "previousGroup": "detail-unconfirmed",
+      "outcome": "representative-only",
+      "checkedAt": "2026-10-16T08:10:21.764Z",
+      "note": "네이버·카카오에서 현대실리콘앨리 동탄의 현재 도로명·지번을 확인해 단지 대표 좌표로 옮겼습니다. 원주소의 S01동 0186호 개별 지점은 미확정이며 대표 위치를 정확한 방문 지점으로 보증하지 않습니다.",
+      "sources": [
+        {
+          "provider": "네이버지도",
+          "url": "https://map.naver.com/p/search/%EA%B2%BD%EA%B8%B0%EB%8F%84%20%ED%99%94%EC%84%B1%EC%8B%9C%20%EC%98%81%EC%B2%9C%EB%8F%99%20%EB%8F%99%ED%83%84%ED%85%8C%ED%81%AC%EB%85%B8%EB%B0%B8%EB%A6%AC%20%EB%82%B4%2025-1%2C2%2C3%2C4%2C5%20%EB%B8%94%EB%A1%9D%20%ED%98%84%EB%8C%80%20%EC%8B%A4%EB%A6%AC%EC%BD%98%EC%95%A8%EB%A6%AC%20%EB%8F%99%ED%83%84%20%EC%A7%80%EC%8B%9D%EC%82%B0%EC%97%85%EC%84%BC%ED%84%B0%20S01%EB%8F%99%200186%ED%98%B8?c=15.00,0,0,0,dh"
+        }
+      ],
+      "correction": {
+        "status": "representative-only",
+        "matchedAddress": "경기 화성시 동탄구 동탄영천로 150 (영천동 844-1)",
+        "matchedTitle": "현대실리콘앨리 동탄",
+        "sourceUrl": "https://map.kakao.com/?urlX=522549.99999999994&urlY=1032490&urlLevel=3&itemId=1644104828&q=%ED%98%84%EB%8C%80%EC%8B%A4%EB%A6%AC%EC%BD%98%EC%95%A8%EB%A6%AC%20%EB%8F%99%ED%83%84&srcid=1644104828&map_type=TYPE_MAP",
+        "latitude": 37.21605945,
+        "longitude": 127.10162327,
+        "note": "네이버·카카오에서 현대실리콘앨리 동탄의 현재 도로명·지번을 확인해 단지 대표 좌표로 옮겼습니다. 원주소의 S01동 0186호 개별 지점은 미확정이며 대표 위치를 정확한 방문 지점으로 보증하지 않습니다."
+      }
+    },
+    {
+      "index": 39,
+      "address": "경기도 화성시 영천동 25-1  동탄테크노밸리 내 25-1~5BL 현대실리콘앨리 동탄지식산업센터 A07동 714호",
+      "previousGroup": "detail-unconfirmed",
+      "outcome": "representative-only",
+      "checkedAt": "2026-10-16T08:10:21.764Z",
+      "note": "현대실리콘앨리 동탄 A동의 도로명·지번은 확인했지만 확보한 숫자 좌표는 단지 대표점입니다. 단지 대표 좌표로 옮겼으며 원주소 A07동 714호 개별 지점은 미확정으로 남깁니다.",
+      "sources": [
+        {
+          "provider": "네이버지도",
+          "url": "https://map.naver.com/p/search/%EA%B2%BD%EA%B8%B0%EB%8F%84%20%ED%99%94%EC%84%B1%EC%8B%9C%20%EC%98%81%EC%B2%9C%EB%8F%99%2025-1%20%EB%8F%99%ED%83%84%ED%85%8C%ED%81%AC%EB%85%B8%EB%B0%B8%EB%A6%AC%20%EB%82%B4%2025-1~5BL%20%ED%98%84%EB%8C%80%EC%8B%A4%EB%A6%AC%EC%BD%98%EC%95%A8%EB%A6%AC%20%EB%8F%99%ED%83%84%EC%A7%80%EC%8B%9D%EC%82%B0%EC%97%85%EC%84%BC%ED%84%B0%20A07%EB%8F%99%20714%ED%98%B8?c=15.00,0,0,0,dh"
+        }
+      ],
+      "correction": {
+        "status": "representative-only",
+        "matchedAddress": "경기 화성시 동탄구 동탄영천로 150 (영천동 844-1)",
+        "matchedTitle": "현대실리콘앨리 동탄",
+        "sourceUrl": "https://map.kakao.com/?urlX=522549.99999999994&urlY=1032490&urlLevel=3&itemId=1644104828&q=%ED%98%84%EB%8C%80%EC%8B%A4%EB%A6%AC%EC%BD%98%EC%95%A8%EB%A6%AC%20%EB%8F%99%ED%83%84&srcid=1644104828&map_type=TYPE_MAP",
+        "latitude": 37.21605945,
+        "longitude": 127.10162327,
+        "note": "현대실리콘앨리 동탄 A동의 도로명·지번은 확인했지만 확보한 숫자 좌표는 단지 대표점입니다. 단지 대표 좌표로 옮겼으며 원주소 A07동 714호 개별 지점은 미확정으로 남깁니다."
+      }
+    },
+    {
+      "index": 40,
+      "address": "경기도 화성시 영천동 동탄 2신도시 택지개발지구 테크노밸리 내 도시지원 14블럭 금강펜테리움 IX STAY 17층 S1724호",
+      "previousGroup": "detail-unconfirmed",
+      "outcome": "verified",
+      "checkedAt": "2026-10-16T08:10:21.764Z",
+      "note": "원주소의 금강펜테리움 IX STAY가 영천동 823-6의 동탄금강펜테리움IX타워 스테이동으로 확인돼 일반 타워나 홍보관이 아닌 스테이동 지도 위치를 반영했습니다. 층·호수의 실제 위치나 방문 사실을 검증한 것은 아닙니다.",
+      "sources": [
+        {
+          "provider": "네이버지도",
+          "url": "https://map.naver.com/p/search/%EA%B2%BD%EA%B8%B0%EB%8F%84%20%ED%99%94%EC%84%B1%EC%8B%9C%20%EC%98%81%EC%B2%9C%EB%8F%99%20%EB%8F%99%ED%83%84%202%EC%8B%A0%EB%8F%84%EC%8B%9C%20%ED%83%9D%EC%A7%80%EA%B0%9C%EB%B0%9C%EC%A7%80%EA%B5%AC%20%ED%85%8C%ED%81%AC%EB%85%B8%EB%B0%B8%EB%A6%AC%20%EB%82%B4%20%EB%8F%84%EC%8B%9C%EC%A7%80%EC%9B%90%2014%EB%B8%94%EB%9F%AD%20%EA%B8%88%EA%B0%95%ED%8E%9C%ED%85%8C%EB%A6%AC%EC%9B%80%20IX%20STAY%2017%EC%B8%B5%20S1724%ED%98%B8?c=15.00,0,0,0,dh"
+        }
+      ],
+      "correction": {
+        "status": "verified",
+        "matchedAddress": "경기 화성시 동탄구 영천동 823-6",
+        "matchedTitle": "동탄금강펜테리움IX타워 스테이동",
+        "sourceUrl": "https://map.kakao.com/?urlX=520067.9999999984&urlY=1031285.9999999998&urlLevel=3&itemId=1610961359&q=%EB%8F%99%ED%83%84%EA%B8%88%EA%B0%95%ED%8E%9C%ED%85%8C%EB%A6%AC%EC%9B%80IX%ED%83%80%EC%9B%8C%20%EC%8A%A4%ED%85%8C%EC%9D%B4%EB%8F%99&srcid=1610961359&map_type=TYPE_MAP",
+        "latitude": 37.21172907,
+        "longitude": 127.09043279,
+        "note": "원주소의 금강펜테리움 IX STAY가 영천동 823-6의 동탄금강펜테리움IX타워 스테이동으로 확인돼 일반 타워나 홍보관이 아닌 스테이동 지도 위치를 반영했습니다. 층·호수의 실제 위치나 방문 사실을 검증한 것은 아닙니다."
+      }
+    },
+    {
+      "index": 42,
+      "address": "경기도 의정부시 고산동 자족시설용지 3-5BL 한강 의정부 고산 듀클래스 지식산업센터 B716호  ,B717호",
+      "previousGroup": "detail-unconfirmed",
+      "outcome": "verified",
+      "checkedAt": "2026-10-16T08:10:21.764Z",
+      "note": "원주소의 한강 고산듀클래스 B동이 문충로 74·고산동 996-3으로 네이버·카카오에서 확인돼 A·C동이 아닌 B동 지도 위치를 반영했습니다. 층·호수의 실제 위치나 방문 사실을 검증한 것은 아닙니다.",
+      "sources": [
+        {
+          "provider": "네이버지도",
+          "url": "https://map.naver.com/p/search/%EA%B2%BD%EA%B8%B0%EB%8F%84%20%EC%9D%98%EC%A0%95%EB%B6%80%EC%8B%9C%20%EA%B3%A0%EC%82%B0%EB%8F%99%20%EC%9E%90%EC%A1%B1%EC%8B%9C%EC%84%A4%EC%9A%A9%EC%A7%80%203-5BL%20%ED%95%9C%EA%B0%95%20%EC%9D%98%EC%A0%95%EB%B6%80%20%EA%B3%A0%EC%82%B0%20%EB%93%80%ED%81%B4%EB%9E%98%EC%8A%A4%20%EC%A7%80%EC%8B%9D%EC%82%B0%EC%97%85%EC%84%BC%ED%84%B0%20B716%ED%98%B8%20B717%ED%98%B8?c=15.00,0,0,0,dh"
+        }
+      ],
+      "correction": {
+        "status": "verified",
+        "matchedAddress": "경기 의정부시 문충로74 (고산동996-3)",
+        "matchedTitle": "한강의정부고산듀클래스 B동",
+        "sourceUrl": "https://map.kakao.com/?urlX=522633.9999999996&urlY=1174683.0000000016&urlLevel=3&itemId=278483995&q=%ED%95%9C%EA%B0%95%EC%9D%98%EC%A0%95%EB%B6%80%EA%B3%A0%EC%82%B0%EB%93%80%ED%81%B4%EB%9E%98%EC%8A%A4%20B%EB%8F%99&srcid=278483995&map_type=TYPE_MAP",
+        "latitude": 37.72852776,
+        "longitude": 127.10270062,
+        "note": "원주소의 한강 고산듀클래스 B동이 문충로 74·고산동 996-3으로 네이버·카카오에서 확인돼 A·C동이 아닌 B동 지도 위치를 반영했습니다. 층·호수의 실제 위치나 방문 사실을 검증한 것은 아닙니다."
+      }
+    },
+    {
+      "index": 49,
+      "address": "강원특별자치도 원주시 귀래면 주포리 산 61-1",
+      "previousGroup": "same-primary-address",
+      "outcome": "unresolved",
+      "checkedAt": "2026-10-16T08:10:21.764Z",
+      "note": "네이버는 주포리 산61-1을 표시했지만 다른 지도는 산61-6 또는 산61-5를 반환했습니다. 산번지·부번이 달라 좌표를 확정하지 않았습니다.",
+      "sources": [
+        {
+          "provider": "네이버지도",
+          "url": "https://map.naver.com/p/search/%EA%B0%95%EC%9B%90%ED%8A%B9%EB%B3%84%EC%9E%90%EC%B9%98%EB%8F%84%20%EC%9B%90%EC%A3%BC%EC%8B%9C%20%EA%B7%80%EB%9E%98%EB%A9%B4%20%EC%A3%BC%ED%8F%AC%EB%A6%AC%20%EC%82%B0%2061-1?c=15.00,0,0,0,dh"
+        },
+        {
+          "provider": "Google 지도",
+          "url": "https://www.google.com/maps/search/?api=1&query=%EA%B0%95%EC%9B%90%ED%8A%B9%EB%B3%84%EC%9E%90%EC%B9%98%EB%8F%84%20%EC%9B%90%EC%A3%BC%EC%8B%9C%20%EA%B7%80%EB%9E%98%EB%A9%B4%20%EC%A3%BC%ED%8F%AC%EB%A6%AC%20%EC%82%B0%2061-1"
+        }
+      ]
+    },
+    {
+      "index": 63,
+      "address": "전북특별자치도 익산시 금마면 갈산리 산 71  ,산72,303",
+      "previousGroup": "same-primary-address",
+      "outcome": "unresolved",
+      "checkedAt": "2026-10-16T08:10:21.764Z",
+      "note": "원자료가 갈산리 산71·산72·303의 복수 필지입니다. 첫 번지만 표시되는 결과로 전체 필지의 대표점을 확정할 수 없어 기존 좌표를 유지했습니다.",
+      "sources": [
+        {
+          "provider": "네이버지도",
+          "url": "https://map.naver.com/p/search/%EC%A0%84%EB%B6%81%ED%8A%B9%EB%B3%84%EC%9E%90%EC%B9%98%EB%8F%84%20%EC%9D%B5%EC%82%B0%EC%8B%9C%20%EA%B8%88%EB%A7%88%EB%A9%B4%20%EA%B0%88%EC%82%B0%EB%A6%AC%20%EC%82%B0%2071%20%20%2C%EC%82%B072%2C303?c=15.00,0,0,0,dh"
+        },
+        {
+          "provider": "Google 지도",
+          "url": "https://www.google.com/maps/search/?api=1&query=%EC%A0%84%EB%B6%81%ED%8A%B9%EB%B3%84%EC%9E%90%EC%B9%98%EB%8F%84%20%EC%9D%B5%EC%82%B0%EC%8B%9C%20%EA%B8%88%EB%A7%88%EB%A9%B4%20%EA%B0%88%EC%82%B0%EB%A6%AC%20%EC%82%B0%2071%20%20%2C%EC%82%B072%2C303"
+        }
+      ]
+    },
+    {
+      "index": 64,
+      "address": "전북특별자치도 정읍시 북면 태곡리 266-2  ,267",
+      "previousGroup": "same-primary-address",
+      "outcome": "unresolved",
+      "checkedAt": "2026-10-16T08:10:21.764Z",
+      "note": "태곡리 266-2·267의 복수 필지이며 다른 지도는 산26-6으로 잘못 대응했습니다. 266-2 단독 검색도 같은 산번지를 반환하여 반영하지 않았습니다.",
+      "sources": [
+        {
+          "provider": "네이버지도",
+          "url": "https://map.naver.com/p/search/%EC%A0%84%EB%B6%81%ED%8A%B9%EB%B3%84%EC%9E%90%EC%B9%98%EB%8F%84%20%EC%A0%95%EC%9D%8D%EC%8B%9C%20%EB%B6%81%EB%A9%B4%20%ED%83%9C%EA%B3%A1%EB%A6%AC%20266-2%20%20%2C267?c=15.00,0,0,0,dh"
+        },
+        {
+          "provider": "Google 지도",
+          "url": "https://www.google.com/maps/search/?api=1&query=%EC%A0%84%EB%B6%81%ED%8A%B9%EB%B3%84%EC%9E%90%EC%B9%98%EB%8F%84%20%EC%A0%95%EC%9D%8D%EC%8B%9C%20%EB%B6%81%EB%A9%B4%20%ED%83%9C%EA%B3%A1%EB%A6%AC%20266-2%20%20%2C267"
+        }
+      ]
+    },
+    {
+      "index": 68,
+      "address": "전북특별자치도 김제시 성덕면 석동리 318-1  ,318",
+      "previousGroup": "same-primary-address",
+      "outcome": "unresolved",
+      "checkedAt": "2026-10-16T08:10:21.764Z",
+      "note": "석동리 318-1·318 중 다른 지도는 318만 표시했습니다. 두 필지의 위치·대표점이 확인되지 않아 한 필지 결과로 전체를 확정하지 않았습니다.",
+      "sources": [
+        {
+          "provider": "네이버지도",
+          "url": "https://map.naver.com/p/search/%EC%A0%84%EB%B6%81%ED%8A%B9%EB%B3%84%EC%9E%90%EC%B9%98%EB%8F%84%20%EA%B9%80%EC%A0%9C%EC%8B%9C%20%EC%84%B1%EB%8D%95%EB%A9%B4%20%EC%84%9D%EB%8F%99%EB%A6%AC%20318-1%20%20%2C318?c=15.00,0,0,0,dh"
+        },
+        {
+          "provider": "Google 지도",
+          "url": "https://www.google.com/maps/search/?api=1&query=%EC%A0%84%EB%B6%81%ED%8A%B9%EB%B3%84%EC%9E%90%EC%B9%98%EB%8F%84%20%EA%B9%80%EC%A0%9C%EC%8B%9C%20%EC%84%B1%EB%8D%95%EB%A9%B4%20%EC%84%9D%EB%8F%99%EB%A6%AC%20318-1%20%20%2C318"
+        }
+      ]
+    },
+    {
+      "index": 70,
+      "address": "전북특별자치도 장수군 장수읍 두산리 705-23",
+      "previousGroup": "same-primary-address",
+      "outcome": "unresolved",
+      "checkedAt": "2026-10-16T08:10:21.764Z",
+      "note": "네이버는 두산리 705-23을 표시했지만 다른 지도는 705 또는 인접 705-22·24를 반환했습니다. 원주소 부번의 좌표를 확정하지 못했습니다.",
+      "sources": [
+        {
+          "provider": "네이버지도",
+          "url": "https://map.naver.com/p/search/%EC%A0%84%EB%B6%81%ED%8A%B9%EB%B3%84%EC%9E%90%EC%B9%98%EB%8F%84%20%EC%9E%A5%EC%88%98%EA%B5%B0%20%EC%9E%A5%EC%88%98%EC%9D%8D%20%EB%91%90%EC%82%B0%EB%A6%AC%20705-23?c=15.00,0,0,0,dh"
+        },
+        {
+          "provider": "Google 지도",
+          "url": "https://www.google.com/maps/search/?api=1&query=%EC%A0%84%EB%B6%81%ED%8A%B9%EB%B3%84%EC%9E%90%EC%B9%98%EB%8F%84%20%EC%9E%A5%EC%88%98%EA%B5%B0%20%EC%9E%A5%EC%88%98%EC%9D%8D%20%EB%91%90%EC%82%B0%EB%A6%AC%20705-23"
+        }
+      ]
+    },
+    {
+      "index": 71,
+      "address": "전북특별자치도 장수군 천천면 남양리 665  665-1,666",
+      "previousGroup": "same-primary-address",
+      "outcome": "unresolved",
+      "checkedAt": "2026-10-16T08:10:21.764Z",
+      "note": "남양리 665·665-1·666의 복수 필지입니다. 다른 지도는 산66-5로 대응하여 필지별 위치와 전체 대표점을 확정하지 못했습니다.",
+      "sources": [
+        {
+          "provider": "네이버지도",
+          "url": "https://map.naver.com/p/search/%EC%A0%84%EB%B6%81%ED%8A%B9%EB%B3%84%EC%9E%90%EC%B9%98%EB%8F%84%20%EC%9E%A5%EC%88%98%EA%B5%B0%20%EC%B2%9C%EC%B2%9C%EB%A9%B4%20%EB%82%A8%EC%96%91%EB%A6%AC%20665%20%20665-1%2C666?c=15.00,0,0,0,dh"
+        },
+        {
+          "provider": "Google 지도",
+          "url": "https://www.google.com/maps/search/?api=1&query=%EC%A0%84%EB%B6%81%ED%8A%B9%EB%B3%84%EC%9E%90%EC%B9%98%EB%8F%84%20%EC%9E%A5%EC%88%98%EA%B5%B0%20%EC%B2%9C%EC%B2%9C%EB%A9%B4%20%EB%82%A8%EC%96%91%EB%A6%AC%20665%20%20665-1%2C666"
+        }
+      ]
+    },
+    {
+      "index": 80,
+      "address": "경상북도 문경시 영순면 김용리 산 8-22",
+      "previousGroup": "same-primary-address",
+      "outcome": "unresolved",
+      "checkedAt": "2026-10-16T08:10:21.764Z",
+      "note": "네이버는 김용리 산8-22를 표시했지만 다른 지도는 산8-1 또는 산8-23·24를 반환했습니다. 산번지의 부번이 달라 반영하지 않았습니다.",
+      "sources": [
+        {
+          "provider": "네이버지도",
+          "url": "https://map.naver.com/p/search/%EA%B2%BD%EC%83%81%EB%B6%81%EB%8F%84%20%EB%AC%B8%EA%B2%BD%EC%8B%9C%20%EC%98%81%EC%88%9C%EB%A9%B4%20%EA%B9%80%EC%9A%A9%EB%A6%AC%20%EC%82%B0%208-22?c=15.00,0,0,0,dh"
+        },
+        {
+          "provider": "Google 지도",
+          "url": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EC%83%81%EB%B6%81%EB%8F%84%20%EB%AC%B8%EA%B2%BD%EC%8B%9C%20%EC%98%81%EC%88%9C%EB%A9%B4%20%EA%B9%80%EC%9A%A9%EB%A6%AC%20%EC%82%B0%208-22"
+        }
+      ]
+    },
+    {
+      "index": 86,
+      "address": "경상남도 김해시 외동 홍익아파트 104동 308호",
+      "previousGroup": "detail-unconfirmed",
+      "outcome": "unresolved",
+      "checkedAt": "2026-10-16T08:10:21.764Z",
+      "note": "김해 홍익아파트 검색 결과가 내동 홍익그린빌·대성동 홍익타운 등으로 나뉘어 원자료 외동 104동과 일치하지 않았습니다. 비슷한 아파트명으로 좌표를 정하지 않았습니다.",
+      "sources": [
+        {
+          "provider": "네이버지도",
+          "url": "https://map.naver.com/p/search/%EA%B2%BD%EC%83%81%EB%82%A8%EB%8F%84%20%EA%B9%80%ED%95%B4%EC%8B%9C%20%EC%99%B8%EB%8F%99%20%ED%99%8D%EC%9D%B5%EC%95%84%ED%8C%8C%ED%8A%B8%20104%EB%8F%99%20308%ED%98%B8?c=15.00,0,0,0,dh"
+        }
+      ]
+    },
+    {
+      "index": 89,
+      "address": "경상남도 양산시 물금읍 증산리 ICD4단지 CJ대한통운 금정사업소내",
+      "previousGroup": "detail-unconfirmed",
+      "outcome": "unresolved",
+      "checkedAt": "2026-10-16T08:10:21.764Z",
+      "note": "증산리 ICD4단지 CJ대한통운 금정사업소의 상세 검색을 다시 열었지만 해당 사업소의 현재 위치를 특정하지 못했습니다.",
+      "sources": [
+        {
+          "provider": "네이버지도",
+          "url": "https://map.naver.com/p/search/%EA%B2%BD%EC%83%81%EB%82%A8%EB%8F%84%20%EC%96%91%EC%82%B0%EC%8B%9C%20%EB%AC%BC%EA%B8%88%EC%9D%8D%20%EC%A6%9D%EC%82%B0%EB%A6%AC%20ICD4%EB%8B%A8%EC%A7%80%20CJ%EB%8C%80%ED%95%9C%ED%86%B5%EC%9A%B4%20%EA%B8%88%EC%A0%95%EC%82%AC%EC%97%85%EC%86%8C%EB%82%B4?c=14.00,0,0,0,dh"
+        }
+      ]
+    },
+    {
+      "index": 90,
+      "address": "서울특별시 구로구 구로동 735-3  1층",
+      "previousGroup": "same-primary-address",
+      "outcome": "unresolved",
+      "checkedAt": "2026-10-16T08:10:21.764Z",
+      "note": "네이버는 구로동 735-3을 표시했지만 다른 지도는 735-97을 반환했습니다. 부번이 달라 해당 결과로 옮기지 않았습니다.",
+      "sources": [
+        {
+          "provider": "네이버지도",
+          "url": "https://map.naver.com/p/search/%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C%20%EA%B5%AC%EB%A1%9C%EA%B5%AC%20%EA%B5%AC%EB%A1%9C%EB%8F%99%20735-3%20%201%EC%B8%B5?c=14.00,0,0,0,dh"
+        },
+        {
+          "provider": "Google 지도",
+          "url": "https://www.google.com/maps/search/?api=1&query=%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C%20%EA%B5%AC%EB%A1%9C%EA%B5%AC%20%EA%B5%AC%EB%A1%9C%EB%8F%99%20735-3%20%201%EC%B8%B5"
+        }
+      ]
+    },
+    {
+      "index": 93,
+      "address": "서울특별시 강서구 가양동 33-1 33-2 서서울주차장 내",
+      "previousGroup": "same-primary-address",
+      "outcome": "unresolved",
+      "checkedAt": "2026-10-16T08:10:21.764Z",
+      "note": "가양동 33-1·33-2 및 서서울주차장이 함께 적힌 복수 필지입니다. 필지별 위치와 주차장의 대표점을 확정하지 못했습니다.",
+      "sources": [
+        {
+          "provider": "네이버지도",
+          "url": "https://map.naver.com/p/search/%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C%20%EA%B0%95%EC%84%9C%EA%B5%AC%20%EA%B0%80%EC%96%91%EB%8F%99%2033-1%2033-2%20%EC%84%9C%EC%84%9C%EC%9A%B8%EC%A3%BC%EC%B0%A8%EC%9E%A5%20%EB%82%B4?c=14.00,0,0,0,dh"
+        },
+        {
+          "provider": "Google 지도",
+          "url": "https://www.google.com/maps/search/?api=1&query=%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C%20%EA%B0%95%EC%84%9C%EA%B5%AC%20%EA%B0%80%EC%96%91%EB%8F%99%2033-1%2033-2%20%EC%84%9C%EC%84%9C%EC%9A%B8%EC%A3%BC%EC%B0%A8%EC%9E%A5%20%EB%82%B4"
+        }
+      ]
+    },
+    {
+      "index": 98,
+      "address": "서울특별시 양천구 신정동 812",
+      "previousGroup": "same-primary-address",
+      "outcome": "unresolved",
+      "checkedAt": "2026-10-16T08:10:21.764Z",
+      "note": "네이버는 신정동 812를 표시했지만 다른 지도는 812-17을 반환했습니다. 본번과 부번의 동일성을 확인하지 못해 유지했습니다.",
+      "sources": [
+        {
+          "provider": "네이버지도",
+          "url": "https://map.naver.com/p/search/%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C%20%EC%96%91%EC%B2%9C%EA%B5%AC%20%EC%8B%A0%EC%A0%95%EB%8F%99%20812?c=13.00,0,0,0,dh"
+        },
+        {
+          "provider": "Google 지도",
+          "url": "https://www.google.com/maps/search/?api=1&query=%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C%20%EC%96%91%EC%B2%9C%EA%B5%AC%20%EC%8B%A0%EC%A0%95%EB%8F%99%20812"
+        }
+      ]
+    },
+    {
+      "index": 99,
+      "address": "서울특별시 송파구 문정동 516",
+      "previousGroup": "same-primary-address",
+      "outcome": "unresolved",
+      "checkedAt": "2026-10-16T08:10:21.764Z",
+      "note": "문정동 516 검색에는 NC백화점 송파점·가든파이브 관련 업체가 나타났지만 현재 가든파이브라이프 지번은 문정동 634로 검색됩니다. 옛 지번의 연결 관계가 확정되지 않아 634의 좌표로 자동 변경하지 않았습니다.",
+      "sources": [
+        {
+          "provider": "네이버지도",
+          "url": "https://map.naver.com/p/search/%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C%20%EC%86%A1%ED%8C%8C%EA%B5%AC%20%EB%AC%B8%EC%A0%95%EB%8F%99%20516?c=13.00,0,0,0,dh"
+        },
+        {
+          "provider": "Google 지도",
+          "url": "https://www.google.com/maps/search/?api=1&query=%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C%20%EC%86%A1%ED%8C%8C%EA%B5%AC%20%EB%AC%B8%EC%A0%95%EB%8F%99%20516"
+        }
+      ]
+    },
+    {
+      "index": 101,
+      "address": "경기도 화성시 동탄구 영천동 1",
+      "previousGroup": "detail-unconfirmed",
+      "outcome": "unresolved",
+      "checkedAt": "2026-10-16T08:10:21.764Z",
+      "note": "영천동 1로 다시 검색했으나 주변 업체가 섞여 해당 번지를 특정하지 못했습니다. 영천동 전체나 다른 업체의 좌표로 대체하지 않았습니다.",
+      "sources": [
+        {
+          "provider": "네이버지도",
+          "url": "https://map.naver.com/p/search/%EA%B2%BD%EA%B8%B0%EB%8F%84%20%ED%99%94%EC%84%B1%EC%8B%9C%20%EB%8F%99%ED%83%84%EA%B5%AC%20%EC%98%81%EC%B2%9C%EB%8F%99%201?c=15.00,0,0,0,dh"
+        }
+      ]
+    },
+    {
+      "index": 103,
+      "address": "인천광역시 계양구 작전동 500 현대아파트상가 105호",
+      "previousGroup": "detail-unconfirmed",
+      "outcome": "unresolved",
+      "checkedAt": "2026-10-16T08:10:21.764Z",
+      "note": "작전동 현대아파트 상가는 여러 후보가 있고 확인된 후보의 지번은 111 등으로 원주소 500과 다릅니다. 원주소와 같은 상가인지 확인되지 않아 변경하지 않았습니다.",
+      "sources": [
+        {
+          "provider": "네이버지도",
+          "url": "https://map.naver.com/p/search/%EC%9D%B8%EC%B2%9C%EA%B4%91%EC%97%AD%EC%8B%9C%20%EA%B3%84%EC%96%91%EA%B5%AC%20%EC%9E%91%EC%A0%84%EB%8F%99%20500%20%ED%98%84%EB%8C%80%EC%95%84%ED%8C%8C%ED%8A%B8%EC%83%81%EA%B0%80%20105%ED%98%B8?c=15.00,0,0,0,dh"
+        }
+      ]
+    },
+    {
+      "index": 120,
+      "address": "경기도 여주시 하동 122-8 3B3.4L삼한강변APT 1동 1104호",
+      "previousGroup": "same-primary-address",
+      "outcome": "verified",
+      "checkedAt": "2026-10-16T08:10:21.764Z",
+      "note": "네이버의 동일 지번 결과와 Google의 하동 122-8 주소 지점을 대조해 해당 필지의 지도 좌표를 반영했습니다. 아파트 개별 동 및 층·호수의 실제 위치나 방문 사실을 검증한 것은 아닙니다.",
+      "sources": [
+        {
+          "provider": "네이버지도",
+          "url": "https://map.naver.com/p/search/%EA%B2%BD%EA%B8%B0%EB%8F%84%20%EC%97%AC%EC%A3%BC%EC%8B%9C%20%ED%95%98%EB%8F%99%20122-8%203B3.4L%EC%82%BC%ED%95%9C%EA%B0%95%EB%B3%80APT%201%EB%8F%99%201104%ED%98%B8?c=13.00,0,0,0,dh"
+        },
+        {
+          "provider": "Google 지도",
+          "url": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EA%B8%B0%EB%8F%84%20%EC%97%AC%EC%A3%BC%EC%8B%9C%20%ED%95%98%EB%8F%99%20122-8%203B3.4L%EC%82%BC%ED%95%9C%EA%B0%95%EB%B3%80APT%201%EB%8F%99%201104%ED%98%B8"
+        }
+      ],
+      "correction": {
+        "status": "verified",
+        "matchedAddress": "경기도 여주시 하동 122-8",
+        "matchedTitle": "경기도 여주시 하동 122-8",
+        "sourceUrl": "https://www.google.com/maps/place/%EA%B2%BD%EA%B8%B0%EB%8F%84+%EC%97%AC%EC%A3%BC%EC%8B%9C+%ED%95%98%EB%8F%99+122-8/data=!4m5!3m4!1s0x35635d8d5cf79987:0x9a642b87002cf5e2!16s%2Fg%2F11jz7wnqs4!19sChIJh5n3XI1dYzUR4vUsAIcrZJo!20s8Q998J2H%2B6C2?authuser=0&hl=ko&g_ep=EgoyMDI2MTAxMy4wIJJjKgBIAVAD&rclk=1",
+        "plusCode": "8Q998J2H+6C2",
+        "latitude": 37.3005125,
+        "longitude": 127.62851563,
+        "note": "네이버의 동일 지번 결과와 Google의 하동 122-8 주소 지점을 대조해 해당 필지의 지도 좌표를 반영했습니다. 아파트 개별 동 및 층·호수의 실제 위치나 방문 사실을 검증한 것은 아닙니다."
+      }
+    },
+    {
+      "index": 122,
+      "address": "경기도 연천군 청산면 궁평리 21-11",
+      "previousGroup": "same-primary-address",
+      "outcome": "unresolved",
+      "checkedAt": "2026-10-16T08:10:21.764Z",
+      "note": "네이버는 궁평리 21-11을 표시했지만 다른 지도는 산2-1을 반환했습니다. 산 여부와 번지가 달라 확정하지 않았습니다.",
+      "sources": [
+        {
+          "provider": "네이버지도",
+          "url": "https://map.naver.com/p/search/%EA%B2%BD%EA%B8%B0%EB%8F%84%20%EC%97%B0%EC%B2%9C%EA%B5%B0%20%EC%B2%AD%EC%82%B0%EB%A9%B4%20%EA%B6%81%ED%8F%89%EB%A6%AC%2021-11?c=13.00,0,0,0,dh"
+        },
+        {
+          "provider": "Google 지도",
+          "url": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EA%B8%B0%EB%8F%84%20%EC%97%B0%EC%B2%9C%EA%B5%B0%20%EC%B2%AD%EC%82%B0%EB%A9%B4%20%EA%B6%81%ED%8F%89%EB%A6%AC%2021-11"
+        }
+      ]
+    }
+  ]
+}

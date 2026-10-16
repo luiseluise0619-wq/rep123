@@ -64,6 +64,12 @@ test('mismatched addresses show a permanent marker label and escaped source-resu
  h.ui.openPopup({bindPopup(content){assert.match(content,/원주소와 지도 검색 결과 불일치/);assert.match(content,/다른 번지 &lt;안전&gt;/);assert.match(content,/현장 사진 등록/);return {openPopup(){}};}},p);
  assert.match(html,/map-pin-label/);assert.match(css,/\.addr-dot\.mismatch/);
 });
+test('complex representative points remain warned on the marker and in its popup',()=>{
+ const h=harness(),p=h.point;p[4]=0;h.ui.window.COORD_REVIEW={records:{[p[2]]:{status:'representative-only',matchedAddress:'동탄영천로 150',note:'S01동은 미확정'}}};
+ assert.equal(h.ui.coordinateNeedsReview(p),true);assert.equal(h.ui.coordinateLabel(p),'단지 대표 위치 · 개별 동 미확인');h.ui.appendAddrRow(p);
+ assert.match(h.get('list').children[0].children[1].innerHTML,/단지 대표 위치/);assert.ok(h.get('list').children[0].children[2].href);
+ h.ui.openPopup({bindPopup(content){assert.match(content,/단지 대표 위치 · 개별 동·호수 미확인/);assert.match(content,/S01동은 미확정/);return {openPopup(){}};}},p);
+});
 test('region drilldown keeps weighted business counts and keyboard-accessible breadcrumb buttons',()=>{
  const h=harness();h.ui.renderSido();const region=h.get('list').children.find(r=>r.attributes.role==='button');
  assert.equal(region.attributes['aria-label'],'서울특별시 사업자수 3개');region.onclick();assert.equal(h.ui.sel.sido,'서울특별시');
