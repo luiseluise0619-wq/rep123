@@ -7,7 +7,7 @@ var PHOTO_LIMITS_ = Object.freeze({
   accountCeilingBytes: 24000000000, reserveBytes: 1000000000,
   dailyUploads: 1000, dailyReads: 2000, sessionHours: 8,
   sourceUrl: 'https://rep123-seven.vercel.app/addresses.js',
-  rootName: '현장방문_주소사진_v1', indexRootName: '현장방문_사진목록_v3', version: '2026-10-16-mybox-v5-gps', publicEnabled: true, requireCapture: true,
+  rootName: '현장방문_주소사진_v1', indexRootName: '현장방문_사진목록_v3', version: '2026-10-16-mybox-v5-refresh', publicEnabled: true, requireCapture: true,
   webAppUrl: 'https://script.google.com/macros/s/AKfycbxkluXWRelyVJ1D0XtuLHHo1GdF76Dzp4CLHQeC-hlvpW6WmctvD9_60WKqugmfN_PAQw/exec'
 });
 
