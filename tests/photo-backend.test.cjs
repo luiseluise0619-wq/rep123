@@ -101,7 +101,7 @@ test('doGet escapes script tags in user-controlled address; helper functions sta
   assert.ok(!template.initialJson.includes('<'));
   assert.ok(template.initialJson.includes('\\u003c'));
   const exposed=[...source.matchAll(/^function (\w+)\(/gm)].map(m=>m[1]).filter(n=>!n.endsWith('_'));
-  assert.deepEqual(exposed,['doGet','getStatus','loginPhoto','uploadPhoto','getPhoto','listEmployees','manageEmployee','getAdminOverview','getAdminChunk','syncAdminCatalog','getPublicStatus','uploadPublicPhoto','getPublicPhoto','getPublicUploadReceipt','deletePhoto','beginPublicCapture','diagnosePhotoStorage']);
+  assert.deepEqual(exposed,['doGet','getStatus','loginPhoto','uploadPhoto','getPhoto','listEmployees','manageEmployee','getAdminOverview','getAdminChunk','repairAdminCatalog','syncAdminCatalog','getPublicStatus','uploadPublicPhoto','getPublicPhoto','getPublicUploadReceipt','deletePhoto','beginPublicCapture','diagnosePhotoStorage']);
 });
 
 test('staff with identical display names see only immutable account-owned photos; admin sees both',()=>{
@@ -126,6 +126,7 @@ test('staff and unauthenticated requests cannot access ANY administrator RPC',()
     assert.equal(h.app.manageEmployee(session,'create',{login:'evil',name:'관리자',role:'admin'}).code,expected);
     assert.equal(h.app.getAdminOverview(session).code,expected);
     assert.equal(h.app.getAdminChunk(session,'a').code,expected);
+    assert.equal(h.app.repairAdminCatalog(session).code,expected);
     assert.equal(h.app.syncAdminCatalog(session,true).code,expected);
   }
   const claims=JSON.parse(Buffer.from(staff.session.split('.')[0],'base64url').toString());claims.role='admin';

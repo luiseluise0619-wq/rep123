@@ -24,7 +24,7 @@ function harness(width=390){
 test('map uses the photo-page palette and keeps secondary actions inside the more menu',()=>{
  assert.match(html,/map-ui\.css\?v=20261016-simple-map/);assert.match(css,/--accent:#2563eb/);assert.doesNotMatch(css,/#EFEBE3|#E5007E|#FF6A00|animation:(?:spread|ripple)/i);
  const menu=html.slice(html.indexOf('<details class="map-menu"'),html.indexOf('</details>'));
- for(const token of ['duplicates.html','check.html','dataInfoBtn','photoAdminLink','nApprox'])assert.ok(menu.includes(token));
+ for(const token of ['duplicates.html','coordinate-review.html','dataInfoBtn','photoAdminLink','nApprox'])assert.ok(menu.includes(token));
  assert.match(menu,/지도에 표시된 숫자는 주소 수/);assert.match(html,/id="panelToggle"[^>]*aria-expanded="true"/);
 });
 test('panel can be collapsed and reopened with a native button without losing region or search state',()=>{
@@ -55,6 +55,14 @@ test('coordinate warnings and missing coordinates remain explicit, without block
  assert.match(h.get('list').children[0].children[1].innerHTML,/좌표 확인필요/);assert.match(h.get('list').children[0].children[1].innerHTML,/행정동 미확정/);
  h.ui.openPopup({bindPopup(content){assert.match(content,/&lt;주소&gt;/);assert.match(content,/근사 좌표/);return {openPopup(){}};}},approx);
  h.ui.appendAddrRow([null,null,'좌표 없음',1,0]);const missing=h.get('list').children[1];missing.children[0].onclick();assert.equal(h.calls.at(-1)[0],'alert');assert.ok(missing.children[2].href);
+});
+
+test('mismatched addresses show a permanent marker label and escaped source-result warning without blocking photos',()=>{
+ const h=harness(),p=h.point;h.ui.window.COORD_REVIEW={records:{[p[2]]:{status:'address-mismatch',matchedAddress:'다른 번지 <안전>',note:'원주소 보존'}}};
+ assert.equal(h.ui.coordinateNeedsReview(p),true);assert.equal(h.ui.coordinateLabel(p),'주소 불일치');
+ h.ui.appendAddrRow(p);assert.match(h.get('list').children[0].children[1].innerHTML,/주소 불일치/);assert.ok(h.get('list').children[0].children[2].href);
+ h.ui.openPopup({bindPopup(content){assert.match(content,/원주소와 지도 검색 결과 불일치/);assert.match(content,/다른 번지 &lt;안전&gt;/);assert.match(content,/현장 사진 등록/);return {openPopup(){}};}},p);
+ assert.match(html,/map-pin-label/);assert.match(css,/\.addr-dot\.mismatch/);
 });
 test('region drilldown keeps weighted business counts and keyboard-accessible breadcrumb buttons',()=>{
  const h=harness();h.ui.renderSido();const region=h.get('list').children.find(r=>r.attributes.role==='button');

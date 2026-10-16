@@ -1,0 +1,1193 @@
+{
+  "asOf": "2026-10-16",
+  "summary": {
+    "checked": 145,
+    "verified": 17,
+    "remaining": 128,
+    "statuses": {
+      "address-mismatch": 84,
+      "unverified": 39,
+      "verified": 17,
+      "insufficient-address": 5
+    }
+  },
+  "records": {
+    "서울특별시 금천구 가산동 549-9": {
+      "status": "address-mismatch",
+      "matchedAddress": "서울특별시 금천구 가산동 549-1",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C%20%EA%B8%88%EC%B2%9C%EA%B5%AC%20%EA%B0%80%EC%82%B0%EB%8F%99%20549-9",
+      "checkedAt": "2026-10-16T06:09:49.397Z"
+    },
+    "서울특별시 구로구 가리봉동 25-52": {
+      "status": "address-mismatch",
+      "matchedAddress": "서울특별시 구로구 가리봉동 25",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C%20%EA%B5%AC%EB%A1%9C%EA%B5%AC%20%EA%B0%80%EB%A6%AC%EB%B4%89%EB%8F%99%2025-52",
+      "checkedAt": "2026-10-16T06:09:51.217Z"
+    },
+    "서울특별시 중구 회현동1가 125-9": {
+      "status": "address-mismatch",
+      "matchedAddress": "서울특별시 중구 회현동1가 125-8",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C%20%EC%A4%91%EA%B5%AC%20%ED%9A%8C%ED%98%84%EB%8F%991%EA%B0%80%20125-9",
+      "checkedAt": "2026-10-16T06:09:52.868Z"
+    },
+    "서울특별시 중구 을지로5가 19-43": {
+      "status": "address-mismatch",
+      "matchedAddress": "서울특별시 중구 을지로5가 19-62",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C%20%EC%A4%91%EA%B5%AC%20%EC%9D%84%EC%A7%80%EB%A1%9C5%EA%B0%80%2019-43",
+      "checkedAt": "2026-10-16T06:09:54.943Z"
+    },
+    "서울특별시 영등포구 신길동 4664": {
+      "status": "unverified",
+      "matchedAddress": "",
+      "note": "원주소와 일치하는 단일 위치를 확인하지 못해 기존 근사 좌표를 유지했습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C%20%EC%98%81%EB%93%B1%ED%8F%AC%EA%B5%AC%20%EC%8B%A0%EA%B8%B8%EB%8F%99%204664",
+      "checkedAt": "2026-10-16T06:09:58.917Z"
+    },
+    "서울특별시 영등포구 영등포동3가 618-3 지하상가86,87-1": {
+      "status": "unverified",
+      "matchedAddress": "",
+      "note": "원주소와 일치하는 단일 위치를 확인하지 못해 기존 근사 좌표를 유지했습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C%20%EC%98%81%EB%93%B1%ED%8F%AC%EA%B5%AC%20%EC%98%81%EB%93%B1%ED%8F%AC%EB%8F%993%EA%B0%80%20618-3%20%EC%A7%80%ED%95%98%EC%83%81%EA%B0%8086%2C87-1",
+      "checkedAt": "2026-10-16T06:10:01.090Z"
+    },
+    "서울특별시 동작구 본동 9-8": {
+      "status": "address-mismatch",
+      "matchedAddress": "서울특별시 동작구 본동 8-9",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C%20%EB%8F%99%EC%9E%91%EA%B5%AC%20%EB%B3%B8%EB%8F%99%209-8",
+      "checkedAt": "2026-10-16T06:10:03.644Z"
+    },
+    "서울특별시 성북구 길음동 517-2": {
+      "status": "address-mismatch",
+      "matchedAddress": "서울특별시 성북구 길음동 517-5",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C%20%EC%84%B1%EB%B6%81%EA%B5%AC%20%EA%B8%B8%EC%9D%8C%EB%8F%99%20517-2",
+      "checkedAt": "2026-10-16T06:10:05.127Z"
+    },
+    "서울특별시 은평구 응암로16길 38-1(응암동)": {
+      "status": "unverified",
+      "matchedAddress": "",
+      "note": "원주소와 일치하는 단일 위치를 확인하지 못해 기존 근사 좌표를 유지했습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C%20%EC%9D%80%ED%8F%89%EA%B5%AC%20%EC%9D%91%EC%95%94%EB%A1%9C16%EA%B8%B8%2038-1(%EC%9D%91%EC%95%94%EB%8F%99)",
+      "checkedAt": "2026-10-16T06:10:48.733Z"
+    },
+    "서울특별시 은평구 응암동 295-40": {
+      "status": "unverified",
+      "matchedAddress": "",
+      "note": "원주소와 일치하는 단일 위치를 확인하지 못해 기존 근사 좌표를 유지했습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C%20%EC%9D%80%ED%8F%89%EA%B5%AC%20%EC%9D%91%EC%95%94%EB%8F%99%20295-40",
+      "checkedAt": "2026-10-16T06:10:52.685Z"
+    },
+    "부산광역시 사상구 학장동 산 140-17  1층": {
+      "status": "address-mismatch",
+      "matchedAddress": "부산광역시 사상구 학장동 산140-9 1층",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EB%B6%80%EC%82%B0%EA%B4%91%EC%97%AD%EC%8B%9C%20%EC%82%AC%EC%83%81%EA%B5%AC%20%ED%95%99%EC%9E%A5%EB%8F%99%20%EC%82%B0%20140-17%20%201%EC%B8%B5",
+      "checkedAt": "2026-10-16T06:10:54.234Z"
+    },
+    "부산광역시 해운대구 중동 1381-1": {
+      "status": "address-mismatch",
+      "matchedAddress": "부산광역시 해운대구 중동 1381-5",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EB%B6%80%EC%82%B0%EA%B4%91%EC%97%AD%EC%8B%9C%20%ED%95%B4%EC%9A%B4%EB%8C%80%EA%B5%AC%20%EC%A4%91%EB%8F%99%201381-1",
+      "checkedAt": "2026-10-16T06:10:55.717Z"
+    },
+    "대구광역시 동구 방촌동 1113-327": {
+      "status": "address-mismatch",
+      "matchedAddress": "대구광역시 동구 방촌동 1113-229",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EB%8C%80%EA%B5%AC%EA%B4%91%EC%97%AD%EC%8B%9C%20%EB%8F%99%EA%B5%AC%20%EB%B0%A9%EC%B4%8C%EB%8F%99%201113-327",
+      "checkedAt": "2026-10-16T06:10:57.204Z"
+    },
+    "인천광역시 서구 가정동 루원시티 주상복합 7블록 앨리스빌 상가 B021호": {
+      "status": "unverified",
+      "matchedAddress": "",
+      "note": "원주소와 일치하는 단일 위치를 확인하지 못해 기존 근사 좌표를 유지했습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%9D%B8%EC%B2%9C%EA%B4%91%EC%97%AD%EC%8B%9C%20%EC%84%9C%EA%B5%AC%20%EA%B0%80%EC%A0%95%EB%8F%99%20%EB%A3%A8%EC%9B%90%EC%8B%9C%ED%8B%B0%20%EC%A3%BC%EC%83%81%EB%B3%B5%ED%95%A9%207%EB%B8%94%EB%A1%9D%20%EC%95%A8%EB%A6%AC%EC%8A%A4%EB%B9%8C%20%EC%83%81%EA%B0%80%20B021%ED%98%B8",
+      "checkedAt": "2026-10-16T06:10:58.922Z"
+    },
+    "인천광역시 서구 원당동 인천검단 택지개발지구 C-5-1-1BL 909호": {
+      "status": "unverified",
+      "matchedAddress": "",
+      "note": "원주소와 일치하는 단일 위치를 확인하지 못해 기존 근사 좌표를 유지했습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%9D%B8%EC%B2%9C%EA%B4%91%EC%97%AD%EC%8B%9C%20%EC%84%9C%EA%B5%AC%20%EC%9B%90%EB%8B%B9%EB%8F%99%20%EC%9D%B8%EC%B2%9C%EA%B2%80%EB%8B%A8%20%ED%83%9D%EC%A7%80%EA%B0%9C%EB%B0%9C%EC%A7%80%EA%B5%AC%20C-5-1-1BL%20909%ED%98%B8",
+      "checkedAt": "2026-10-16T06:11:00.678Z"
+    },
+    "인천광역시 서구 불로동 불로지구 35블럭 3,4롯트  한호프라자 201, 202호": {
+      "status": "unverified",
+      "matchedAddress": "",
+      "note": "원주소와 일치하는 단일 위치를 확인하지 못해 기존 근사 좌표를 유지했습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%9D%B8%EC%B2%9C%EA%B4%91%EC%97%AD%EC%8B%9C%20%EC%84%9C%EA%B5%AC%20%EB%B6%88%EB%A1%9C%EB%8F%99%20%EB%B6%88%EB%A1%9C%EC%A7%80%EA%B5%AC%2035%EB%B8%94%EB%9F%AD%203%2C4%EB%A1%AF%ED%8A%B8%20%20%ED%95%9C%ED%98%B8%ED%94%84%EB%9D%BC%EC%9E%90%20201%2C%20202%ED%98%B8",
+      "checkedAt": "2026-10-16T06:11:04.533Z"
+    },
+    "인천광역시 서구 마전동 검단2지구  24B 20-29L  검단2차풍림아이원아파트 202동 102호": {
+      "status": "unverified",
+      "matchedAddress": "",
+      "note": "원주소와 일치하는 단일 위치를 확인하지 못해 기존 근사 좌표를 유지했습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%9D%B8%EC%B2%9C%EA%B4%91%EC%97%AD%EC%8B%9C%20%EC%84%9C%EA%B5%AC%20%EB%A7%88%EC%A0%84%EB%8F%99%20%EA%B2%80%EB%8B%A82%EC%A7%80%EA%B5%AC%20%2024B%2020-29L%20%20%EA%B2%80%EB%8B%A82%EC%B0%A8%ED%92%8D%EB%A6%BC%EC%95%84%EC%9D%B4%EC%9B%90%EC%95%84%ED%8C%8C%ED%8A%B8%20202%EB%8F%99%20102%ED%98%B8",
+      "checkedAt": "2026-10-16T06:11:06.439Z"
+    },
+    "인천광역시 남동구 구월동 1265-24": {
+      "status": "address-mismatch",
+      "matchedAddress": "인천광역시 남동구 구월동 1265",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%9D%B8%EC%B2%9C%EA%B4%91%EC%97%AD%EC%8B%9C%20%EB%82%A8%EB%8F%99%EA%B5%AC%20%EA%B5%AC%EC%9B%94%EB%8F%99%201265-24",
+      "checkedAt": "2026-10-16T06:11:08.988Z"
+    },
+    "인천광역시 부평구 부평동 211-14": {
+      "status": "address-mismatch",
+      "matchedAddress": "인천광역시 부평구 부평동 211-119",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%9D%B8%EC%B2%9C%EA%B4%91%EC%97%AD%EC%8B%9C%20%EB%B6%80%ED%8F%89%EA%B5%AC%20%EB%B6%80%ED%8F%89%EB%8F%99%20211-14",
+      "checkedAt": "2026-10-16T06:11:11.007Z"
+    },
+    "인천광역시 동구 송현동 87": {
+      "status": "address-mismatch",
+      "matchedAddress": "인천광역시 동구 송현동 87-48",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%9D%B8%EC%B2%9C%EA%B4%91%EC%97%AD%EC%8B%9C%20%EB%8F%99%EA%B5%AC%20%EC%86%A1%ED%98%84%EB%8F%99%2087",
+      "checkedAt": "2026-10-16T06:11:12.562Z"
+    },
+    "인천광역시 미추홀구 주안동 456-22": {
+      "status": "address-mismatch",
+      "matchedAddress": "인천광역시 미추홀구 주안동 456-42",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%9D%B8%EC%B2%9C%EA%B4%91%EC%97%AD%EC%8B%9C%20%EB%AF%B8%EC%B6%94%ED%99%80%EA%B5%AC%20%EC%A3%BC%EC%95%88%EB%8F%99%20456-22",
+      "checkedAt": "2026-10-16T06:11:14.220Z"
+    },
+    "대전광역시 동구 중동 28-3 ,44": {
+      "status": "address-mismatch",
+      "matchedAddress": "대전광역시 동구 중동 3-28",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EB%8C%80%EC%A0%84%EA%B4%91%EC%97%AD%EC%8B%9C%20%EB%8F%99%EA%B5%AC%20%EC%A4%91%EB%8F%99%2028-3%20%2C44",
+      "checkedAt": "2026-10-16T06:11:15.657Z"
+    },
+    "대전광역시 유성구 구암동 680-66  지상1층": {
+      "status": "unverified",
+      "matchedAddress": "",
+      "note": "원주소와 일치하는 단일 위치를 확인하지 못해 기존 근사 좌표를 유지했습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EB%8C%80%EC%A0%84%EA%B4%91%EC%97%AD%EC%8B%9C%20%EC%9C%A0%EC%84%B1%EA%B5%AC%20%EA%B5%AC%EC%95%94%EB%8F%99%20680-66%20%20%EC%A7%80%EC%83%811%EC%B8%B5",
+      "checkedAt": "2026-10-16T06:11:19.345Z"
+    },
+    "울산광역시 북구 매곡동 634-9 1층": {
+      "status": "unverified",
+      "matchedAddress": "",
+      "note": "원주소와 일치하는 단일 위치를 확인하지 못해 기존 근사 좌표를 유지했습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%9A%B8%EC%82%B0%EA%B4%91%EC%97%AD%EC%8B%9C%20%EB%B6%81%EA%B5%AC%20%EB%A7%A4%EA%B3%A1%EB%8F%99%20634-9%201%EC%B8%B5",
+      "checkedAt": "2026-10-16T06:11:21.579Z"
+    },
+    "울산광역시 울주군 범서읍 천상리 40-1 천상벽산 101동 1202호": {
+      "status": "unverified",
+      "matchedAddress": "",
+      "note": "원주소와 일치하는 단일 위치를 확인하지 못해 기존 근사 좌표를 유지했습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%9A%B8%EC%82%B0%EA%B4%91%EC%97%AD%EC%8B%9C%20%EC%9A%B8%EC%A3%BC%EA%B5%B0%20%EB%B2%94%EC%84%9C%EC%9D%8D%20%EC%B2%9C%EC%83%81%EB%A6%AC%2040-1%20%EC%B2%9C%EC%83%81%EB%B2%BD%EC%82%B0%20101%EB%8F%99%201202%ED%98%B8",
+      "checkedAt": "2026-10-16T06:11:23.864Z"
+    },
+    "울산광역시 울주군 삼남읍 방기리 산 87-1": {
+      "status": "address-mismatch",
+      "matchedAddress": "울산광역시 울주군 삼남읍 방기리 산87",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%9A%B8%EC%82%B0%EA%B4%91%EC%97%AD%EC%8B%9C%20%EC%9A%B8%EC%A3%BC%EA%B5%B0%20%EC%82%BC%EB%82%A8%EC%9D%8D%20%EB%B0%A9%EA%B8%B0%EB%A6%AC%20%EC%82%B0%2087-1",
+      "checkedAt": "2026-10-16T06:13:22.144Z"
+    },
+    "세종특별자치시 세종특별자치시 집현동 883-139": {
+      "status": "verified",
+      "matchedAddress": "세종특별자치시 집현동 883-139",
+      "note": "원주소의 건물명 또는 도로명·지번이 지도 결과와 일치해 해당 지도 위치를 반영했습니다. 층·호수의 위치나 실제 방문을 검증한 것은 아닙니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/place/%EC%84%B8%EC%A2%85%ED%8A%B9%EB%B3%84%EC%9E%90%EC%B9%98%EC%8B%9C+%EC%A7%91%ED%98%84%EB%8F%99+883-139/data=!3m1!4b1!4m4!3m3!1s0x3565349552e2227d:0xf9b19e3da0a1afec!16s%2Fg%2F11sb7cszdt!20s8Q89F8P9%2BFJX?entry=ttu&g_ep=EgoyMDI2MTAxMy4wIKXMDSoASAFQAw%3D%3D",
+      "checkedAt": "2026-10-16T06:24:46.636Z",
+      "plusCode": "8Q89F8P9+FJX"
+    },
+    "경기도 가평군 가평읍 읍내리 267-5": {
+      "status": "address-mismatch",
+      "matchedAddress": "경기도 가평군 가평읍 읍내리 267-4",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EA%B8%B0%EB%8F%84%20%EA%B0%80%ED%8F%89%EA%B5%B0%20%EA%B0%80%ED%8F%89%EC%9D%8D%20%EC%9D%8D%EB%82%B4%EB%A6%AC%20267-5",
+      "checkedAt": "2026-10-16T06:13:25.606Z"
+    },
+    "경기도 가평군 상면 원흥리 산 28-8": {
+      "status": "verified",
+      "matchedAddress": "경기도 가평군 상면 원흥리 산28-8",
+      "note": "원주소의 건물명 또는 도로명·지번이 지도 결과와 일치해 해당 지도 위치를 반영했습니다. 층·호수의 위치나 실제 방문을 검증한 것은 아닙니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/place/%EA%B2%BD%EA%B8%B0%EB%8F%84+%EA%B0%80%ED%8F%89%EA%B5%B0+%EC%83%81%EB%A9%B4+%EC%9B%90%ED%9D%A5%EB%A6%AC+%EC%82%B028-8/data=!3m1!4b1!4m4!3m3!1s0x35632c96e45c5da3:0xfd8f9dbcf3eb387a!16s%2Fg%2F11tjfgff4f!20s8Q99R8FC%2BJV6?entry=ttu&g_ep=EgoyMDI2MTAxMy4wIKXMDSoASAFQAw%3D%3D",
+      "checkedAt": "2026-10-16T06:24:46.670Z",
+      "plusCode": "8Q99R8FC+JV6"
+    },
+    "경기도 고양시 덕양구 덕은동 덕은도시개발구역 내 업2,3블럭 2동 1401호": {
+      "status": "unverified",
+      "matchedAddress": "",
+      "note": "원주소와 일치하는 단일 위치를 확인하지 못해 기존 근사 좌표를 유지했습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EA%B8%B0%EB%8F%84%20%EA%B3%A0%EC%96%91%EC%8B%9C%20%EB%8D%95%EC%96%91%EA%B5%AC%20%EB%8D%95%EC%9D%80%EB%8F%99%20%EB%8D%95%EC%9D%80%EB%8F%84%EC%8B%9C%EA%B0%9C%EB%B0%9C%EA%B5%AC%EC%97%AD%20%EB%82%B4%20%EC%97%852%2C3%EB%B8%94%EB%9F%AD%202%EB%8F%99%201401%ED%98%B8",
+      "checkedAt": "2026-10-16T06:13:28.958Z"
+    },
+    "경기도 과천시 갈현동 과천지식정보타운 6블럭 내 근린생활시설 지하1층 B107호": {
+      "status": "unverified",
+      "matchedAddress": "",
+      "note": "원주소와 일치하는 단일 위치를 확인하지 못해 기존 근사 좌표를 유지했습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EA%B8%B0%EB%8F%84%20%EA%B3%BC%EC%B2%9C%EC%8B%9C%20%EA%B0%88%ED%98%84%EB%8F%99%20%EA%B3%BC%EC%B2%9C%EC%A7%80%EC%8B%9D%EC%A0%95%EB%B3%B4%ED%83%80%EC%9A%B4%206%EB%B8%94%EB%9F%AD%20%EB%82%B4%20%EA%B7%BC%EB%A6%B0%EC%83%9D%ED%99%9C%EC%8B%9C%EC%84%A4%20%EC%A7%80%ED%95%981%EC%B8%B5%20B107%ED%98%B8",
+      "checkedAt": "2026-10-16T06:13:30.546Z"
+    },
+    "경기도 광주시 양벌동 208-12": {
+      "status": "unverified",
+      "matchedAddress": "",
+      "note": "원주소와 일치하는 단일 위치를 확인하지 못해 기존 근사 좌표를 유지했습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EA%B8%B0%EB%8F%84%20%EA%B4%91%EC%A3%BC%EC%8B%9C%20%EC%96%91%EB%B2%8C%EB%8F%99%20208-12",
+      "checkedAt": "2026-10-16T06:13:34.299Z"
+    },
+    "경기도 김포시 감정동 526-2": {
+      "status": "address-mismatch",
+      "matchedAddress": "경기도 김포시 감정동 526-6",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EA%B8%B0%EB%8F%84%20%EA%B9%80%ED%8F%AC%EC%8B%9C%20%EA%B0%90%EC%A0%95%EB%8F%99%20526-2",
+      "checkedAt": "2026-10-16T06:13:35.978Z"
+    },
+    "경기도 김포시 하성면 하사리 254-2": {
+      "status": "address-mismatch",
+      "matchedAddress": "경기도 김포시 하성면 하사리 254",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EA%B8%B0%EB%8F%84%20%EA%B9%80%ED%8F%AC%EC%8B%9C%20%ED%95%98%EC%84%B1%EB%A9%B4%20%ED%95%98%EC%82%AC%EB%A6%AC%20254-2",
+      "checkedAt": "2026-10-16T06:13:37.640Z"
+    },
+    "경기도 남양주시 별내면 청학리 217-4": {
+      "status": "address-mismatch",
+      "matchedAddress": "경기도 남양주시 별내면 청학리 217-3",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EA%B8%B0%EB%8F%84%20%EB%82%A8%EC%96%91%EC%A3%BC%EC%8B%9C%20%EB%B3%84%EB%82%B4%EB%A9%B4%20%EC%B2%AD%ED%95%99%EB%A6%AC%20217-4",
+      "checkedAt": "2026-10-16T06:13:39.440Z"
+    },
+    "경기도 성남시 수정구 창곡동  위례택지개발지구 주차장10 위례리버스토리 204호": {
+      "status": "verified",
+      "matchedAddress": "경기도 성남시 수정구 위례서로 34",
+      "note": "원주소의 건물명 또는 도로명·지번이 지도 결과와 일치해 해당 지도 위치를 반영했습니다. 층·호수의 위치나 실제 방문을 검증한 것은 아닙니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/place/%EC%9C%84%EB%A1%80%EB%A6%AC%EB%B2%84%EC%8A%A4%ED%86%A0%EB%A6%AC+%EC%98%A4%ED%94%BC%EC%8A%A4%ED%85%94/data=!3m1!4b1!4m4!3m3!1s0x357caf51548ba63d:0x46384f8948b579d1!16s%2Fg%2F11sf6b2c73!20s8Q99F49P%2B7V3?entry=ttu&g_ep=EgoyMDI2MTAxMy4wIKXMDSoASAFQAw%3D%3D",
+      "checkedAt": "2026-10-16T06:31:54.801Z",
+      "plusCode": "8Q99F49P+7V3"
+    },
+    "경기도 시흥시 조남동 916": {
+      "status": "address-mismatch",
+      "matchedAddress": "경기도 시흥시 조남동 산91-6",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EA%B8%B0%EB%8F%84%20%EC%8B%9C%ED%9D%A5%EC%8B%9C%20%EC%A1%B0%EB%82%A8%EB%8F%99%20916",
+      "checkedAt": "2026-10-16T06:13:45.132Z"
+    },
+    "경기도 안성시 공도읍 승두리 65-4": {
+      "status": "address-mismatch",
+      "matchedAddress": "경기도 안성시 공도읍 승두리 65-12",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EA%B8%B0%EB%8F%84%20%EC%95%88%EC%84%B1%EC%8B%9C%20%EA%B3%B5%EB%8F%84%EC%9D%8D%20%EC%8A%B9%EB%91%90%EB%A6%AC%2065-4",
+      "checkedAt": "2026-10-16T06:13:47.516Z"
+    },
+    "경기도 양주시 율정동 603-6": {
+      "status": "address-mismatch",
+      "matchedAddress": "경기도 양주시 율정동 603-26",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EA%B8%B0%EB%8F%84%20%EC%96%91%EC%A3%BC%EC%8B%9C%20%EC%9C%A8%EC%A0%95%EB%8F%99%20603-6",
+      "checkedAt": "2026-10-16T06:13:49.947Z"
+    },
+    "경기도 화성시 청계동 동탄(2)택지개발지구 C-5블록 반도유보라   동탄역 카림애비뉴 2차판매시설 1층 W130호": {
+      "status": "unverified",
+      "matchedAddress": "",
+      "note": "원주소와 일치하는 단일 위치를 확인하지 못해 기존 근사 좌표를 유지했습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EA%B8%B0%EB%8F%84%20%ED%99%94%EC%84%B1%EC%8B%9C%20%EC%B2%AD%EA%B3%84%EB%8F%99%20%EB%8F%99%ED%83%84(2)%ED%83%9D%EC%A7%80%EA%B0%9C%EB%B0%9C%EC%A7%80%EA%B5%AC%20C-5%EB%B8%94%EB%A1%9D%20%EB%B0%98%EB%8F%84%EC%9C%A0%EB%B3%B4%EB%9D%BC%20%20%20%EB%8F%99%ED%83%84%EC%97%AD%20%EC%B9%B4%EB%A6%BC%EC%95%A0%EB%B9%84%EB%89%B4%202%EC%B0%A8%ED%8C%90%EB%A7%A4%EC%8B%9C%EC%84%A4%201%EC%B8%B5%20W130%ED%98%B8",
+      "checkedAt": "2026-10-16T06:13:52.048Z"
+    },
+    "경기도 화성시 영천동  동탄2택지개발지구 42BL-1,2,3LT 이든앤스페이스 202호": {
+      "status": "verified",
+      "matchedAddress": "경기도 화성시 동탄영천로 105",
+      "note": "원주소의 건물명 또는 도로명·지번이 지도 결과와 일치해 해당 지도 위치를 반영했습니다. 층·호수의 위치나 실제 방문을 검증한 것은 아닙니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/place/%EC%9D%B4%EB%93%A0%EC%95%A4%EC%8A%A4%ED%8E%98%EC%9D%B4%EC%8A%A4/data=!3m1!4b1!4m4!3m3!1s0x357b4500033d3d45:0x6c80e2e92516375c!16s%2Fg%2F11vx3jqw5k!20s8Q996462%2BQR7?entry=ttu&g_ep=EgoyMDI2MTAxMy4wIKXMDSoASAFQAw%3D%3D",
+      "checkedAt": "2026-10-16T06:21:39.723Z",
+      "plusCode": "8Q996462+QR7"
+    },
+    "경기도 화성시 영천동  동탄2택지개발지구 지원시설용지 1150-102 동탄IT밸리Ⅱ 지식산업센터 5층 518호.519호": {
+      "status": "verified",
+      "matchedAddress": "경기도 화성시 동탄대로 706",
+      "note": "원주소의 건물명 또는 도로명·지번이 지도 결과와 일치해 해당 지도 위치를 반영했습니다. 층·호수의 위치나 실제 방문을 검증한 것은 아닙니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/place/%EB%8F%99%ED%83%84IT%EB%B0%B8%EB%A6%AC2/data=!3m1!4b1!4m4!3m3!1s0x357b45004e26bed9:0x780205e1a9629ace!16s%2Fg%2F11y59xpn0z!20s8Q996473%2BX72?entry=ttu&g_ep=EgoyMDI2MTAxMy4wIKXMDSoASAFQAw%3D%3D",
+      "checkedAt": "2026-10-16T06:26:59.022Z",
+      "plusCode": "8Q996473+X72"
+    },
+    "경기도 화성시 영천동  동탄2택지개발지구 지원시설용지 1150-102 동탄IT밸리Ⅱ 지식산업센터 5층 535호": {
+      "status": "verified",
+      "matchedAddress": "경기도 화성시 동탄대로 706",
+      "note": "원주소의 건물명 또는 도로명·지번이 지도 결과와 일치해 해당 지도 위치를 반영했습니다. 층·호수의 위치나 실제 방문을 검증한 것은 아닙니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/place/%EB%8F%99%ED%83%84IT%EB%B0%B8%EB%A6%AC2/data=!3m1!4b1!4m4!3m3!1s0x357b45004e26bed9:0x780205e1a9629ace!16s%2Fg%2F11y59xpn0z!20s8Q996473%2BX72?entry=ttu&g_ep=EgoyMDI2MTAxMy4wIKXMDSoASAFQAw%3D%3D",
+      "checkedAt": "2026-10-16T06:26:59.072Z",
+      "plusCode": "8Q996473+X72"
+    },
+    "경기도 화성시 영천동  동탄테크노밸리 내 25-1,2,3,4,5 블록 현대 실리콘앨리 동탄 지식산업센터 S01동 0186호": {
+      "status": "unverified",
+      "matchedAddress": "",
+      "note": "원주소와 일치하는 단일 위치를 확인하지 못해 기존 근사 좌표를 유지했습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EA%B8%B0%EB%8F%84%20%ED%99%94%EC%84%B1%EC%8B%9C%20%EC%98%81%EC%B2%9C%EB%8F%99%20%20%EB%8F%99%ED%83%84%ED%85%8C%ED%81%AC%EB%85%B8%EB%B0%B8%EB%A6%AC%20%EB%82%B4%2025-1%2C2%2C3%2C4%2C5%20%EB%B8%94%EB%A1%9D%20%ED%98%84%EB%8C%80%20%EC%8B%A4%EB%A6%AC%EC%BD%98%EC%95%A8%EB%A6%AC%20%EB%8F%99%ED%83%84%20%EC%A7%80%EC%8B%9D%EC%82%B0%EC%97%85%EC%84%BC%ED%84%B0%20S01%EB%8F%99%200186%ED%98%B8",
+      "checkedAt": "2026-10-16T06:14:00.619Z"
+    },
+    "경기도 화성시 영천동 25-1  동탄테크노밸리 내 25-1~5BL 현대실리콘앨리 동탄지식산업센터 A07동 714호": {
+      "status": "unverified",
+      "matchedAddress": "",
+      "note": "원주소와 일치하는 단일 위치를 확인하지 못해 기존 근사 좌표를 유지했습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EA%B8%B0%EB%8F%84%20%ED%99%94%EC%84%B1%EC%8B%9C%20%EC%98%81%EC%B2%9C%EB%8F%99%2025-1%20%20%EB%8F%99%ED%83%84%ED%85%8C%ED%81%AC%EB%85%B8%EB%B0%B8%EB%A6%AC%20%EB%82%B4%2025-1~5BL%20%ED%98%84%EB%8C%80%EC%8B%A4%EB%A6%AC%EC%BD%98%EC%95%A8%EB%A6%AC%20%EB%8F%99%ED%83%84%EC%A7%80%EC%8B%9D%EC%82%B0%EC%97%85%EC%84%BC%ED%84%B0%20A07%EB%8F%99%20714%ED%98%B8",
+      "checkedAt": "2026-10-16T06:14:02.205Z"
+    },
+    "경기도 화성시 영천동 동탄 2신도시 택지개발지구 테크노밸리 내 도시지원 14블럭 금강펜테리움 IX STAY 17층 S1724호": {
+      "status": "unverified",
+      "matchedAddress": "",
+      "note": "원주소와 일치하는 단일 위치를 확인하지 못해 기존 근사 좌표를 유지했습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EA%B8%B0%EB%8F%84%20%ED%99%94%EC%84%B1%EC%8B%9C%20%EC%98%81%EC%B2%9C%EB%8F%99%20%EB%8F%99%ED%83%84%202%EC%8B%A0%EB%8F%84%EC%8B%9C%20%ED%83%9D%EC%A7%80%EA%B0%9C%EB%B0%9C%EC%A7%80%EA%B5%AC%20%ED%85%8C%ED%81%AC%EB%85%B8%EB%B0%B8%EB%A6%AC%20%EB%82%B4%20%EB%8F%84%EC%8B%9C%EC%A7%80%EC%9B%90%2014%EB%B8%94%EB%9F%AD%20%EA%B8%88%EA%B0%95%ED%8E%9C%ED%85%8C%EB%A6%AC%EC%9B%80%20IX%20STAY%2017%EC%B8%B5%20S1724%ED%98%B8",
+      "checkedAt": "2026-10-16T06:14:35.217Z"
+    },
+    "경기도 용인시 처인구 마평동 571-1": {
+      "status": "address-mismatch",
+      "matchedAddress": "경기도 용인시 처인구 마평동 산57-1",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EA%B8%B0%EB%8F%84%20%EC%9A%A9%EC%9D%B8%EC%8B%9C%20%EC%B2%98%EC%9D%B8%EA%B5%AC%20%EB%A7%88%ED%8F%89%EB%8F%99%20571-1",
+      "checkedAt": "2026-10-16T06:14:39.017Z"
+    },
+    "경기도 의정부시 고산동 자족시설용지 3-5BL 한강 의정부 고산 듀클래스 지식산업센터 B716호  ,B717호": {
+      "status": "unverified",
+      "matchedAddress": "",
+      "note": "원주소와 일치하는 단일 위치를 확인하지 못해 기존 근사 좌표를 유지했습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EA%B8%B0%EB%8F%84%20%EC%9D%98%EC%A0%95%EB%B6%80%EC%8B%9C%20%EA%B3%A0%EC%82%B0%EB%8F%99%20%EC%9E%90%EC%A1%B1%EC%8B%9C%EC%84%A4%EC%9A%A9%EC%A7%80%203-5BL%20%ED%95%9C%EA%B0%95%20%EC%9D%98%EC%A0%95%EB%B6%80%20%EA%B3%A0%EC%82%B0%20%EB%93%80%ED%81%B4%EB%9E%98%EC%8A%A4%20%EC%A7%80%EC%8B%9D%EC%82%B0%EC%97%85%EC%84%BC%ED%84%B0%20B716%ED%98%B8%20%20%2CB717%ED%98%B8",
+      "checkedAt": "2026-10-16T06:14:42.740Z"
+    },
+    "경기도 평택시 고덕면 여염리 4230-4": {
+      "status": "verified",
+      "matchedAddress": "경기도 평택시 고덕면 여염리 4230-4",
+      "note": "원주소의 건물명 또는 도로명·지번이 지도 결과와 일치해 해당 지도 위치를 반영했습니다. 층·호수의 위치나 실제 방문을 검증한 것은 아닙니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/place/%EA%B2%BD%EA%B8%B0%EB%8F%84+%ED%8F%89%ED%83%9D%EC%8B%9C+%EA%B3%A0%EB%8D%95%EB%A9%B4+%EC%97%AC%EC%97%BC%EB%A6%AC+4230-4/data=!3m1!4b1!4m4!3m3!1s0x357b39505732bae1:0x502031001e43b2b2!16s%2Fg%2F11tjfhwt7d!20s8Q99324X%2BWFC?entry=ttu&g_ep=EgoyMDI2MTAxMy4wIKXMDSoASAFQAw%3D%3D",
+      "checkedAt": "2026-10-16T06:28:52.515Z",
+      "plusCode": "8Q99324X+WFC"
+    },
+    "경기도 평택시 신장동 274-366": {
+      "status": "address-mismatch",
+      "matchedAddress": "경기도 평택시 신장동 274-7",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EA%B8%B0%EB%8F%84%20%ED%8F%89%ED%83%9D%EC%8B%9C%20%EC%8B%A0%EC%9E%A5%EB%8F%99%20274-366",
+      "checkedAt": "2026-10-16T06:14:45.716Z"
+    },
+    "경기도 평택시 팽성읍 송화리 243-17": {
+      "status": "address-mismatch",
+      "matchedAddress": "경기도 평택시 팽성읍 송화리 243-33",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EA%B8%B0%EB%8F%84%20%ED%8F%89%ED%83%9D%EC%8B%9C%20%ED%8C%BD%EC%84%B1%EC%9D%8D%20%EC%86%A1%ED%99%94%EB%A6%AC%20243-17",
+      "checkedAt": "2026-10-16T06:14:47.163Z"
+    },
+    "경기도 포천시 신읍동 189-3": {
+      "status": "address-mismatch",
+      "matchedAddress": "경기도 포천시 신읍동 189-9",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EA%B8%B0%EB%8F%84%20%ED%8F%AC%EC%B2%9C%EC%8B%9C%20%EC%8B%A0%EC%9D%8D%EB%8F%99%20189-3",
+      "checkedAt": "2026-10-16T06:14:48.683Z"
+    },
+    "경기도 포천시 군내면 하성북리 669-23": {
+      "status": "address-mismatch",
+      "matchedAddress": "경기도 포천시 군내면 하성북리 669-6",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EA%B8%B0%EB%8F%84%20%ED%8F%AC%EC%B2%9C%EC%8B%9C%20%EA%B5%B0%EB%82%B4%EB%A9%B4%20%ED%95%98%EC%84%B1%EB%B6%81%EB%A6%AC%20669-23",
+      "checkedAt": "2026-10-16T06:14:50.225Z"
+    },
+    "경기도 하남시 풍산동 907-2 외1필지 미사센텀비즈 F6층 645호": {
+      "status": "verified",
+      "matchedAddress": "경기도 하남시 조정대로 45 F334",
+      "note": "원주소의 건물명 또는 도로명·지번이 지도 결과와 일치해 해당 지도 위치를 반영했습니다. 층·호수의 위치나 실제 방문을 검증한 것은 아닙니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/place/%EB%AF%B8%EC%82%AC%EC%84%BC%ED%85%80%EB%B9%84%EC%A6%88/data=!3m1!4b1!4m4!3m3!1s0x357cb1ca31afbc63:0xd5842fd649f05872!16s%2Fg%2F11h5w572gg!20s8Q99H52M%2B6JP?entry=ttu&g_ep=EgoyMDI2MTAxMy4wIKXMDSoASAFQAw%3D%3D",
+      "checkedAt": "2026-10-16T06:32:59.270Z",
+      "plusCode": "8Q99H52M+6JP"
+    },
+    "경기도 화성시 만세구 양감면 신왕리 640-26": {
+      "status": "unverified",
+      "matchedAddress": "",
+      "note": "원주소와 일치하는 단일 위치를 확인하지 못해 기존 근사 좌표를 유지했습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EA%B8%B0%EB%8F%84%20%ED%99%94%EC%84%B1%EC%8B%9C%20%EB%A7%8C%EC%84%B8%EA%B5%AC%20%EC%96%91%EA%B0%90%EB%A9%B4%20%EC%8B%A0%EC%99%95%EB%A6%AC%20640-26",
+      "checkedAt": "2026-10-16T06:14:55.514Z"
+    },
+    "강원특별자치도 횡성군 횡성읍 읍상리 288": {
+      "status": "address-mismatch",
+      "matchedAddress": "강원특별자치도 횡성군 횡성읍 읍상리 288-60",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B0%95%EC%9B%90%ED%8A%B9%EB%B3%84%EC%9E%90%EC%B9%98%EB%8F%84%20%ED%9A%A1%EC%84%B1%EA%B5%B0%20%ED%9A%A1%EC%84%B1%EC%9D%8D%20%EC%9D%8D%EC%83%81%EB%A6%AC%20288",
+      "checkedAt": "2026-10-16T06:14:57.386Z"
+    },
+    "강원특별자치도 원주시 귀래면 주포리 산 61-1": {
+      "status": "address-mismatch",
+      "matchedAddress": "강원특별자치도 원주시 귀래면 주포리 산61-6",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B0%95%EC%9B%90%ED%8A%B9%EB%B3%84%EC%9E%90%EC%B9%98%EB%8F%84%20%EC%9B%90%EC%A3%BC%EC%8B%9C%20%EA%B7%80%EB%9E%98%EB%A9%B4%20%EC%A3%BC%ED%8F%AC%EB%A6%AC%20%EC%82%B0%2061-1",
+      "checkedAt": "2026-10-16T06:14:59.325Z"
+    },
+    "강원특별자치도 춘천시 온의동 262-5": {
+      "status": "address-mismatch",
+      "matchedAddress": "강원특별자치도 춘천시 온의동 262",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B0%95%EC%9B%90%ED%8A%B9%EB%B3%84%EC%9E%90%EC%B9%98%EB%8F%84%20%EC%B6%98%EC%B2%9C%EC%8B%9C%20%EC%98%A8%EC%9D%98%EB%8F%99%20262-5",
+      "checkedAt": "2026-10-16T06:15:02.070Z"
+    },
+    "강원특별자치도 홍천군 북방면 소매곡리 산 87": {
+      "status": "verified",
+      "matchedAddress": "강원특별자치도 홍천군 북방면 소매곡리 산87",
+      "note": "원주소의 건물명 또는 도로명·지번이 지도 결과와 일치해 해당 지도 위치를 반영했습니다. 층·호수의 위치나 실제 방문을 검증한 것은 아닙니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/place/%EA%B0%95%EC%9B%90%ED%8A%B9%EB%B3%84%EC%9E%90%EC%B9%98%EB%8F%84+%ED%99%8D%EC%B2%9C%EA%B5%B0+%EB%B6%81%EB%B0%A9%EB%A9%B4+%EC%86%8C%EB%A7%A4%EA%B3%A1%EB%A6%AC+%EC%82%B087/data=!3m1!4b1!4m4!3m3!1s0x356302a52d25d07f:0xc7fda0f6fd54968c!16s%2Fg%2F11bzm3n4dc!20s8Q99PR7C%2BHQQ?entry=ttu&g_ep=EgoyMDI2MTAxMy4wIKXMDSoASAFQAw%3D%3D",
+      "checkedAt": "2026-10-16T06:28:52.550Z",
+      "plusCode": "8Q99PR7C+HQQ"
+    },
+    "충청북도 청주시 흥덕구 강내면 저산리 117-41": {
+      "status": "address-mismatch",
+      "matchedAddress": "충청북도 청주시 흥덕구 강내면 저산리 117",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%B6%A9%EC%B2%AD%EB%B6%81%EB%8F%84%20%EC%B2%AD%EC%A3%BC%EC%8B%9C%20%ED%9D%A5%EB%8D%95%EA%B5%AC%20%EA%B0%95%EB%82%B4%EB%A9%B4%20%EC%A0%80%EC%82%B0%EB%A6%AC%20117-41",
+      "checkedAt": "2026-10-16T06:15:06.623Z"
+    },
+    "충청북도 충주시 수안보면 온천리 242": {
+      "status": "address-mismatch",
+      "matchedAddress": "충청북도 충주시 수안보면 온천리 산24-2",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%B6%A9%EC%B2%AD%EB%B6%81%EB%8F%84%20%EC%B6%A9%EC%A3%BC%EC%8B%9C%20%EC%88%98%EC%95%88%EB%B3%B4%EB%A9%B4%20%EC%98%A8%EC%B2%9C%EB%A6%AC%20242",
+      "checkedAt": "2026-10-16T06:15:08.098Z"
+    },
+    "충청북도 청주시 청원구 외남동 237-4": {
+      "status": "address-mismatch",
+      "matchedAddress": "충청북도 청주시 청원구 외남동 237-2",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%B6%A9%EC%B2%AD%EB%B6%81%EB%8F%84%20%EC%B2%AD%EC%A3%BC%EC%8B%9C%20%EC%B2%AD%EC%9B%90%EA%B5%AC%20%EC%99%B8%EB%82%A8%EB%8F%99%20237-4",
+      "checkedAt": "2026-10-16T06:15:09.699Z"
+    },
+    "충청남도 논산시 부적면 외성리 32-4": {
+      "status": "address-mismatch",
+      "matchedAddress": "충청남도 논산시 부적면 외성리 산32-6",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%B6%A9%EC%B2%AD%EB%82%A8%EB%8F%84%20%EB%85%BC%EC%82%B0%EC%8B%9C%20%EB%B6%80%EC%A0%81%EB%A9%B4%20%EC%99%B8%EC%84%B1%EB%A6%AC%2032-4",
+      "checkedAt": "2026-10-16T06:15:11.343Z"
+    },
+    "충청남도 홍성군 장곡면 광성리 519": {
+      "status": "address-mismatch",
+      "matchedAddress": "충청남도 홍성군 장곡면 광성리 519-3",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%B6%A9%EC%B2%AD%EB%82%A8%EB%8F%84%20%ED%99%8D%EC%84%B1%EA%B5%B0%20%EC%9E%A5%EA%B3%A1%EB%A9%B4%20%EA%B4%91%EC%84%B1%EB%A6%AC%20519",
+      "checkedAt": "2026-10-16T06:15:12.958Z"
+    },
+    "충청남도 홍성군 홍성읍 의사로43번길 32-5": {
+      "status": "unverified",
+      "matchedAddress": "",
+      "note": "원주소와 일치하는 단일 위치를 확인하지 못해 기존 근사 좌표를 유지했습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%B6%A9%EC%B2%AD%EB%82%A8%EB%8F%84%20%ED%99%8D%EC%84%B1%EA%B5%B0%20%ED%99%8D%EC%84%B1%EC%9D%8D%20%EC%9D%98%EC%82%AC%EB%A1%9C43%EB%B2%88%EA%B8%B8%2032-5",
+      "checkedAt": "2026-10-16T06:15:14.477Z"
+    },
+    "충청남도 공주시 정안면 운궁리 329-4": {
+      "status": "address-mismatch",
+      "matchedAddress": "충청남도 공주시 정안면 운궁리 329",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%B6%A9%EC%B2%AD%EB%82%A8%EB%8F%84%20%EA%B3%B5%EC%A3%BC%EC%8B%9C%20%EC%A0%95%EC%95%88%EB%A9%B4%20%EC%9A%B4%EA%B6%81%EB%A6%AC%20329-4",
+      "checkedAt": "2026-10-16T06:15:56.735Z"
+    },
+    "충청남도 당진시 합덕읍 운산리 268": {
+      "status": "address-mismatch",
+      "matchedAddress": "충청남도 당진시 합덕읍 운산리 268-85",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%B6%A9%EC%B2%AD%EB%82%A8%EB%8F%84%20%EB%8B%B9%EC%A7%84%EC%8B%9C%20%ED%95%A9%EB%8D%95%EC%9D%8D%20%EC%9A%B4%EC%82%B0%EB%A6%AC%20268",
+      "checkedAt": "2026-10-16T06:16:00.143Z"
+    },
+    "충청남도 천안시 동남구 목천읍 삼성리 산 55": {
+      "status": "address-mismatch",
+      "matchedAddress": "충청남도 천안시 동남구 목천읍 삼성리 산55-1",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%B6%A9%EC%B2%AD%EB%82%A8%EB%8F%84%20%EC%B2%9C%EC%95%88%EC%8B%9C%20%EB%8F%99%EB%82%A8%EA%B5%AC%20%EB%AA%A9%EC%B2%9C%EC%9D%8D%20%EC%82%BC%EC%84%B1%EB%A6%AC%20%EC%82%B0%2055",
+      "checkedAt": "2026-10-16T06:16:02.261Z"
+    },
+    "충청남도 보령시 대천동 332-1": {
+      "status": "address-mismatch",
+      "matchedAddress": "충청남도 보령시 대천동 332-8",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%B6%A9%EC%B2%AD%EB%82%A8%EB%8F%84%20%EB%B3%B4%EB%A0%B9%EC%8B%9C%20%EB%8C%80%EC%B2%9C%EB%8F%99%20332-1",
+      "checkedAt": "2026-10-16T06:16:04.603Z"
+    },
+    "충청남도 보령시 대천동 333-1": {
+      "status": "address-mismatch",
+      "matchedAddress": "충청남도 보령시 대천동 333-2",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%B6%A9%EC%B2%AD%EB%82%A8%EB%8F%84%20%EB%B3%B4%EB%A0%B9%EC%8B%9C%20%EB%8C%80%EC%B2%9C%EB%8F%99%20333-1",
+      "checkedAt": "2026-10-16T06:16:06.176Z"
+    },
+    "충청남도 아산시 실옥동 219": {
+      "status": "address-mismatch",
+      "matchedAddress": "충청남도 아산시 실옥동 219-1",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%B6%A9%EC%B2%AD%EB%82%A8%EB%8F%84%20%EC%95%84%EC%82%B0%EC%8B%9C%20%EC%8B%A4%EC%98%A5%EB%8F%99%20219",
+      "checkedAt": "2026-10-16T06:16:07.675Z"
+    },
+    "전북특별자치도 익산시 금마면 갈산리 산 71  ,산72,303": {
+      "status": "unverified",
+      "matchedAddress": "",
+      "note": "원주소와 일치하는 단일 위치를 확인하지 못해 기존 근사 좌표를 유지했습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%A0%84%EB%B6%81%ED%8A%B9%EB%B3%84%EC%9E%90%EC%B9%98%EB%8F%84%20%EC%9D%B5%EC%82%B0%EC%8B%9C%20%EA%B8%88%EB%A7%88%EB%A9%B4%20%EA%B0%88%EC%82%B0%EB%A6%AC%20%EC%82%B0%2071%20%20%2C%EC%82%B072%2C303",
+      "checkedAt": "2026-10-16T06:16:11.351Z"
+    },
+    "전북특별자치도 정읍시 북면 태곡리 266-2  ,267": {
+      "status": "address-mismatch",
+      "matchedAddress": "전북특별자치도 정읍시 북면 태곡리 산26-6",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%A0%84%EB%B6%81%ED%8A%B9%EB%B3%84%EC%9E%90%EC%B9%98%EB%8F%84%20%EC%A0%95%EC%9D%8D%EC%8B%9C%20%EB%B6%81%EB%A9%B4%20%ED%83%9C%EA%B3%A1%EB%A6%AC%20266-2%20%20%2C267",
+      "checkedAt": "2026-10-16T06:16:12.844Z"
+    },
+    "전북특별자치도 정읍시 시기동 267": {
+      "status": "address-mismatch",
+      "matchedAddress": "전북특별자치도 정읍시 시기동 267-57",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%A0%84%EB%B6%81%ED%8A%B9%EB%B3%84%EC%9E%90%EC%B9%98%EB%8F%84%20%EC%A0%95%EC%9D%8D%EC%8B%9C%20%EC%8B%9C%EA%B8%B0%EB%8F%99%20267",
+      "checkedAt": "2026-10-16T06:16:14.362Z"
+    },
+    "전북특별자치도 군산시 개정면 아동리 145": {
+      "status": "address-mismatch",
+      "matchedAddress": "전북특별자치도 군산시 개정면 아동리 산145",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%A0%84%EB%B6%81%ED%8A%B9%EB%B3%84%EC%9E%90%EC%B9%98%EB%8F%84%20%EA%B5%B0%EC%82%B0%EC%8B%9C%20%EA%B0%9C%EC%A0%95%EB%A9%B4%20%EC%95%84%EB%8F%99%EB%A6%AC%20145",
+      "checkedAt": "2026-10-16T06:16:15.982Z"
+    },
+    "전북특별자치도 김제시 금산면 구월리 114-4": {
+      "status": "address-mismatch",
+      "matchedAddress": "전북특별자치도 김제시 금산면 구월리 114",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%A0%84%EB%B6%81%ED%8A%B9%EB%B3%84%EC%9E%90%EC%B9%98%EB%8F%84%20%EA%B9%80%EC%A0%9C%EC%8B%9C%20%EA%B8%88%EC%82%B0%EB%A9%B4%20%EA%B5%AC%EC%9B%94%EB%A6%AC%20114-4",
+      "checkedAt": "2026-10-16T06:16:17.693Z"
+    },
+    "전북특별자치도 김제시 성덕면 석동리 318-1  ,318": {
+      "status": "address-mismatch",
+      "matchedAddress": "전북특별자치도 김제시 성덕면 석동리 318",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%A0%84%EB%B6%81%ED%8A%B9%EB%B3%84%EC%9E%90%EC%B9%98%EB%8F%84%20%EA%B9%80%EC%A0%9C%EC%8B%9C%20%EC%84%B1%EB%8D%95%EB%A9%B4%20%EC%84%9D%EB%8F%99%EB%A6%AC%20318-1%20%20%2C318",
+      "checkedAt": "2026-10-16T06:16:19.303Z"
+    },
+    "전북특별자치도 전주시 완산구 삼천동1가 625-3": {
+      "status": "address-mismatch",
+      "matchedAddress": "전북특별자치도 전주시 완산구 삼천동1가 625",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%A0%84%EB%B6%81%ED%8A%B9%EB%B3%84%EC%9E%90%EC%B9%98%EB%8F%84%20%EC%A0%84%EC%A3%BC%EC%8B%9C%20%EC%99%84%EC%82%B0%EA%B5%AC%20%EC%82%BC%EC%B2%9C%EB%8F%991%EA%B0%80%20625-3",
+      "checkedAt": "2026-10-16T06:16:20.872Z"
+    },
+    "전북특별자치도 장수군 장수읍 두산리 705-23": {
+      "status": "address-mismatch",
+      "matchedAddress": "전북특별자치도 장수군 장수읍 두산리 705",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%A0%84%EB%B6%81%ED%8A%B9%EB%B3%84%EC%9E%90%EC%B9%98%EB%8F%84%20%EC%9E%A5%EC%88%98%EA%B5%B0%20%EC%9E%A5%EC%88%98%EC%9D%8D%20%EB%91%90%EC%82%B0%EB%A6%AC%20705-23",
+      "checkedAt": "2026-10-16T06:16:22.441Z"
+    },
+    "전북특별자치도 장수군 천천면 남양리 665  665-1,666": {
+      "status": "address-mismatch",
+      "matchedAddress": "전북특별자치도 장수군 천천면 남양리 산66-5",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%A0%84%EB%B6%81%ED%8A%B9%EB%B3%84%EC%9E%90%EC%B9%98%EB%8F%84%20%EC%9E%A5%EC%88%98%EA%B5%B0%20%EC%B2%9C%EC%B2%9C%EB%A9%B4%20%EB%82%A8%EC%96%91%EB%A6%AC%20665%20%20665-1%2C666",
+      "checkedAt": "2026-10-16T06:16:23.993Z"
+    },
+    "전북특별자치도 부안군 진서면 진서리 1214  1층": {
+      "status": "unverified",
+      "matchedAddress": "",
+      "note": "원주소와 일치하는 단일 위치를 확인하지 못해 기존 근사 좌표를 유지했습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%A0%84%EB%B6%81%ED%8A%B9%EB%B3%84%EC%9E%90%EC%B9%98%EB%8F%84%20%EB%B6%80%EC%95%88%EA%B5%B0%20%EC%A7%84%EC%84%9C%EB%A9%B4%20%EC%A7%84%EC%84%9C%EB%A6%AC%201214%20%201%EC%B8%B5",
+      "checkedAt": "2026-10-16T06:16:25.648Z"
+    },
+    "전북특별자치도 완주군 봉동읍 용암리 산 20-1": {
+      "status": "verified",
+      "matchedAddress": "전북특별자치도 완주군 봉동읍 용암리 산20-1",
+      "note": "원주소의 건물명 또는 도로명·지번이 지도 결과와 일치해 해당 지도 위치를 반영했습니다. 층·호수의 위치나 실제 방문을 검증한 것은 아닙니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/place/%EC%A0%84%EB%B6%81%ED%8A%B9%EB%B3%84%EC%9E%90%EC%B9%98%EB%8F%84+%EC%99%84%EC%A3%BC%EA%B5%B0+%EB%B4%89%EB%8F%99%EC%9D%8D+%EC%9A%A9%EC%95%94%EB%A6%AC+%EC%82%B020-1/data=!3m1!4b1!4m4!3m3!1s0x357019eb7f0e6197:0xf1ca0002440aa8c!16s%2Fg%2F11bzmmpbq2!20s8Q79X43V%2BMV3?entry=ttu&g_ep=EgoyMDI2MTAxMy4wIKXMDSoASAFQAw%3D%3D",
+      "checkedAt": "2026-10-16T06:29:32.657Z",
+      "plusCode": "8Q79X43V+MV3"
+    },
+    "전남광주통합특별시 순천시 가곡동 137-11": {
+      "status": "unverified",
+      "matchedAddress": "",
+      "note": "원주소와 일치하는 단일 위치를 확인하지 못해 기존 근사 좌표를 유지했습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%A0%84%EB%9D%BC%EB%82%A8%EB%8F%84%20%EC%88%9C%EC%B2%9C%EC%8B%9C%20%EA%B0%80%EA%B3%A1%EB%8F%99%20137-11",
+      "checkedAt": "2026-10-16T06:16:32.176Z"
+    },
+    "전남광주통합특별시 강진군 도암면 덕년리 산 168-4": {
+      "status": "address-mismatch",
+      "matchedAddress": "전라남도 강진군 도암면 덕년리 산168-3",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%A0%84%EB%9D%BC%EB%82%A8%EB%8F%84%20%EA%B0%95%EC%A7%84%EA%B5%B0%20%EB%8F%84%EC%95%94%EB%A9%B4%20%EB%8D%95%EB%85%84%EB%A6%AC%20%EC%82%B0%20168-4",
+      "checkedAt": "2026-10-16T06:16:34.170Z"
+    },
+    "전라남도 진도군 의신면 돈지리 642-3": {
+      "status": "address-mismatch",
+      "matchedAddress": "전라남도 진도군 의신면 돈지리 642",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%A0%84%EB%9D%BC%EB%82%A8%EB%8F%84%20%EC%A7%84%EB%8F%84%EA%B5%B0%20%EC%9D%98%EC%8B%A0%EB%A9%B4%20%EB%8F%88%EC%A7%80%EB%A6%AC%20642-3",
+      "checkedAt": "2026-10-16T06:16:36.043Z"
+    },
+    "전라남도 고흥군 동강면 대강리 823-19": {
+      "status": "address-mismatch",
+      "matchedAddress": "전라남도 고흥군 동강면 대강리 823-4",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%A0%84%EB%9D%BC%EB%82%A8%EB%8F%84%20%EA%B3%A0%ED%9D%A5%EA%B5%B0%20%EB%8F%99%EA%B0%95%EB%A9%B4%20%EB%8C%80%EA%B0%95%EB%A6%AC%20823-19",
+      "checkedAt": "2026-10-16T06:17:23.348Z"
+    },
+    "전남광주통합특별시 영암군 미암면 신포리 산 40": {
+      "status": "verified",
+      "matchedAddress": "전라남도 영암군 미암면 신포리 산40",
+      "note": "원주소의 건물명 또는 도로명·지번이 지도 결과와 일치해 해당 지도 위치를 반영했습니다. 층·호수의 위치나 실제 방문을 검증한 것은 아닙니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/place/%EC%A0%84%EB%9D%BC%EB%82%A8%EB%8F%84+%EC%98%81%EC%95%94%EA%B5%B0+%EB%AF%B8%EC%95%94%EB%A9%B4+%EC%8B%A0%ED%8F%AC%EB%A6%AC+%EC%82%B040/data=!3m1!4b1!4m4!3m3!1s0x3573adba1818568d:0xf94da3540a303121!16s%2Fg%2F11bz2dflwr!20s8Q68PH52%2B299?entry=ttu&g_ep=EgoyMDI2MTAxMy4wIKXMDSoASAFQAw%3D%3D",
+      "checkedAt": "2026-10-16T06:29:32.695Z",
+      "plusCode": "8Q68PH52+299"
+    },
+    "전라남도 함평군 손불면 궁산리 1007": {
+      "status": "address-mismatch",
+      "matchedAddress": "전라남도 함평군 손불면 궁산리 1007-25",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%A0%84%EB%9D%BC%EB%82%A8%EB%8F%84%20%ED%95%A8%ED%8F%89%EA%B5%B0%20%EC%86%90%EB%B6%88%EB%A9%B4%20%EA%B6%81%EC%82%B0%EB%A6%AC%201007",
+      "checkedAt": "2026-10-16T06:17:26.425Z"
+    },
+    "전라남도 무안군 청계면 도대리 산 103  57-1": {
+      "status": "address-mismatch",
+      "matchedAddress": "전라남도 무안군 청계면 도대리 산103-4",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%A0%84%EB%9D%BC%EB%82%A8%EB%8F%84%20%EB%AC%B4%EC%95%88%EA%B5%B0%20%EC%B2%AD%EA%B3%84%EB%A9%B4%20%EB%8F%84%EB%8C%80%EB%A6%AC%20%EC%82%B0%20103%20%2057-1",
+      "checkedAt": "2026-10-16T06:17:28.085Z"
+    },
+    "경상북도 칠곡군 가산면 천평리 134": {
+      "status": "address-mismatch",
+      "matchedAddress": "경상북도 칠곡군 가산면 천평리 134-8",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EC%83%81%EB%B6%81%EB%8F%84%20%EC%B9%A0%EA%B3%A1%EA%B5%B0%20%EA%B0%80%EC%82%B0%EB%A9%B4%20%EC%B2%9C%ED%8F%89%EB%A6%AC%20134",
+      "checkedAt": "2026-10-16T06:17:29.677Z"
+    },
+    "경상북도 문경시 영순면 김용리 산 8-22": {
+      "status": "address-mismatch",
+      "matchedAddress": "경상북도 문경시 영순면 김용리 산8-1",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EC%83%81%EB%B6%81%EB%8F%84%20%EB%AC%B8%EA%B2%BD%EC%8B%9C%20%EC%98%81%EC%88%9C%EB%A9%B4%20%EA%B9%80%EC%9A%A9%EB%A6%AC%20%EC%82%B0%208-22",
+      "checkedAt": "2026-10-16T06:17:31.188Z"
+    },
+    "경상북도 상주시 사벌국면 화달리 산 28-7": {
+      "status": "address-mismatch",
+      "matchedAddress": "경상북도 상주시 사벌국면 화달리 산28-3",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EC%83%81%EB%B6%81%EB%8F%84%20%EC%83%81%EC%A3%BC%EC%8B%9C%20%EC%82%AC%EB%B2%8C%EA%B5%AD%EB%A9%B4%20%ED%99%94%EB%8B%AC%EB%A6%AC%20%EC%82%B0%2028-7",
+      "checkedAt": "2026-10-16T06:17:32.652Z"
+    },
+    "경상북도 경산시 하양읍 금락리 4-25": {
+      "status": "address-mismatch",
+      "matchedAddress": "경상북도 경산시 하양읍 금락리 425",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EC%83%81%EB%B6%81%EB%8F%84%20%EA%B2%BD%EC%82%B0%EC%8B%9C%20%ED%95%98%EC%96%91%EC%9D%8D%20%EA%B8%88%EB%9D%BD%EB%A6%AC%204-25",
+      "checkedAt": "2026-10-16T06:17:34.212Z"
+    },
+    "경상북도 안동시 송천동 192": {
+      "status": "address-mismatch",
+      "matchedAddress": "경상북도 안동시 송천동 산192",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EC%83%81%EB%B6%81%EB%8F%84%20%EC%95%88%EB%8F%99%EC%8B%9C%20%EC%86%A1%EC%B2%9C%EB%8F%99%20192",
+      "checkedAt": "2026-10-16T06:17:35.813Z"
+    },
+    "경상남도 함안군 법수면 윤외리 177": {
+      "status": "address-mismatch",
+      "matchedAddress": "경상남도 함안군 법수면 윤외리 177-93",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EC%83%81%EB%82%A8%EB%8F%84%20%ED%95%A8%EC%95%88%EA%B5%B0%20%EB%B2%95%EC%88%98%EB%A9%B4%20%EC%9C%A4%EC%99%B8%EB%A6%AC%20177",
+      "checkedAt": "2026-10-16T06:17:37.652Z"
+    },
+    "경상남도 창녕군 대합면 십이리 222": {
+      "status": "unverified",
+      "matchedAddress": "",
+      "note": "원주소와 일치하는 단일 위치를 확인하지 못해 기존 근사 좌표를 유지했습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EC%83%81%EB%82%A8%EB%8F%84%20%EC%B0%BD%EB%85%95%EA%B5%B0%20%EB%8C%80%ED%95%A9%EB%A9%B4%20%EC%8B%AD%EC%9D%B4%EB%A6%AC%20222",
+      "checkedAt": "2026-10-16T06:17:39.309Z"
+    },
+    "경상남도 김해시 외동 홍익아파트 104동 308호": {
+      "status": "unverified",
+      "matchedAddress": "",
+      "note": "원주소와 일치하는 단일 위치를 확인하지 못해 기존 근사 좌표를 유지했습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EC%83%81%EB%82%A8%EB%8F%84%20%EA%B9%80%ED%95%B4%EC%8B%9C%20%EC%99%B8%EB%8F%99%20%ED%99%8D%EC%9D%B5%EC%95%84%ED%8C%8C%ED%8A%B8%20104%EB%8F%99%20308%ED%98%B8",
+      "checkedAt": "2026-10-16T06:17:43.036Z"
+    },
+    "경상남도 김해시 흥동 433": {
+      "status": "unverified",
+      "matchedAddress": "",
+      "note": "원주소와 일치하는 단일 위치를 확인하지 못해 기존 근사 좌표를 유지했습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EC%83%81%EB%82%A8%EB%8F%84%20%EA%B9%80%ED%95%B4%EC%8B%9C%20%ED%9D%A5%EB%8F%99%20433",
+      "checkedAt": "2026-10-16T06:17:44.964Z"
+    },
+    "경상남도 김해시 상동면 매리 산 179-8": {
+      "status": "address-mismatch",
+      "matchedAddress": "경상남도 김해시 상동면 매리 산179-1",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EC%83%81%EB%82%A8%EB%8F%84%20%EA%B9%80%ED%95%B4%EC%8B%9C%20%EC%83%81%EB%8F%99%EB%A9%B4%20%EB%A7%A4%EB%A6%AC%20%EC%82%B0%20179-8",
+      "checkedAt": "2026-10-16T06:17:46.440Z"
+    },
+    "경상남도 양산시 물금읍 증산리 ICD4단지 CJ대한통운 금정사업소내": {
+      "status": "unverified",
+      "matchedAddress": "",
+      "note": "원주소와 일치하는 단일 위치를 확인하지 못해 기존 근사 좌표를 유지했습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EC%83%81%EB%82%A8%EB%8F%84%20%EC%96%91%EC%82%B0%EC%8B%9C%20%EB%AC%BC%EA%B8%88%EC%9D%8D%20%EC%A6%9D%EC%82%B0%EB%A6%AC%20ICD4%EB%8B%A8%EC%A7%80%20CJ%EB%8C%80%ED%95%9C%ED%86%B5%EC%9A%B4%20%EA%B8%88%EC%A0%95%EC%82%AC%EC%97%85%EC%86%8C%EB%82%B4",
+      "checkedAt": "2026-10-16T06:17:47.747Z"
+    },
+    "서울특별시 구로구 구로동 735-3  1층": {
+      "status": "address-mismatch",
+      "matchedAddress": "서울특별시 구로구 구로동 735-115 1층",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C%20%EA%B5%AC%EB%A1%9C%EA%B5%AC%20%EA%B5%AC%EB%A1%9C%EB%8F%99%20735-3%20%201%EC%B8%B5",
+      "checkedAt": "2026-10-16T06:17:49.904Z"
+    },
+    "서울특별시 중구 을지로6가 17 평화시장 1층 가243호 ~ 244호": {
+      "status": "verified",
+      "matchedAddress": "서울특별시 중구 청계천로 274",
+      "note": "원주소의 건물명 또는 도로명·지번이 지도 결과와 일치해 해당 지도 위치를 반영했습니다. 층·호수의 위치나 실제 방문을 검증한 것은 아닙니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/place/%ED%8F%89%ED%99%94%EC%8B%9C%EC%9E%A5/data=!3m1!4b1!4m4!3m3!1s0x357ca32368d6fa67:0x806c68791ae1a390!16s%2Fg%2F11csqj4_26!20s8Q99H295%2BQ6P?entry=ttu&g_ep=EgoyMDI2MTAxMy4wIKXMDSoASAFQAw%3D%3D",
+      "checkedAt": "2026-10-16T06:31:54.657Z",
+      "plusCode": "8Q99H295+Q6P"
+    },
+    "서울특별시 중구 을지로6가 17 통일상가 B동 2층 224호": {
+      "status": "unverified",
+      "matchedAddress": "",
+      "note": "원주소와 일치하는 단일 위치를 확인하지 못해 기존 근사 좌표를 유지했습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C%20%EC%A4%91%EA%B5%AC%20%EC%9D%84%EC%A7%80%EB%A1%9C6%EA%B0%80%2017%20%ED%86%B5%EC%9D%BC%EC%83%81%EA%B0%80%20B%EB%8F%99%202%EC%B8%B5%20224%ED%98%B8",
+      "checkedAt": "2026-10-16T06:17:58.459Z"
+    },
+    "서울특별시 중구 을지로6가 17 평화시장 １층 나동 285호": {
+      "status": "verified",
+      "matchedAddress": "서울특별시 중구 청계천로 274",
+      "note": "원주소의 건물명 또는 도로명·지번이 지도 결과와 일치해 해당 지도 위치를 반영했습니다. 층·호수의 위치나 실제 방문을 검증한 것은 아닙니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/place/%ED%8F%89%ED%99%94%EC%8B%9C%EC%9E%A5/data=!3m1!4b1!4m4!3m3!1s0x357ca32368d6fa67:0x806c68791ae1a390!16s%2Fg%2F11csqj4_26!20s8Q99H295%2BQ6P?entry=ttu&g_ep=EgoyMDI2MTAxMy4wIKXMDSoASAFQAw%3D%3D",
+      "checkedAt": "2026-10-16T06:31:54.693Z",
+      "plusCode": "8Q99H295+Q6P"
+    },
+    "서울특별시 중구 을지로6가 17 평화시장 3층 나 260호 261호1/2": {
+      "status": "verified",
+      "matchedAddress": "서울특별시 중구 청계천로 274",
+      "note": "원주소의 건물명 또는 도로명·지번이 지도 결과와 일치해 해당 지도 위치를 반영했습니다. 층·호수의 위치나 실제 방문을 검증한 것은 아닙니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/place/%ED%8F%89%ED%99%94%EC%8B%9C%EC%9E%A5/data=!3m1!4b1!4m4!3m3!1s0x357ca32368d6fa67:0x806c68791ae1a390!16s%2Fg%2F11csqj4_26!20s8Q99H295%2BQ6P?entry=ttu&g_ep=EgoyMDI2MTAxMy4wIKXMDSoASAFQAw%3D%3D",
+      "checkedAt": "2026-10-16T06:31:54.729Z",
+      "plusCode": "8Q99H295+Q6P"
+    },
+    "서울특별시 중구 을지로6가 17 통일상가 B동 1층 61호": {
+      "status": "unverified",
+      "matchedAddress": "",
+      "note": "원주소와 일치하는 단일 위치를 확인하지 못해 기존 근사 좌표를 유지했습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C%20%EC%A4%91%EA%B5%AC%20%EC%9D%84%EC%A7%80%EB%A1%9C6%EA%B0%80%2017%20%ED%86%B5%EC%9D%BC%EC%83%81%EA%B0%80%20B%EB%8F%99%201%EC%B8%B5%2061%ED%98%B8",
+      "checkedAt": "2026-10-16T06:18:35.522Z"
+    },
+    "서울특별시 중구 을지로6가 17 평화시장 2층 다 57호": {
+      "status": "verified",
+      "matchedAddress": "서울특별시 중구 청계천로 274",
+      "note": "원주소의 건물명 또는 도로명·지번이 지도 결과와 일치해 해당 지도 위치를 반영했습니다. 층·호수의 위치나 실제 방문을 검증한 것은 아닙니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/place/%ED%8F%89%ED%99%94%EC%8B%9C%EC%9E%A5/data=!3m1!4b1!4m4!3m3!1s0x357ca32368d6fa67:0x806c68791ae1a390!16s%2Fg%2F11csqj4_26!20s8Q99H295%2BQ6P?entry=ttu&g_ep=EgoyMDI2MTAxMy4wIKXMDSoASAFQAw%3D%3D",
+      "checkedAt": "2026-10-16T06:31:54.763Z",
+      "plusCode": "8Q99H295+Q6P"
+    },
+    "서울특별시 강서구 가양동 33-1 33-2 서서울주차장 내": {
+      "status": "unverified",
+      "matchedAddress": "",
+      "note": "원주소와 일치하는 단일 위치를 확인하지 못해 기존 근사 좌표를 유지했습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C%20%EA%B0%95%EC%84%9C%EA%B5%AC%20%EA%B0%80%EC%96%91%EB%8F%99%2033-1%2033-2%20%EC%84%9C%EC%84%9C%EC%9A%B8%EC%A3%BC%EC%B0%A8%EC%9E%A5%20%EB%82%B4",
+      "checkedAt": "2026-10-16T06:18:40.734Z"
+    },
+    "서울특별시 서초구 반포동": {
+      "status": "insufficient-address",
+      "matchedAddress": "",
+      "note": "원자료에 번지·건물명이 없어 특정 건물의 좌표를 정할 수 없습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C%20%EC%84%9C%EC%B4%88%EA%B5%AC%20%EB%B0%98%ED%8F%AC%EB%8F%99",
+      "checkedAt": "2026-10-16T06:18:42.241Z"
+    },
+    "서울특별시 마포구 염리동 507 마포프레스티자이 근린생활시설 C동 B1층 203호": {
+      "status": "unverified",
+      "matchedAddress": "",
+      "note": "원주소와 일치하는 단일 위치를 확인하지 못해 기존 근사 좌표를 유지했습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C%20%EB%A7%88%ED%8F%AC%EA%B5%AC%20%EC%97%BC%EB%A6%AC%EB%8F%99%20507%20%EB%A7%88%ED%8F%AC%ED%94%84%EB%A0%88%EC%8A%A4%ED%8B%B0%EC%9E%90%EC%9D%B4%20%EA%B7%BC%EB%A6%B0%EC%83%9D%ED%99%9C%EC%8B%9C%EC%84%A4%20C%EB%8F%99%20B1%EC%B8%B5%20203%ED%98%B8",
+      "checkedAt": "2026-10-16T06:18:43.843Z"
+    },
+    "서울특별시 성북구 정릉동 87-357": {
+      "status": "address-mismatch",
+      "matchedAddress": "서울특별시 성북구 정릉동 산87-357",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C%20%EC%84%B1%EB%B6%81%EA%B5%AC%20%EC%A0%95%EB%A6%89%EB%8F%99%2087-357",
+      "checkedAt": "2026-10-16T06:18:45.542Z"
+    },
+    "서울특별시 성북구 정릉동 416 1층": {
+      "status": "address-mismatch",
+      "matchedAddress": "서울특별시 성북구 정릉동 416-64 1층",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C%20%EC%84%B1%EB%B6%81%EA%B5%AC%20%EC%A0%95%EB%A6%89%EB%8F%99%20416%201%EC%B8%B5",
+      "checkedAt": "2026-10-16T06:18:47.060Z"
+    },
+    "서울특별시 양천구 신정동 812": {
+      "status": "address-mismatch",
+      "matchedAddress": "서울특별시 양천구 신정동 812-17",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C%20%EC%96%91%EC%B2%9C%EA%B5%AC%20%EC%8B%A0%EC%A0%95%EB%8F%99%20812",
+      "checkedAt": "2026-10-16T06:18:48.639Z"
+    },
+    "서울특별시 송파구 문정동 516": {
+      "status": "unverified",
+      "matchedAddress": "",
+      "note": "원주소와 일치하는 단일 위치를 확인하지 못해 기존 근사 좌표를 유지했습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C%20%EC%86%A1%ED%8C%8C%EA%B5%AC%20%EB%AC%B8%EC%A0%95%EB%8F%99%20516",
+      "checkedAt": "2026-10-16T06:18:50.680Z"
+    },
+    "경기도 하남시 신장동 432": {
+      "status": "address-mismatch",
+      "matchedAddress": "경기도 하남시 신장동 432-19",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EA%B8%B0%EB%8F%84%20%ED%95%98%EB%82%A8%EC%8B%9C%20%EC%8B%A0%EC%9E%A5%EB%8F%99%20432",
+      "checkedAt": "2026-10-16T06:18:53.417Z"
+    },
+    "경기도 화성시 동탄구 영천동 1": {
+      "status": "unverified",
+      "matchedAddress": "",
+      "note": "원주소와 일치하는 단일 위치를 확인하지 못해 기존 근사 좌표를 유지했습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EA%B8%B0%EB%8F%84%20%ED%99%94%EC%84%B1%EC%8B%9C%20%EB%8F%99%ED%83%84%EA%B5%AC%20%EC%98%81%EC%B2%9C%EB%8F%99%201",
+      "checkedAt": "2026-10-16T06:18:57.050Z"
+    },
+    "경기도 화성시 동탄구 영천동 706": {
+      "status": "unverified",
+      "matchedAddress": "",
+      "note": "원주소와 일치하는 단일 위치를 확인하지 못해 기존 근사 좌표를 유지했습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EA%B8%B0%EB%8F%84%20%ED%99%94%EC%84%B1%EC%8B%9C%20%EB%8F%99%ED%83%84%EA%B5%AC%20%EC%98%81%EC%B2%9C%EB%8F%99%20706",
+      "checkedAt": "2026-10-16T06:19:00.807Z"
+    },
+    "인천광역시 계양구 작전동 500 현대아파트상가 105호": {
+      "status": "unverified",
+      "matchedAddress": "",
+      "note": "원주소와 일치하는 단일 위치를 확인하지 못해 기존 근사 좌표를 유지했습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%9D%B8%EC%B2%9C%EA%B4%91%EC%97%AD%EC%8B%9C%20%EA%B3%84%EC%96%91%EA%B5%AC%20%EC%9E%91%EC%A0%84%EB%8F%99%20500%20%ED%98%84%EB%8C%80%EC%95%84%ED%8C%8C%ED%8A%B8%EC%83%81%EA%B0%80%20105%ED%98%B8",
+      "checkedAt": "2026-10-16T06:19:02.347Z"
+    },
+    "인천광역시 중구 인현동 2  1층": {
+      "status": "address-mismatch",
+      "matchedAddress": "인천광역시 중구 인현동 2-3 1층",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%9D%B8%EC%B2%9C%EA%B4%91%EC%97%AD%EC%8B%9C%20%EC%A4%91%EA%B5%AC%20%EC%9D%B8%ED%98%84%EB%8F%99%202%20%201%EC%B8%B5",
+      "checkedAt": "2026-10-16T06:19:03.953Z"
+    },
+    "인천광역시 미추홀구 문학동": {
+      "status": "insufficient-address",
+      "matchedAddress": "",
+      "note": "원자료에 번지·건물명이 없어 특정 건물의 좌표를 정할 수 없습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%9D%B8%EC%B2%9C%EA%B4%91%EC%97%AD%EC%8B%9C%20%EB%AF%B8%EC%B6%94%ED%99%80%EA%B5%AC%20%EB%AC%B8%ED%95%99%EB%8F%99",
+      "checkedAt": "2026-10-16T06:19:05.586Z"
+    },
+    "인천광역시 연수구 동춘동": {
+      "status": "insufficient-address",
+      "matchedAddress": "",
+      "note": "원자료에 번지·건물명이 없어 특정 건물의 좌표를 정할 수 없습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%9D%B8%EC%B2%9C%EA%B4%91%EC%97%AD%EC%8B%9C%20%EC%97%B0%EC%88%98%EA%B5%AC%20%EB%8F%99%EC%B6%98%EB%8F%99",
+      "checkedAt": "2026-10-16T06:19:07.227Z"
+    },
+    "전북특별자치도 정읍시 시기동 9-28": {
+      "status": "address-mismatch",
+      "matchedAddress": "전북특별자치도 정읍시 시기동 928",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%A0%84%EB%B6%81%ED%8A%B9%EB%B3%84%EC%9E%90%EC%B9%98%EB%8F%84%20%EC%A0%95%EC%9D%8D%EC%8B%9C%20%EC%8B%9C%EA%B8%B0%EB%8F%99%209-28",
+      "checkedAt": "2026-10-16T06:19:08.745Z"
+    },
+    "전북특별자치도 군산시 개정면 아동리 145  5호": {
+      "status": "unverified",
+      "matchedAddress": "",
+      "note": "원주소와 일치하는 단일 위치를 확인하지 못해 기존 근사 좌표를 유지했습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EC%A0%84%EB%B6%81%ED%8A%B9%EB%B3%84%EC%9E%90%EC%B9%98%EB%8F%84%20%EA%B5%B0%EC%82%B0%EC%8B%9C%20%EA%B0%9C%EC%A0%95%EB%A9%B4%20%EC%95%84%EB%8F%99%EB%A6%AC%20145%20%205%ED%98%B8",
+      "checkedAt": "2026-10-16T06:19:12.648Z"
+    },
+    "경상북도 김천시 아포읍 의3길 14-16": {
+      "status": "verified",
+      "matchedAddress": "경상북도 김천시 아포읍 의3길 14-16",
+      "note": "원주소의 건물명 또는 도로명·지번이 지도 결과와 일치해 해당 지도 위치를 반영했습니다. 층·호수의 위치나 실제 방문을 검증한 것은 아닙니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/place/%EA%B2%BD%EC%83%81%EB%B6%81%EB%8F%84+%EA%B9%80%EC%B2%9C%EC%8B%9C+%EC%95%84%ED%8F%AC%EC%9D%8D+%EC%9D%983%EA%B8%B8+14-16/data=!3m1!4b1!4m4!3m3!1s0x3565b95f812fa7c3:0xc39995008aa26ea1!16s%2Fg%2F11bzh24ttt!20s8Q8C56MJ%2BCW3?entry=ttu&g_ep=EgoyMDI2MTAxMy4wIKXMDSoASAFQAw%3D%3D",
+      "checkedAt": "2026-10-16T06:30:34.150Z",
+      "plusCode": "8Q8C56MJ+CW3"
+    },
+    "경상북도 경주시 서면 운대리 13": {
+      "status": "address-mismatch",
+      "matchedAddress": "경상북도 경주시 서면 운대리 13-5",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EC%83%81%EB%B6%81%EB%8F%84%20%EA%B2%BD%EC%A3%BC%EC%8B%9C%20%EC%84%9C%EB%A9%B4%20%EC%9A%B4%EB%8C%80%EB%A6%AC%2013",
+      "checkedAt": "2026-10-16T06:19:15.820Z"
+    },
+    "경상남도 양산시 상북면 석계리 23": {
+      "status": "address-mismatch",
+      "matchedAddress": "경상남도 양산시 상북면 석계리 산23-17",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EC%83%81%EB%82%A8%EB%8F%84%20%EC%96%91%EC%82%B0%EC%8B%9C%20%EC%83%81%EB%B6%81%EB%A9%B4%20%EC%84%9D%EA%B3%84%EB%A6%AC%2023",
+      "checkedAt": "2026-10-16T06:19:45.401Z"
+    },
+    "경기도 고양시 덕양구 고양동 138 １층 102호": {
+      "status": "unverified",
+      "matchedAddress": "",
+      "note": "원주소와 일치하는 단일 위치를 확인하지 못해 기존 근사 좌표를 유지했습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EA%B8%B0%EB%8F%84%20%EA%B3%A0%EC%96%91%EC%8B%9C%20%EB%8D%95%EC%96%91%EA%B5%AC%20%EA%B3%A0%EC%96%91%EB%8F%99%20138%20%EF%BC%91%EC%B8%B5%20102%ED%98%B8",
+      "checkedAt": "2026-10-16T06:19:49.177Z"
+    },
+    "경기도 김포시 양촌읍 양곡리 416": {
+      "status": "address-mismatch",
+      "matchedAddress": "경기도 김포시 양촌읍 양곡리 416-37",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EA%B8%B0%EB%8F%84%20%EA%B9%80%ED%8F%AC%EC%8B%9C%20%EC%96%91%EC%B4%8C%EC%9D%8D%20%EC%96%91%EA%B3%A1%EB%A6%AC%20416",
+      "checkedAt": "2026-10-16T06:19:50.771Z"
+    },
+    "경기도 김포시 통진읍 서암리 758": {
+      "status": "address-mismatch",
+      "matchedAddress": "경기도 김포시 통진읍 서암리 758-2",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EA%B8%B0%EB%8F%84%20%EA%B9%80%ED%8F%AC%EC%8B%9C%20%ED%86%B5%EC%A7%84%EC%9D%8D%20%EC%84%9C%EC%95%94%EB%A6%AC%20758",
+      "checkedAt": "2026-10-16T06:19:52.960Z"
+    },
+    "경기도 김포시 하성면 마곡리 634": {
+      "status": "address-mismatch",
+      "matchedAddress": "경기도 김포시 하성면 마곡리 634-10",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EA%B8%B0%EB%8F%84%20%EA%B9%80%ED%8F%AC%EC%8B%9C%20%ED%95%98%EC%84%B1%EB%A9%B4%20%EB%A7%88%EA%B3%A1%EB%A6%AC%20634",
+      "checkedAt": "2026-10-16T06:19:56.166Z"
+    },
+    "경기도 안성시 봉산동 12": {
+      "status": "address-mismatch",
+      "matchedAddress": "경기도 안성시 봉산동 12-7",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EA%B8%B0%EB%8F%84%20%EC%95%88%EC%84%B1%EC%8B%9C%20%EB%B4%89%EC%82%B0%EB%8F%99%2012",
+      "checkedAt": "2026-10-16T06:19:58.783Z"
+    },
+    "경기도 안성시 서인동 13 B42호": {
+      "status": "address-mismatch",
+      "matchedAddress": "경기도 안성시 서인동 13-226 B42호",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EA%B8%B0%EB%8F%84%20%EC%95%88%EC%84%B1%EC%8B%9C%20%EC%84%9C%EC%9D%B8%EB%8F%99%2013%20B42%ED%98%B8",
+      "checkedAt": "2026-10-16T06:20:01.758Z"
+    },
+    "경기도 양주시 백석읍 방성리 269": {
+      "status": "address-mismatch",
+      "matchedAddress": "경기도 양주시 백석읍 방성리 269-14",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EA%B8%B0%EB%8F%84%20%EC%96%91%EC%A3%BC%EC%8B%9C%20%EB%B0%B1%EC%84%9D%EC%9D%8D%20%EB%B0%A9%EC%84%B1%EB%A6%AC%20269",
+      "checkedAt": "2026-10-16T06:20:03.855Z"
+    },
+    "경기도 양평군 용문면 다문리 737  (용문역)": {
+      "status": "verified",
+      "matchedAddress": "용문역",
+      "note": "원주소의 건물명 또는 도로명·지번이 지도 결과와 일치해 해당 지도 위치를 반영했습니다. 층·호수의 위치나 실제 방문을 검증한 것은 아닙니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/place/%EC%9A%A9%EB%AC%B8%EC%97%AD/data=!3m1!4b1!4m4!3m3!1s0x356340f8cb4b7a7b:0xe31a13a4731e744a!16s%2Fm%2F0807qr7!20s8Q99FHJV%2BXQQ?entry=ttu&g_ep=EgoyMDI2MTAxMy4wIKXMDSoASAFQAw%3D%3D",
+      "checkedAt": "2026-10-16T06:30:34.187Z",
+      "plusCode": "8Q99FHJV+XQQ"
+    },
+    "경기도 양평군 지평면 곡수리 399": {
+      "status": "address-mismatch",
+      "matchedAddress": "경기도 양평군 지평면 곡수리 399-10",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EA%B8%B0%EB%8F%84%20%EC%96%91%ED%8F%89%EA%B5%B0%20%EC%A7%80%ED%8F%89%EB%A9%B4%20%EA%B3%A1%EC%88%98%EB%A6%AC%20399",
+      "checkedAt": "2026-10-16T06:20:07.111Z"
+    },
+    "경기도 여주시 상동 281": {
+      "status": "address-mismatch",
+      "matchedAddress": "경기도 여주시 상동 281-9",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EA%B8%B0%EB%8F%84%20%EC%97%AC%EC%A3%BC%EC%8B%9C%20%EC%83%81%EB%8F%99%20281",
+      "checkedAt": "2026-10-16T06:20:08.636Z"
+    },
+    "경기도 여주시 하동 122-8 3B3.4L삼한강변APT 1동 1104호": {
+      "status": "unverified",
+      "matchedAddress": "",
+      "note": "원주소와 일치하는 단일 위치를 확인하지 못해 기존 근사 좌표를 유지했습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EA%B8%B0%EB%8F%84%20%EC%97%AC%EC%A3%BC%EC%8B%9C%20%ED%95%98%EB%8F%99%20122-8%203B3.4L%EC%82%BC%ED%95%9C%EA%B0%95%EB%B3%80APT%201%EB%8F%99%201104%ED%98%B8",
+      "checkedAt": "2026-10-16T06:20:12.396Z"
+    },
+    "경기도 연천군 백학면 백령리 72": {
+      "status": "address-mismatch",
+      "matchedAddress": "경기도 연천군 백학면 백령리 72-2",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EA%B8%B0%EB%8F%84%20%EC%97%B0%EC%B2%9C%EA%B5%B0%20%EB%B0%B1%ED%95%99%EB%A9%B4%20%EB%B0%B1%EB%A0%B9%EB%A6%AC%2072",
+      "checkedAt": "2026-10-16T06:20:13.929Z"
+    },
+    "경기도 연천군 청산면 궁평리 21-11": {
+      "status": "address-mismatch",
+      "matchedAddress": "경기도 연천군 청산면 궁평리 산2-1",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EA%B8%B0%EB%8F%84%20%EC%97%B0%EC%B2%9C%EA%B5%B0%20%EC%B2%AD%EC%82%B0%EB%A9%B4%20%EA%B6%81%ED%8F%89%EB%A6%AC%2021-11",
+      "checkedAt": "2026-10-16T06:20:15.352Z"
+    },
+    "경기도 오산시 오산동 547": {
+      "status": "address-mismatch",
+      "matchedAddress": "경기도 오산시 오산동 547-16",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EA%B8%B0%EB%8F%84%20%EC%98%A4%EC%82%B0%EC%8B%9C%20%EC%98%A4%EC%82%B0%EB%8F%99%20547",
+      "checkedAt": "2026-10-16T06:20:17.007Z"
+    },
+    "경기도 파주시 금촌동 54": {
+      "status": "address-mismatch",
+      "matchedAddress": "경기도 파주시 금촌동 54-49",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EA%B8%B0%EB%8F%84%20%ED%8C%8C%EC%A3%BC%EC%8B%9C%20%EA%B8%88%EC%B4%8C%EB%8F%99%2054",
+      "checkedAt": "2026-10-16T06:20:18.548Z"
+    },
+    "경기도 파주시 파주읍 파주리 426": {
+      "status": "address-mismatch",
+      "matchedAddress": "경기도 파주시 파주읍 파주리 426-9",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EA%B8%B0%EB%8F%84%20%ED%8C%8C%EC%A3%BC%EC%8B%9C%20%ED%8C%8C%EC%A3%BC%EC%9D%8D%20%ED%8C%8C%EC%A3%BC%EB%A6%AC%20426",
+      "checkedAt": "2026-10-16T06:20:20.343Z"
+    },
+    "경기도 평택시 세교동": {
+      "status": "insufficient-address",
+      "matchedAddress": "",
+      "note": "원자료에 번지·건물명이 없어 특정 건물의 좌표를 정할 수 없습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EA%B8%B0%EB%8F%84%20%ED%8F%89%ED%83%9D%EC%8B%9C%20%EC%84%B8%EA%B5%90%EB%8F%99",
+      "checkedAt": "2026-10-16T06:20:22.333Z"
+    },
+    "경기도 평택시 동삭동": {
+      "status": "insufficient-address",
+      "matchedAddress": "",
+      "note": "원자료에 번지·건물명이 없어 특정 건물의 좌표를 정할 수 없습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EA%B8%B0%EB%8F%84%20%ED%8F%89%ED%83%9D%EC%8B%9C%20%EB%8F%99%EC%82%AD%EB%8F%99",
+      "checkedAt": "2026-10-16T06:20:24.576Z"
+    },
+    "경기도 평택시 신장동 317": {
+      "status": "address-mismatch",
+      "matchedAddress": "경기도 평택시 신장동 317-125",
+      "note": "지도 검색에서 원주소와 다른 번지가 반환되어 그 위치로 변경하지 않았습니다.",
+      "source": "Google 지도",
+      "sourceUrl": "https://www.google.com/maps/search/?api=1&query=%EA%B2%BD%EA%B8%B0%EB%8F%84%20%ED%8F%89%ED%83%9D%EC%8B%9C%20%EC%8B%A0%EC%9E%A5%EB%8F%99%20317",
+      "checkedAt": "2026-10-16T06:20:26.770Z"
+    }
+  }
+}

@@ -14,18 +14,19 @@ function markCatalogPending_(address) {
 function indexContext_(create) {
   if (PHOTO_INDEX_CONTEXT_ && PHOTO_INDEX_CONTEXT_.folder) return PHOTO_INDEX_CONTEXT_;
   var folder = folder_('', PHOTO_LIMITS_.indexRootName, !!create);
-  PHOTO_INDEX_CONTEXT_ = {folder:folder,files:folder ? listResources_(folder) : []};
+  PHOTO_INDEX_CONTEXT_ = {folder:folder,files:folder ? listResources_(folder) : [],json:{}};
   return PHOTO_INDEX_CONTEXT_;
 }
 function indexRead_(name, fallback) {
   var context = indexContext_(false), matches = context.files.filter(function(f) { return f.name === name; });
-  if (!matches.length) return fallback;
+  if(Object.prototype.hasOwnProperty.call(context.json,name))return context.json[name];
+  if (!matches.length) {context.json[name]=fallback;return fallback;}
   if (matches.length !== 1 || matches[0].type !== 'file' || Number(matches[0].size) > 8000000)
     fail_('CATALOG', '관리자 목록 파일을 확인해야 합니다. 사진 원본은 보존됩니다.');
   var target = api_('/drive/files/' + encodeURIComponent(matches[0].resourceId) + '/download');
   var result = fetch_(storageUrl_(target.downloadUrl,'download'), {muteHttpExceptions:true,followRedirects:false});
   if (result.getResponseCode() !== 200) fail_('CATALOG', '관리자 목록을 불러오지 못했습니다.');
-  try { return JSON.parse(result.getContentText('UTF-8')); }
+  try { context.json[name]=JSON.parse(result.getContentText('UTF-8'));return context.json[name]; }
   catch(ignored) { fail_('CATALOG', '관리자 목록 형식이 달라 동기화가 필요합니다.'); }
 }
 function indexWrite_(name, value) {
@@ -41,6 +42,7 @@ function indexWrite_(name, value) {
   if(result.getResponseCode()<200 || result.getResponseCode()>=300) fail_('CATALOG','관리자 목록 저장이 지연됩니다.');
   context.files=listResources_(context.folder);
   if(!context.files.some(function(f){return f.name===name && Number(f.size)===size;})) fail_('CATALOG','관리자 목록 저장 확인이 지연됩니다.');
+  context.json[name]=value;
 }
 function manifest_() {
   var value=indexRead_('manifest.json',{v:3,shards:{},scanComplete:false,updatedAt:null});
@@ -70,13 +72,13 @@ function saveShard_(key, shard, manifest) {
     legacy:rows.reduce(function(n,r){return n+r.photos.filter(function(p){return p.legacy;}).length;},0)};
 }
 function applyCatalogBatch_(entries) {
-  var manifest=manifest_(), groups={}, state=scanState_();
+  var manifest=manifest_(), groups={}, state=scanState_(),changed=false;
   entries.forEach(function(entry){var hash=digest_(entry.address),key=hash[0];(groups[key]||(groups[key]=[])).push({entry:entry,hash:hash});});
-  Object.keys(groups).forEach(function(key){var data=shard_(key);groups[key].forEach(function(item){
-    if(item.entry.files.length) data.rows[item.hash]=recordFor_(item.entry.address,item.entry.files,state.active?state.id:null);
-    else delete data.rows[item.hash];
-  });saveShard_(key,data,manifest);});
-  manifest.updatedAt=new Date().toISOString();indexWrite_('manifest.json',manifest);
+  Object.keys(groups).forEach(function(key){var data=shard_(key),dirty=false;groups[key].forEach(function(item){
+    if(item.entry.files.length){data.rows[item.hash]=recordFor_(item.entry.address,item.entry.files,state.active?state.id:null);dirty=true;}
+    else if(Object.prototype.hasOwnProperty.call(data.rows,item.hash)){delete data.rows[item.hash];dirty=true;}
+  });if(dirty){saveShard_(key,data,manifest);changed=true;}});
+  if(changed){manifest.updatedAt=new Date().toISOString();indexWrite_('manifest.json',manifest);}
   entries.forEach(function(entry){PropertiesService.getScriptProperties().deleteProperty('PHOTO_PENDING_'+digest_(entry.address));});
 }
 function tryCatalogUpdate_(address,files) {
@@ -92,7 +94,7 @@ function getAdminOverview(session) {
     return {addresses:keys.reduce(function(n,k){return n+m.shards[k].addresses;},0),photos:keys.reduce(function(n,k){return n+m.shards[k].photos;},0),
       legacy:keys.reduce(function(n,k){return n+Number(m.shards[k].legacy||0);},0),
       chunks:keys.filter(function(k){return m.shards[k].addresses>0;}),updatedAt:m.updatedAt,
-      scanComplete:!!m.scanComplete,scan:scanPublic_(state),pending:pendingCatalog_().length,quota:quota_()};
+      scanComplete:!!m.scanComplete,verifiedAt:m.verifiedAt||null,scan:scanPublic_(state),pending:pendingCatalog_().length,quota:quota_()};
   });
 }
 function getAdminChunk(session,key) {
@@ -109,6 +111,15 @@ function sourceAddressForFolder_(name) {
     found=candidate;return true;
   });});});});return found;
 }
+// App events are repaired without starting a full MYBOX folder walk.
+function repairAdminCatalog(session) {
+  return rpc_(function(){
+    requireAdmin_(session);
+    var pending=pendingCatalog_().slice(0,4),batch=pending.map(function(p){var f=addressFolder_(p.address,false);return {address:p.address,files:f?photoFiles_(f):[]};});
+    if(batch.length)applyCatalogBatch_(batch);
+    return {pending:pendingCatalog_().length,processed:batch.length};
+  });
+}
 function syncAdminCatalog(session,restart) {
   return rpc_(function(){
     requireAdmin_(session);
@@ -120,7 +131,7 @@ function syncAdminCatalog(session,restart) {
     if(state.active && state.phase==='folders') {
       var root=folder_('',PHOTO_LIMITS_.rootName,false),shards=root?listResources_(root).filter(function(f){return f.type==='folder' && /^[0-9a-f]{2}$/.test(f.name);}).sort(function(a,b){return a.name.localeCompare(b.name);}):[];
       var next=shards.filter(function(s){return s.name>=state.prefix;})[0];
-      if(!root && !Object.keys(manifest_().shards).length) {m=manifest_();m.scanComplete=true;m.updatedAt=new Date().toISOString();indexWrite_('manifest.json',m);state.active=false;state.phase='done';}
+      if(!root && !Object.keys(manifest_().shards).length) {m=manifest_();m.scanComplete=true;m.verifiedAt=m.updatedAt=new Date().toISOString();indexWrite_('manifest.json',m);state.active=false;state.phase='done';}
       else if(!next) {state.phase='prune';state.prune=0;}
       else {
         if(state.prefix!==next.name){state.prefix=next.name;state.offset=0;}
@@ -138,10 +149,18 @@ function syncAdminCatalog(session,restart) {
       }
     } else if(state.active && state.phase==='prune') {
       // Remove stale snapshot entries after a full scan, but preserve new uploads made during it.
-      var key=state.prune.toString(16),data=shard_(key);
-      Object.keys(data.rows).forEach(function(hash){var r=data.rows[hash];if(r.scanId!==state.id && r.updatedAt<state.startedAt)delete data.rows[hash];});
-      m=manifest_();saveShard_(key,data,m);state.prune++;
-      if(state.prune>=16){state.active=false;state.phase='done';m.scanComplete=state.issues===0;}
+      m=manifest_();var checked=0;
+      while(state.prune<16){
+        var key=state.prune.toString(16),summary=m.shards[key];
+        // Empty shards cannot contribute a stale visible row. Avoid sixteen
+        // downloads and rewrites when there are no registered photos.
+        if(!summary||summary.addresses===0){state.prune++;continue;}
+        if(checked>=2)break;
+        var data=shard_(key),dirty=false;checked++;
+        Object.keys(data.rows).forEach(function(hash){var r=data.rows[hash];if(r.scanId!==state.id && r.updatedAt<state.startedAt){delete data.rows[hash];dirty=true;}});
+        if(dirty)saveShard_(key,data,m);state.prune++;
+      }
+      if(state.prune>=16){state.active=false;state.phase='done';m.scanComplete=state.issues===0;if(m.scanComplete)m.verifiedAt=new Date().toISOString();}
       m.updatedAt=new Date().toISOString();indexWrite_('manifest.json',m);
     } else {
       var pending=pendingCatalog_().slice(0,4),batch=pending.map(function(p){var f=addressFolder_(p.address,false);return {address:p.address,files:f?photoFiles_(f):[]};});

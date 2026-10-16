@@ -54,31 +54,47 @@ const overview=(extra={})=>({addresses:1,photos:1,legacy:0,pending:0,chunks:['a'
 const row={address:'test source address',province:'서울',district:'동대문구',dong:'이문2동',photos:[{slot:1,uploadedAt:'2026-10-16T04:00:00Z'}]};
 const identity={ready:true,authenticated:true,role:'admin'};
 
-test('one refresh checks MYBOX to completion then updates both totals and address rows',async()=>{
+test('ordinary refresh reads the catalog without a complete MYBOX scan',async()=>{
   let steps=0;
   const h=harness(name=>({ok:true,data:name==='getStatus'?identity:name==='getAdminOverview'?overview():name==='syncAdminCatalog'?{scan:{active:++steps===1,processed:steps,issues:0},pending:0}:{rows:[row]}}));
   h.run("session='admin-session'");h.get('province').value='서울';await h.get('refresh').onclick();
-  assert.deepEqual(h.calls.map(c=>c.name),['getStatus','getAdminOverview','syncAdminCatalog','syncAdminCatalog','getStatus','getAdminOverview','getAdminChunk']);
-  assert.deepEqual(h.calls.filter(c=>c.name==='syncAdminCatalog').map(c=>c.args[1]),[true,false]);
+  assert.deepEqual(h.calls.map(c=>c.name),['getStatus','getAdminOverview','getAdminChunk']);
+  assert.equal(steps,0);
   assert.equal(h.get('photoCount').textContent,'1');assert.equal(h.run('rows.length'),1);
   assert.equal(h.get('province').value,'서울');assert.equal(h.get('refresh').disabled,false);
   assert.equal(h.get('refresh').textContent,'새로고침');assert.equal(h.get('stopSync').hidden,true);
   assert.match(h.get('message').textContent,/수량과 목록을 새로/);
-  assert.doesNotMatch(html,/id="(?:sync|rescan|loadRows)"|사진 목록 맞추기|목록 새로고침|전체 다시 확인/);
+  assert.match(html,/id="fullCheck"/);
+});
+
+test('ordinary refresh repairs pending app changes without starting a full scan',async()=>{
+ let pending=2;
+ const h=harness(name=>({ok:true,data:name==='getStatus'?identity:name==='getAdminOverview'?overview({pending}):name==='repairAdminCatalog'?{pending:--pending,processed:1}:{rows:[row]}}));
+ h.run("session='admin-session'");await h.get('refresh').onclick();
+ assert.equal(h.calls.filter(c=>c.name==='repairAdminCatalog').length,2);assert.equal(h.calls.filter(c=>c.name==='syncAdminCatalog').length,0);
+ assert.equal(h.run('rows.length'),1);assert.equal(h.get('pendingCount').textContent,'0');
+});
+
+test('full storage comparison shows the current list before scanning and resumes without a batch cap',async()=>{
+ let steps=0;
+ const h=harness(name=>{if(name==='syncAdminCatalog')assert.equal(h.run('rows.length'),1);return {ok:true,data:name==='getStatus'?identity:name==='getAdminOverview'?overview({scan:{active:steps<105}}):name==='syncAdminCatalog'?{scan:{active:++steps<105,processed:steps,issues:0},pending:0}:{rows:[row]}};});
+ h.run("session='admin-session'");await h.get('fullCheck').onclick();
+ const scans=h.calls.filter(c=>c.name==='syncAdminCatalog');assert.equal(scans.length,105);assert.ok(scans.every(c=>c.args[1]===false));
+ assert.match(h.get('message').textContent,/전체 대조를 마쳤/);
 });
 
 test('refresh resumes an active scan and does not silently stop after 100 batches',async()=>{
   let steps=0;
   const h=harness(name=>({ok:true,data:name==='getStatus'?identity:name==='getAdminOverview'?overview({scan:{active:steps<105}}):name==='syncAdminCatalog'?{scan:{active:++steps<105,processed:steps,issues:0},pending:0}:{rows:[row]}}));
-  h.run("session='admin-session'");await h.get('refresh').onclick();
+  h.run("session='admin-session'");await h.get('fullCheck').onclick();
   const scans=h.calls.filter(c=>c.name==='syncAdminCatalog');assert.equal(scans.length,105);
   assert.ok(scans.every(c=>c.args[1]===false));assert.equal(h.run('rows.length'),1);
-  assert.match(h.get('message').textContent,/수량과 목록을 새로/);
+  assert.match(h.get('message').textContent,/전체 대조를 마쳤/);
 });
 
 test('pause keeps progress resumable and loads available rows without reporting completion',async()=>{
   const h=harness(name=>{if(name==='syncAdminCatalog')h.get('stopSync').onclick();return {ok:true,data:name==='getStatus'?identity:name==='getAdminOverview'?overview({scan:{active:true},scanComplete:false}):name==='syncAdminCatalog'?{scan:{active:true,processed:4,issues:0},pending:0}:{rows:[row]}};});
-  h.run("session='admin-session'");await h.get('refresh').onclick();
+  h.run("session='admin-session'");await h.get('fullCheck').onclick();
   assert.equal(h.calls.filter(c=>c.name==='syncAdminCatalog').length,1);assert.equal(h.run('rows.length'),1);
   assert.match(h.get('message').textContent,/일시정지/);assert.doesNotMatch(h.get('message').textContent,/새로 불러왔습니다/);
   assert.equal(h.get('refresh').disabled,false);
@@ -87,15 +103,15 @@ test('pause keeps progress resumable and loads available rows without reporting 
 test('failed scan or list load preserves the last list and never claims a successful refresh',async()=>{
   for(const failure of ['syncAdminCatalog','getAdminChunk']){
     const h=harness(name=>name===failure?{ok:false,code:'MYBOX',message:'test connection failed'}:{ok:true,data:name==='getStatus'?identity:name==='getAdminOverview'?overview():name==='syncAdminCatalog'?{scan:{active:false,processed:1,issues:0},pending:0}:{rows:[row]}});
-    h.run("session='admin-session';rows=[{address:'last known address',province:'서울',photos:[]}]");await h.get('refresh').onclick();
-    assert.equal(h.run('rows[0].address'),'last known address');assert.match(h.get('message').textContent,/test connection failed/);
+    h.run("session='admin-session';rows=[{address:'last known address',province:'서울',photos:[]}]");await h.get('fullCheck').onclick();
+    assert.equal(h.run('rows[0].address'),failure==='getAdminChunk'?'last known address':'test source address');assert.match(h.get('message').textContent,/test connection failed/);
     assert.equal(h.get('refresh').disabled,false);assert.equal(h.get('stopSync').hidden,true);
   }
 });
 
 test('scan issues stop the loop and warn instead of repeating a failed full scan forever',async()=>{
   const h=harness(name=>({ok:true,data:name==='getStatus'?identity:name==='getAdminOverview'?overview({scanComplete:false}):name==='syncAdminCatalog'?{scan:{active:false,processed:1,issues:1},pending:1}:{rows:[row]}}));
-  h.run("session='admin-session'");await h.get('refresh').onclick();
+  h.run("session='admin-session'");await h.get('fullCheck').onclick();
   assert.equal(h.calls.filter(c=>c.name==='syncAdminCatalog').length,1);assert.match(h.get('message').textContent,/전체가 아닐 수/);
 });
 

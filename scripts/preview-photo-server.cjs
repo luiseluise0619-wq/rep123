@@ -4,7 +4,7 @@ const {harness,PASSWORD}=require('../tests/helpers/photo-harness.cjs');
 const root=path.resolve(__dirname,'..'),sourceText=fs.readFileSync(path.join(root,'web/addresses.js'),'utf8');
 const h=harness({sourceText,requireCapture:true}),app=h.app;
 app.PHOTO_LIMITS_={...app.PHOTO_LIMITS_,webAppUrl:'http://127.0.0.1:8765/photos'};
-const exposed=new Set(['getStatus','loginPhoto','uploadPhoto','getPhoto','listEmployees','manageEmployee','getAdminOverview','getAdminChunk','syncAdminCatalog','getPublicStatus','uploadPublicPhoto','getPublicPhoto','deletePhoto','getPublicUploadReceipt','beginPublicCapture']);
+const exposed=new Set(['getStatus','loginPhoto','uploadPhoto','getPhoto','listEmployees','manageEmployee','getAdminOverview','getAdminChunk','repairAdminCatalog','syncAdminCatalog','getPublicStatus','uploadPublicPhoto','getPublicPhoto','deletePhoto','getPublicUploadReceipt','beginPublicCapture']);
 const mock=`<script>
 let MOCK_OK,MOCK_FAIL;const runner=new Proxy({},{get(target,name){
  if(name==='withSuccessHandler')return fn=>{MOCK_OK=fn;return runner};

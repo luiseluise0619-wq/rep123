@@ -32,7 +32,7 @@
       <div class="menu-content">
         <nav class="hbtns" aria-label="지도 보조 기능">
           <a class="hbtn" href="./duplicates.html" target="_blank" rel="noopener">같은 주소 <b>1,001곳</b></a>
-          <a class="hbtn" href="./check.html" target="_blank" rel="noopener">위치 확인 <span><b id="nApprox">-</b>곳</span></a>
+          <a class="hbtn" href="./coordinate-review.html" target="_blank" rel="noopener">위치 확인 <span><b id="nApprox">-</b>곳</span></a>
           <button class="hbtn" type="button" id="dataInfoBtn">집계 기준</button>
           <a class="hbtn" id="photoAdminLink" hidden target="_blank" rel="noopener noreferrer">사진 관리</a>
         </nav>
@@ -76,6 +76,7 @@
 
 <script src="./data-meta.js?v=20261015-admin"></script>
 <script src="./addresses.js?v=20261015-admin"></script>
+<script src="./coordinate-review.js?v=20261016-reviewed"></script>
 <script src="./address-search.js?v=20261016-ux"></script>
 <script src="./photo-config.js?v=20261016-simple-ui"></script>
 <script>
@@ -113,6 +114,9 @@ function countBusinesses(arr){ return arr.reduce(function(n,p){ return n+(Number
 function countGugun(g){ var n=0; for(var d in g) n+=countBusinesses(g[d]); return n; }
 function countSido(s){ var n=0; for(var g in s) n+=countGugun(s[g]); return n; }
 function hasCoordinates(p){ return p[0]!=null && p[1]!=null && Number.isFinite(p[0]) && Number.isFinite(p[1]) && Math.abs(p[0])<=90 && Math.abs(p[1])<=180; }
+function coordinateReview(p){var records=(window.COORD_REVIEW||{}).records||{};return Object.prototype.hasOwnProperty.call(records,p[2])?records[p[2]]:null;}
+function coordinateNeedsReview(p){var review=coordinateReview(p);return !p[4]||!!(review&&review.status!=='verified');}
+function coordinateLabel(p){var review=coordinateReview(p);if(!review||review.status==='verified')return '';return review.status==='address-mismatch'?'주소 불일치':review.status==='insufficient-address'?'번지·건물 정보 없음':'위치 미확인';}
 // collect*: 한 구/시도 안의 모든 주소를 하나의 목록으로 합침(지도 범위 맞출 때 사용)
 function collectGugun(g){ var out=[]; for(var d in g) out=out.concat(g[d]); return out; }
 function collectSido(s){ var out=[]; for(var g in s) out=out.concat(collectGugun(s[g])); return out; }
@@ -142,7 +146,7 @@ function buildIndex(){
     var arr = DATA[sido][gugun][dong];
     for(var i=0;i<arr.length;i++){
       var p = arr[i];
-      var real = hasCoordinates(p) && !!p[4];
+      var real = hasCoordinates(p) && !coordinateNeedsReview(p);
       var entry = { p:p, real:real, s:sido, g:gugun, d:dong };
       ALL.push(entry); recordByPoint.set(p,entry);
       if(real) nReal++; else nApprox++;
@@ -155,7 +159,9 @@ function buildIndex(){
 function getMarker(rec){
   var m = markerCache.get(rec.p);
   if(m) return m;
-  m = L.marker([rec.p[0], rec.p[1]], { icon: rec.real ? dotIcon : dotApprox });
+  var label=coordinateLabel(rec.p),review=coordinateReview(rec.p);
+  var icon=label?L.divIcon({className:'',html:'<div class="addr-dot approx'+(review.status==='address-mismatch'?' mismatch':'')+'"><span class="map-pin-label">'+esc(label)+'</span></div>',iconSize:[16,16],iconAnchor:[8,8]}):rec.real?dotIcon:dotApprox;
+  m = L.marker([rec.p[0], rec.p[1]], { icon:icon,title:label||rec.p[2] });
   m._d = rec.p; m._s = rec.s; m._g = rec.g; m._n = rec.d;
   m.on('click', function(e){ openPopup(e.target, e.target._d); });
   markerCache.set(rec.p, m);
@@ -236,14 +242,18 @@ function openPopup(marker, rec){
   var search = 'https://www.google.com/maps/search/?api=1&query=' + q;
   var nav = 'https://www.google.com/maps/dir/?api=1&destination=' + q;
   var cnt = rec[3] || 1;
-  var approx = rec[4] ? false : true;
+  var approx = coordinateNeedsReview(rec),review=coordinateReview(rec),reviewHtml='';
+  if(review&&review.status!=='verified'){
+    var label=review.status==='address-mismatch'?'원주소와 지도 검색 결과 불일치':review.status==='insufficient-address'?'번지·건물 정보 없음 · 정확한 위치 확인 불가':'정확한 위치 미확인';
+    reviewHtml='<div class="popup-warn'+(review.status==='address-mismatch'?' mismatch':'')+'">'+esc(label)+'</div>'+(review.matchedAddress?'<div class="popup-sub">지도 검색 결과: '+esc(review.matchedAddress)+'</div>':'')+'<div class="popup-sub">'+esc(review.note||'원주소의 위치가 확인되지 않아 기존 근사 좌표를 유지했습니다.')+'</div>';
+  }else if(review){reviewHtml='<div class="popup-sub">지도에서 건물·지번 위치 대조 완료 · 층·호수의 실제 방문 위치를 보증하지 않습니다.</div>';}
   var entry = recordByPoint.get(rec);
   var admin = entry ? '<div class="popup-sub">집계 관할: '+esc(entry.s+' '+entry.g+' '+entry.d)+'</div>' : '';
   var html = '<div class="popup-addr">' + esc(rec[2]) + '</div>' +
     admin +
     (rec[6] && !rec[5] ? '<div class="popup-warn">행정동 미확정 · 시군구 합계에는 포함</div>' : '') +
     (!rec[6] ? '<div class="popup-sub">원주소 분류 · 한글 행정동 대조 대상 외</div>' : '') +
-    (approx ? '<div class="popup-warn">근사 좌표 · 위치 확인 필요</div>' : '') +
+    reviewHtml+(approx&&!review ? '<div class="popup-warn">근사 좌표 · 위치 확인 필요</div>' : '') +
     '<div class="popup-sub tag-biz">이 주소 사업자수 ' + cnt + '개</div>' +
     photoLinkHtml(rec[2])+
     '<div class="popup-links"><a class="pbtn" href="' + search + '" target="_blank" rel="noopener">구글 지도</a>' +
@@ -374,7 +384,7 @@ function appendAddrRow(p){
   var r=document.createElement('article'); r.className='row addr-row';
   var select=document.createElement('button');select.type='button';select.className='addr-select';select.textContent=p[2];select.setAttribute('aria-label',p[2]+' 지도에서 보기');
   var sub=[];
-  if(!p[4]) sub.push('<span class="tag-check">좌표 확인필요</span>');
+  if(coordinateNeedsReview(p)) sub.push('<span class="tag-check">'+esc(coordinateLabel(p)||'좌표 확인필요')+'</span>');
   if(p[6] && !p[5]) sub.push('<span class="tag-check">행정동 미확정</span>');
   sub.push('<span class="tag-biz">사업자수 '+(p[3]||1)+'개</span>');
   var info=document.createElement('div');info.className='sub';info.innerHTML=sub.join('');r.append(select,info);
