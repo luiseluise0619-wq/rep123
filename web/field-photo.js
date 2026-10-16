@@ -1,0 +1,113 @@
+(function(){
+'use strict';
+const $=id=>document.getElementById(id),config=window.PHOTO_CONFIG||{},address=new URLSearchParams(location.search).get('address')||'';
+const random=bytes=>Array.from(crypto.getRandomValues(new Uint8Array(bytes)),b=>b.toString(16).padStart(2,'0')).join('');
+const channel=random(32),requests=new Map(),KEY='photoDeviceKeyV4';
+let remote=null,remoteOrigin='',deviceKey='',busy=false,savedCount=0,canUpload=false,stream=null,pending=[],epoch=0;
+let connectResolve,connectReject;
+const connected=new Promise((resolve,reject)=>{connectResolve=resolve;connectReject=reject;});
+const connectionTimer=setTimeout(()=>connectReject(Error('저장 서버에 연결되지 않았습니다. 잠시 후 이 화면을 다시 열어 주세요.')),30000);
+function say(text,error=false){$('message').textContent=text;$('message').hidden=!text;$('message').classList.toggle('error',error);}
+function readKey(){try{const key=localStorage.getItem(KEY)||'';return /^[a-f0-9]{64}$/.test(key)?key:'';}catch(ignored){return '';}}
+function keepKey(legacy){let key=readKey()||(/^[a-f0-9]{64}$/.test(legacy||'')?legacy:random(32));try{localStorage.setItem(KEY,key);return readKey()===key?key:'';}catch(ignored){return '';}}
+function bridgeOrigin(value){return value==='https://script.google.com'||/^https:\/\/[a-z0-9-]+-script\.googleusercontent\.com$/.test(value);}
+window.addEventListener('message',event=>{
+  const data=event.data;if(!data||data.channel!==channel||!bridgeOrigin(event.origin))return;
+  if(data.type==='ready'&&!remote){remote=event.source;remoteOrigin=event.origin;clearTimeout(connectionTimer);deviceKey=keepKey(data.legacyKey);connectResolve();return;}
+  if(event.source!==remote||event.origin!==remoteOrigin||data.type!=='reply')return;
+  const request=requests.get(data.id);if(!request)return;requests.delete(data.id);clearTimeout(request.timer);
+  if(data.result&&data.result.ok)request.resolve(data.result.data);else{const error=Error(data.result&&data.result.message||'요청을 완료하지 못했습니다.');error.code=data.result&&data.result.code;request.reject(error);}
+});
+async function once(name,...args){await connected;return new Promise((resolve,reject)=>{
+  const id=random(12),timer=setTimeout(()=>{requests.delete(id);const error=Error(name==='uploadPublicPhoto'?'등록 응답이 늦어 저장 여부를 확인하지 못했습니다. 사진은 그대로 두고 ‘등록 현황 확인’을 눌러주세요.':'서버 응답이 늦습니다. 잠시 후 다시 확인해 주세요.');error.code='TIMEOUT';reject(error);},name==='uploadPublicPhoto'?90000:30000);
+  requests.set(id,{resolve,reject,timer});remote.postMessage({channel,id,name,args},remoteOrigin);
+});}
+async function rpc(name,...args){for(let attempt=0;;attempt++){try{return await once(name,...args);}catch(error){if(error.code!=='BUSY'||attempt>=3)throw error;await new Promise(resolve=>setTimeout(resolve,1500*(attempt+1)));}}}
+function controls(){
+  $('startCamera').disabled=busy||!!stream||!canUpload||!deviceKey||savedCount+pending.length>=2||!$('locationConsent').checked;
+  $('take').disabled=busy||!stream||savedCount+pending.length>=2;$('stopCamera').disabled=busy;
+  $('locationConsent').disabled=busy||pending.length>0||!!stream;$('publicConsent').disabled=busy;
+  $('upload').disabled=busy||!pending.length||!$('publicConsent').checked||!canUpload||pending.length+savedCount>2;
+  $('upload').textContent=busy?'처리 중…':pending.length?pending.length+'장 등록':'사진 등록';
+  $('refresh').disabled=busy;$('remaining').textContent=Math.max(0,2-savedCount-pending.length)+'장 더 등록 가능';
+  $('saveControls').hidden=!pending.length;$('captureCard').hidden=savedCount>=2&&!pending.length;
+  document.querySelectorAll('#pending button').forEach(button=>{button.disabled=busy;});
+}
+function stopCamera(){if(stream)stream.getTracks().forEach(track=>track.stop());stream=null;$('cameraVideo').srcObject=null;$('cameraPanel').hidden=true;controls();}
+async function withBusy(fn){if(busy)return;busy=true;controls();try{await fn();}catch(error){say(error.message,true);}finally{busy=false;controls();}}
+function position(){return new Promise((resolve,reject)=>{
+  if(!navigator.geolocation)return reject(Error('위치 기능을 지원하지 않는 브라우저입니다.'));
+  navigator.geolocation.getCurrentPosition(value=>resolve({latitude:value.coords.latitude,longitude:value.coords.longitude,accuracy:value.coords.accuracy,timestamp:value.timestamp}),error=>reject(Error(error.code===1?'위치 권한이 꺼져 있습니다. 브라우저 설정에서 이 사이트의 위치 사용을 허용해 주세요.':'현재 위치를 받지 못했습니다. 실외나 창가에서 다시 확인해 주세요.')),{enableHighAccuracy:true,maximumAge:0,timeout:20000});
+});}
+async function openCamera(){await withBusy(async()=>{
+  if(!$('locationConsent').checked)throw Error('위치 제공 안내에 체크해 주세요.');
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw Error('카메라를 지원하는 최신 휴대폰 브라우저로 열어 주세요.');
+  say('카메라와 현재 위치를 확인하는 중…');
+  try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1600},height:{ideal:1200}},audio:false});
+    $('cameraVideo').srcObject=stream;$('cameraPanel').hidden=false;await $('cameraVideo').play();
+    const gps=await position();$('locationInfo').textContent=locationText(gps);say('방문 주소를 확인하고 사진을 찍어 주세요.');
+  }catch(error){stopCamera();throw error.name==='NotAllowedError'?Error('카메라 권한을 허용해 주세요.'):error;}
+});}
+function locationText(gps){return '현재 좌표 '+gps.latitude.toFixed(6)+', '+gps.longitude.toFixed(6)+'\n위치 정확도 약 '+Math.round(gps.accuracy)+'m'+(gps.accuracy>100?' · 오차가 큽니다. 실외에서 다시 확인해 주세요.':'')+'\n관리자에게만 저장됩니다.';}
+function jpeg(canvas,quality){return new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(Error('사진 변환에 실패했습니다.')),'image/jpeg',quality));}
+function kstDate(time){return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'}).format(time);}
+function stamp(video,address,when){
+  const width=video.videoWidth,height=video.videoHeight;if(!width||!height)throw Error('카메라 화면을 아직 받지 못했습니다. 잠시 후 다시 촬영하세요.');
+  const scale=Math.min(1,1600/Math.max(width,height)),w=Math.round(width*scale),h=Math.round(height*scale),font=Math.max(16,Math.round(w/48)),pad=font,lineHeight=Math.ceil(font*1.5),canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');
+  ctx.font=font+'px sans-serif';const lines=[],available=w-2*pad;let line='방문 주소: ';
+  for(const char of address){if(ctx.measureText(line+char).width>available&&line){lines.push(line);line=char;}else line+=char;}if(line)lines.push(line);
+  lines.unshift('촬영 기록(KST·기기 시각): '+when.toLocaleString('ko-KR',{timeZone:'Asia/Seoul',hour12:false}));
+  canvas.width=w;canvas.height=h+pad*2+lineHeight*lines.length;ctx.drawImage(video,0,0,w,h);ctx.fillStyle='#143c35';ctx.fillRect(0,h,w,canvas.height-h);ctx.fillStyle='white';ctx.font=font+'px sans-serif';ctx.textBaseline='top';lines.forEach((text,i)=>ctx.fillText(text,pad,h+pad+i*lineHeight));return canvas;
+}
+async function compress(canvas){
+  for(let edge=Math.min(1600,Math.max(canvas.width,canvas.height));edge>=Math.min(800,Math.max(canvas.width,canvas.height));edge=Math.floor(edge*.8)){
+    const scaled=document.createElement('canvas'),factor=Math.min(1,edge/Math.max(canvas.width,canvas.height));scaled.width=Math.round(canvas.width*factor);scaled.height=Math.round(canvas.height*factor);scaled.getContext('2d').drawImage(canvas,0,0,scaled.width,scaled.height);
+    for(const quality of [.86,.76,.66,.56,.46]){const blob=await jpeg(scaled,quality);if(blob.size<=200000)return blob;}
+  }throw Error('사진을 줄이지 못했습니다. 구도를 바꿔 다시 촬영해 주세요.');
+}
+async function capture(){await withBusy(async()=>{
+  if(!stream)throw Error('카메라를 먼저 켜 주세요.');say('촬영 위치를 확인하는 중…');
+  const gps=await position(),permit=await rpc('beginPublicCapture',deviceKey,address,gps),when=new Date();
+  const canvas=stamp($('cameraVideo'),address,when),blob=await compress(canvas),hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',await blob.arrayBuffer())),b=>b.toString(16).padStart(2,'0')).join('');
+  pending.push({blob,url:URL.createObjectURL(blob),hash,gps,ticket:permit.ticket,capturedAt:when.getTime(),visitDate:kstDate(when)});$('publicConsent').checked=false;renderPending();
+  $('locationInfo').textContent=locationText(gps);if(savedCount+pending.length>=2)stopCamera();say('사진을 확인하고 등록해 주세요.');
+});}
+function zoom(src){$('zoomImage').src=src;$('zoom').showModal();}
+function renderPending(){const cards=pending.map((photo,index)=>{
+  const card=document.createElement('article');card.className='photo';const image=document.createElement('img');image.src=photo.url;image.alt='촬영 사진 '+(index+1);image.onclick=()=>zoom(photo.url);
+  const info=document.createElement('p');info.textContent='사진 '+(index+1)+' · '+(photo.blob.size/1000).toFixed(1)+'KB · 위치 오차 약 '+Math.round(photo.gps.accuracy)+'m';
+  const remove=document.createElement('button');remove.type='button';remove.className='secondary';remove.textContent='이 사진 취소';remove.onclick=()=>{if(busy)return;pending.splice(index,1);URL.revokeObjectURL(photo.url);$('publicConsent').checked=false;renderPending();controls();};card.append(image,info,remove);return card;
+});$('pending').replaceChildren(...cards);controls();}
+function savedCard(photo){const card=document.createElement('article');card.className='photo';const title=document.createElement('p');title.textContent='사진 '+photo.slot+' · 등록 '+(photo.uploadedAt?new Date(photo.uploadedAt).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'}):'시각 기록 없음');card.append(title);
+  const view=document.createElement('button');view.type='button';view.className='secondary';view.textContent='사진 보기';view.onclick=()=>withBusy(async()=>{const result=await rpc('getPublicPhoto',address,photo.id);const src='data:image/jpeg;base64,'+result.base64;const image=document.createElement('img');image.src=src;image.alt='등록 사진 '+photo.slot;image.onclick=()=>zoom(src);card.prepend(image);view.remove();});card.append(view);
+  if(photo.canDelete){const remove=document.createElement('button'),confirm=document.createElement('div'),yes=document.createElement('button'),no=document.createElement('button'),notice=document.createElement('p');remove.type=yes.type=no.type='button';remove.className='danger';remove.textContent='내 사진 삭제';yes.textContent='삭제';yes.className='danger';no.textContent='취소';no.className='secondary';notice.textContent='MYBOX 휴지통으로 이동할까요?';confirm.hidden=true;confirm.append(notice,yes,no);remove.onclick=()=>{if(!busy){confirm.hidden=false;remove.hidden=true;}};no.onclick=()=>{confirm.hidden=true;remove.hidden=false;};yes.onclick=()=>withBusy(async()=>{await rpc('deletePhoto','',deviceKey,address,photo.id);await refresh();say('사진을 삭제했습니다.');});card.append(remove,confirm);}return card;
+}
+async function refresh(){const token=++epoch,data=await rpc('getPublicStatus',address,deviceKey);if(token!==epoch)return;if(!data.ready)throw Error('사진 저장 설정을 확인해야 합니다.');savedCount=data.totalCount;canUpload=!!data.quota.canUpload&&!!deviceKey;$('count').textContent=savedCount+' / 2';$('gallery').hidden=false;$('saved').replaceChildren(...data.photos.map(savedCard));if(!data.photos.length){const empty=document.createElement('p');empty.className='small';empty.textContent='아직 등록된 사진이 없습니다.';$('saved').append(empty);}controls();return data;}
+async function encode(blob){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(',')[1]);reader.onerror=()=>reject(Error('사진을 읽지 못했습니다.'));reader.readAsDataURL(blob);});}
+async function upload(){await withBusy(async()=>{
+  if(!$('publicConsent').checked)throw Error('공개 등록 안내에 체크해 주세요.');stopCamera();let saved=0;
+  try{while(pending.length){const photo=pending[0];$('saveProgress').textContent=(saved+1)+'번째 사진 저장 중… 최대 90초 안에 상태를 안내합니다.';say('사진을 저장하는 중…');
+    // Resolve a previous ambiguous reply before replaying any mutation.
+    const receipt=await rpc('getPublicUploadReceipt',deviceKey,address,photo.hash);
+    if(!receipt.saved)await rpc('uploadPublicPhoto',deviceKey,address,{base64:await encode(photo.blob),visitDate:photo.visitDate,confirmReadable:true,publicShare:true,captureTicket:photo.ticket,capturedAt:photo.capturedAt});
+    pending.shift();URL.revokeObjectURL(photo.url);saved++;renderPending();
+  }await refresh();say(saved+'장을 등록했습니다.');
+  }catch(error){try{await refresh();}catch(ignored){}throw error;}finally{$('saveProgress').textContent='';}
+});}
+$('locationConsent').onchange=controls;$('publicConsent').onchange=controls;$('startCamera').onclick=openCamera;$('take').onclick=capture;$('stopCamera').onclick=stopCamera;$('upload').onclick=upload;
+$('refresh').onclick=()=>withBusy(async()=>{await refresh();say('등록 현황을 확인했습니다.');});$('closeZoom').onclick=()=>{$('zoom').close();$('zoomImage').removeAttribute('src');};
+document.addEventListener('visibilitychange',()=>{if(document.hidden)stopCamera();});window.addEventListener('pagehide',stopCamera);
+window.addEventListener('beforeunload',event=>{if(busy||pending.length){event.preventDefault();event.returnValue='';}});
+window.addEventListener('storage',event=>{if(event.key===KEY||event.key===null){deviceKey=readKey();canUpload=false;stopCamera();say('브라우저 삭제키가 변경됐습니다. 이 화면을 다시 열어 주세요.',true);controls();}});
+async function init(){
+  $('address').textContent=address;$('admin').href=config.webAppUrl+'?page=admin&build='+encodeURIComponent(config.build||'v5');
+  let record;findAddress:for(const groups of Object.values(window.ADDR_DATA||{}))for(const dongs of Object.values(groups))for(const records of Object.values(dongs)){record=records.find(p=>p[2]===address);if(record)break findAddress;} // Exact source address only; server checks it independently.
+  if(!address||!record)throw Error('지도에서 방문 주소를 다시 선택해 주세요.');
+  $('addressMap').href='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(address);$('addressMap').hidden=false;
+  $('coordinateWarning').hidden=!!record[4];$('coordinateWarning').textContent='이 방문지의 지도 좌표는 대략 위치입니다. GPS와의 거리는 참고용입니다.';
+  const bridgeUrl=new URL(config.webAppUrl);bridgeUrl.searchParams.set('page','bridge');bridgeUrl.searchParams.set('channel',channel);bridgeUrl.searchParams.set('build',config.build||'v5');$('bridge').src=bridgeUrl.toString();
+  await connected;await refresh();$('captureCard').hidden=savedCount>=2;
+  if(!deviceKey)say('이 브라우저에서는 보기만 가능합니다. 브라우저 저장을 허용해 주세요.',true);else say('');controls();
+}
+init().catch(error=>say(error.message,true));
+})();

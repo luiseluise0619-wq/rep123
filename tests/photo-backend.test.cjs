@@ -101,7 +101,7 @@ test('doGet escapes script tags in user-controlled address; helper functions sta
   assert.ok(!template.initialJson.includes('<'));
   assert.ok(template.initialJson.includes('\\u003c'));
   const exposed=[...source.matchAll(/^function (\w+)\(/gm)].map(m=>m[1]).filter(n=>!n.endsWith('_'));
-  assert.deepEqual(exposed,['doGet','getStatus','loginPhoto','uploadPhoto','getPhoto','listEmployees','manageEmployee','getAdminOverview','getAdminChunk','syncAdminCatalog','getPublicStatus','uploadPublicPhoto','getPublicPhoto','deletePhoto']);
+  assert.deepEqual(exposed,['doGet','getStatus','loginPhoto','uploadPhoto','getPhoto','listEmployees','manageEmployee','getAdminOverview','getAdminChunk','syncAdminCatalog','getPublicStatus','uploadPublicPhoto','getPublicPhoto','getPublicUploadReceipt','deletePhoto','beginPublicCapture','diagnosePhotoStorage']);
 });
 
 test('staff with identical display names see only immutable account-owned photos; admin sees both',()=>{

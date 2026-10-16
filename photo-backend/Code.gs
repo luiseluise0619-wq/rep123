@@ -7,19 +7,23 @@ var PHOTO_LIMITS_ = Object.freeze({
   accountCeilingBytes: 24000000000, reserveBytes: 1000000000,
   dailyUploads: 1000, dailyReads: 2000, sessionHours: 8,
   sourceUrl: 'https://rep123-seven.vercel.app/addresses.js',
-  rootName: '현장방문_주소사진_v1', indexRootName: '현장방문_사진목록_v3', version: '2026-10-16-mybox-v4-ux1', publicEnabled: true,
+  rootName: '현장방문_주소사진_v1', indexRootName: '현장방문_사진목록_v3', version: '2026-10-16-mybox-v5-gps', publicEnabled: true, requireCapture: true,
   webAppUrl: 'https://script.google.com/macros/s/AKfycbxkluXWRelyVJ1D0XtuLHHo1GdF76Dzp4CLHQeC-hlvpW6WmctvD9_60WKqugmfN_PAQw/exec'
 });
 
 function doGet(e) {
   var address = String(e && e.parameter && e.parameter.address || '').slice(0, 1000);
   var admin = !!(e && e.parameter && e.parameter.page === 'admin');
-  var template = HtmlService.createTemplate(admin ? PHOTO_ADMIN_HTML_ : PHOTO_HTML_);
+  var bridge = !!(e && e.parameter && e.parameter.page === 'bridge');
+  var template = HtmlService.createTemplate(bridge ? PHOTO_BRIDGE_HTML_ : admin ? PHOTO_ADMIN_HTML_ : PHOTO_LANDING_HTML_);
   template.initialJson = JSON.stringify({address: address, maxBytes: PHOTO_LIMITS_.maxBytes,
-    maxEdge: PHOTO_LIMITS_.maxEdge, version: PHOTO_LIMITS_.version, webAppUrl: PHOTO_LIMITS_.webAppUrl})
+    maxEdge: PHOTO_LIMITS_.maxEdge, version: PHOTO_LIMITS_.version, webAppUrl: PHOTO_LIMITS_.webAppUrl,
+    channel: bridge ? String(e.parameter.channel||'').replace(/[^a-f0-9]/g,'').slice(0,64) : ''})
     .replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
-  return template.evaluate().setTitle(admin ? '방문 사진 관리자 · MYBOX' : '현장 방문 사진 · MYBOX')
+  var output=template.evaluate().setTitle(admin ? '방문 사진 관리자 · MYBOX' : '현장 방문 사진 · MYBOX')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+  if(bridge)output.setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  return output;
 }
 
 function getStatus(session, address) {
@@ -73,6 +77,7 @@ function uploadPhoto(session, address, photo) {
   return rpc_(function() {
     var actor=verifySession_(session);
     if(PHOTO_LIMITS_.publicEnabled===true&&(!photo||photo.publicShare!==true))fail_('PUBLIC_CONSENT','이전 사진 화면에서는 등록할 수 없습니다. 새 공개 안내 화면을 다시 여세요.');
+    if(PHOTO_LIMITS_.requireCapture)fail_('CAPTURE','지도 사이트의 새 촬영 화면에서 위치 확인 후 촬영해 주세요.');
     return uploadForActor_(actor,address,photo);
   });
 }
@@ -94,6 +99,7 @@ function uploadForActor_(user,address,photo) {
           catalogPending: !tryCatalogUpdate_(address, files)};
       }
       if (files.length >= PHOTO_LIMITS_.slots) fail_('FULL', '이 주소에는 이미 사진 2장이 저장되어 있습니다.');
+      if(photo.captureEvidence)saveEvidence_(address,hash,user,photo.captureEvidence);
       var quota = quota_();
       if (!quota.canUpload || quota.usedBytes + bytes.length > quota.stopAtBytes)
         fail_('STORAGE', '무료 운영 안전 한도에 도달했습니다. 용량을 확인한 후 다시 시도하세요.');
@@ -136,16 +142,19 @@ function getPhoto(session, address, slot) {
     if (response.getResponseCode() !== 200) fail_('DOWNLOAD', '사진을 불러오지 못했습니다. 잠시 후 다시 시도하세요.');
     var bytes = response.getContent();
     assertJpeg_(bytes);
-    return {base64: Utilities.base64Encode(bytes), photo: publicPhoto_(file)};
+    var p=publicPhoto_(file);if(user.role==='admin')p.evidence=evidenceFor_(address,file);
+    return {base64: Utilities.base64Encode(bytes), photo: p};
   });
 }
 
 var PHOTO_FETCH_BUDGET_ = null;
+var PHOTO_STAGE_ = '';
 function rpc_(fn) {
   var lock = LockService.getScriptLock(), locked = false;
   try {
     if (!lock.tryLock(1000)) fail_('BUSY', '다른 요청을 처리 중입니다. 잠시 후 다시 시도하세요.');
     locked = true;
+    PHOTO_STAGE_='start';
     PHOTO_INDEX_CONTEXT_ = null; PHOTO_SOURCE_ = null;
     var props = PropertiesService.getScriptProperties();
     var today = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd');
@@ -154,6 +163,7 @@ function rpc_(fn) {
     return {ok: true, data: fn()};
   }
   catch (error) {
+    console.warn(JSON.stringify({event:'photo_request_failed',code:error.photoCode||'SERVICE',stage:PHOTO_STAGE_||'unknown'}));
     // Never forward raw network errors: they can contain PATs or signed storage URLs.
     return {ok: false, code: error.photoCode || 'SERVICE', message: error.photoCode ? error.message :
       '서비스 연결 또는 무료 사용 한도 문제가 발생했습니다. 잠시 후 다시 시도하거나 관리자에게 알려주세요.'};
@@ -255,14 +265,14 @@ function assertJpeg_(signed) {
 }
 function assertAddress_(address) {
   if (typeof address !== 'string' || !address || address.length > 1000) fail_('ADDRESS', '사이트에서 주소를 다시 선택하세요.');
-  var cache = CacheService.getScriptCache(), key = 'address-v3:' + digest_(address);
+  var cache = CacheService.getScriptCache(), key = 'address-v5:' + digest_(address);
   var cached = cache.get(key);
   if (cached) return JSON.parse(cached);
   var data = sourceData_(), info = null;
   Object.keys(data).some(function(s) { return Object.keys(data[s]).some(function(g) {
     return Object.keys(data[s][g]).some(function(d) { return data[s][g][d].some(function(p) {
       if (p[2] !== address) return false;
-      info = {province: s, district: g, dong: d}; return true;
+      info = {province: s, district: g, dong: d, latitude:p[0],longitude:p[1],coordinateVerified:!!p[4]}; return true;
     }); });
   }); });
   if (!info) fail_('ADDRESS', '원자료에 없는 주소입니다. 지도에서 주소를 다시 선택하세요.');
@@ -284,6 +294,7 @@ function sourceData_() {
 }
 function api_(path, method, body) {
   requireConfig_();
+  PHOTO_STAGE_=String(method||'get').toUpperCase()+' '+path.split('?')[0].replace(/\/[A-Za-z0-9_-]{15,}/g,'/:id');
   var options = {method: method || 'get', headers: {Authorization: 'Bearer ' + secret_('MYBOX_TOKEN')},
     followRedirects: false, muteHttpExceptions: true};
   if (body) { options.contentType = 'application/json'; options.payload = JSON.stringify(body); }
@@ -358,9 +369,10 @@ function photoFiles_(folder) {
 function photoId_(file){return digest_(String(file.resourceId)+'\n'+file.name);}
 function publicPhoto_(file) {
   var parts = file.name.split('__');
+  var encodedTime=parts[2]||'',serverTime=encodedTime.replace(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(\d{3})Z$/,'$1-$2-$3T$4:$5:$6.$7Z');
   return {id:photoId_(file),slot: Number(parts[0]), visitDate: parts[3], uploader: parts.slice(photoOwner_(file) ? 5 : 4).join('__').replace(/\.jpg$/, ''),
     legacy: !photoOwner_(file),
-    uploadedAt: file.createdAt || null, bytes: Number(file.size)};
+    uploadedAt: isNaN(Date.parse(serverTime)) ? (file.createdAt || file.createdTime || null) : serverTime, bytes: Number(file.size)};
 }
 function takeBudget_(kind, limit, alreadyLocked) {
   var lock = alreadyLocked ? null : LockService.getScriptLock();

@@ -258,7 +258,7 @@
 <script src="./data-meta.js?v=20261015-admin"></script>
 <script src="./addresses.js?v=20261015-admin"></script>
 <script src="./address-search.js?v=20261016-ux"></script>
-<script src="./photo-config.js?v=20261016-mybox-v4-ux1"></script>
+<script src="./photo-config.js?v=20261016-mybox-v5-gps"></script>
 <script>
 /* =======================================================================
    전국 주소 지도 — 동작 개요 (초보자용 설명)
@@ -439,10 +439,10 @@ function openPopup(marker, rec){
 function photoUrl(address){
   var config=window.PHOTO_CONFIG||{}, base=String(config.webAppUrl||'');
   if(!/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(base)) return '';
-  return base+'?address='+encodeURIComponent(address)+'&build='+encodeURIComponent(config.build||'v3');
+  return './photo?address='+encodeURIComponent(address)+'&build='+encodeURIComponent(config.build||'v5');
 }
 var adminPhotoEntry=photoUrl(''), adminPhotoLink=document.getElementById('photoAdminLink');
-if(adminPhotoEntry&&adminPhotoLink){adminPhotoLink.href=adminPhotoEntry.replace('?address=&','?page=admin&');adminPhotoLink.hidden=false;}
+if(adminPhotoEntry&&adminPhotoLink){adminPhotoLink.href=window.PHOTO_CONFIG.webAppUrl+'?page=admin&build='+encodeURIComponent(window.PHOTO_CONFIG.build||'v5');adminPhotoLink.hidden=false;}
 function photoLinkHtml(address){
   var url=photoUrl(address);
   return url ? '<a class="pbtn search" href="'+url+'" target="_blank" rel="noopener noreferrer">현장 사진 등록·보기</a>' :

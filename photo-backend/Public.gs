@@ -17,6 +17,8 @@ function getPublicStatus(address,deviceKey){
 function uploadPublicPhoto(deviceKey,address,photo){
   return rpc_(function(){requirePublic_();var actor=deviceActor_(deviceKey,true);
     if(!photo||photo.publicShare!==true)fail_('PUBLIC_CONSENT','누구나 볼 수 있는 공개 사진 등록 안내에 동의해 주세요.');
+    assertAddress_(address);
+    if(PHOTO_LIMITS_.requireCapture)photo.captureEvidence=verifyCapture_(photo.captureTicket,actor,address,photo.capturedAt);
     var value=uploadForActor_(actor,address,photo);
     // No filename, raw storage ID, owner hash or uploader name is returned to anonymous viewers.
     value.photo={id:value.photo.id,slot:value.photo.slot,visitDate:value.photo.visitDate,uploadedAt:value.photo.uploadedAt,bytes:value.photo.bytes,canDelete:true};
@@ -39,6 +41,13 @@ function getPublicPhoto(address,photoId){
     if(response.getResponseCode()!==200)fail_('DOWNLOAD','사진을 불러오지 못했습니다.');
     var bytes=response.getContent();assertJpeg_(bytes);
     return {base64:Utilities.base64Encode(bytes),photo:publicEntry_(file,null)};
+  });
+}
+function getPublicUploadReceipt(deviceKey,address,imageHash){
+  return rpc_(function(){requirePublic_();var actor=deviceActor_(deviceKey,true);assertAddress_(address);
+    if(typeof imageHash!=='string'||!/^[a-f0-9]{64}$/.test(imageHash))fail_('PHOTO_ID','사진 확인 번호가 올바르지 않습니다.');
+    var folder=addressFolder_(address,false),files=folder?photoFiles_(folder):[];
+    return {saved:files.some(function(file){return file.name.split('__')[1]===imageHash&&canSeePhoto_(actor,file);})};
   });
 }
 function deletePhoto(session,deviceKey,address,photoId){

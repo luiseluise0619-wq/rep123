@@ -29,7 +29,7 @@ function indexRead_(name, fallback) {
   catch(ignored) { fail_('CATALOG', '관리자 목록 형식이 달라 동기화가 필요합니다.'); }
 }
 function indexWrite_(name, value) {
-  if (!/^(manifest|shard-[0-9a-f])\.json$/.test(name)) fail_('CATALOG','허용되지 않은 목록 파일입니다.');
+  if (!/^(manifest|shard-[0-9a-f]|evidence-[0-9a-f])\.json$/.test(name)) fail_('CATALOG','허용되지 않은 목록 파일입니다.');
   var context=indexContext_(true), blob=Utilities.newBlob(JSON.stringify(value),'application/json',name), size=blob.getBytes().length;
   if (size>8000000) fail_('CATALOG','관리자 목록 크기 한도에 도달했습니다.');
   var existing=context.files.filter(function(f){return f.name===name;});
@@ -60,7 +60,7 @@ function shard_(key) {
 function recordFor_(address, files, scanId) {
   var where=assertAddress_(address);
   return {address:address,province:where.province,district:where.district,dong:where.dong,
-    photos:files.map(function(f){var p=publicPhoto_(f);p.ownerId=photoOwner_(f);return p;}),
+    photos:files.map(function(f){var p=publicPhoto_(f);p.ownerId=photoOwner_(f);p.evidence=evidenceFor_(address,f);return p;}),
     updatedAt:new Date().toISOString(),scanId:scanId||null};
 }
 function saveShard_(key, shard, manifest) {

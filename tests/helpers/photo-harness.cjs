@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const crypto = require('node:crypto');
-const source = ['Code.gs','Access.gs','Catalog.gs','Public.gs'].map(name=>fs.readFileSync(path.join(__dirname,'../../photo-backend',name),'utf8')).join('\n');
+const source = ['Code.gs','Access.gs','Catalog.gs','Public.gs','Capture.gs','Diagnostics.gs'].map(name=>fs.readFileSync(path.join(__dirname,'../../photo-backend',name),'utf8')).join('\n');
 const html = fs.readFileSync(path.join(__dirname, '../../photo-backend/Photo.html'), 'utf8');
 const ADDRESS = '서울특별시 영등포구 당산동 1가 1';
 const PASSWORD = 'test-only-not-a-real-password';
@@ -14,7 +14,7 @@ function fakeJpeg(seed = 1, edge = 100) {
   return Buffer.from([255,216,255,224,0,4,0,0,255,192,0,11,8,edge>>8,edge&255,0,100,1,1,17,0,
     255,218,0,8,1,1,0,0,63,0,seed,0,0,255,217]);
 }
-function harness({sourceText} = {}) {
+function harness({sourceText,requireCapture=false} = {}) {
   const props = new Map([['MYBOX_TOKEN','mbx_pat_unit_test_fake_123456789'],['PHOTO_ADMIN_PASSWORD',PASSWORD],['PHOTO_TEAM_PASSWORD','old-team-password']]);
   const cache = new Map(), resources = [], reservations = new Map();
   let locked = false, calls = 0, next = 0, used = 0, dropUploadResponse = false, failCatalog=false, dropDeleteResponse=false;
@@ -22,7 +22,7 @@ function harness({sourceText} = {}) {
   const response = (value, status = 200, bytes) => ({getResponseCode:()=>status,
     getContentText:()=>bytes?bytes.toString('utf8'):typeof value==='string'?value:JSON.stringify(value), getContent:()=>signed(bytes||Buffer.alloc(0))});
   const sandbox = {
-    console, PHOTO_HTML_:html, PHOTO_ADMIN_HTML_:'admin-html',
+    console:{log(){},warn(){}}, PHOTO_DIAG_JPEG_:fakeJpeg().toString('base64'),PHOTO_HTML_:html, PHOTO_ADMIN_HTML_:'admin-html', PHOTO_BRIDGE_HTML_:'bridge-html',PHOTO_LANDING_HTML_:html,
     Utilities:{ Charset:{UTF_8:'UTF-8'},DigestAlgorithm:{SHA_256:'sha256'},
       getUuid:()=>crypto.randomUUID(),
       computeDigest:(algorithm,value)=>signed(crypto.createHash('sha256').update(buffer(value)).digest()),
@@ -85,6 +85,8 @@ function harness({sourceText} = {}) {
     }}
   };
   vm.createContext(sandbox); vm.runInContext(source,sandbox);
+  // Existing v3/v4 ownership tests also cover migration. Strict v5 capture is tested separately.
+  sandbox.PHOTO_LIMITS_={...sandbox.PHOTO_LIMITS_,requireCapture};
   const login=sandbox.loginPhoto('admin',PASSWORD); assert.equal(login.ok,true);
   return {app:sandbox,props,cache,resources,trash,session:login.data.session,
     setUsed:value=>{used=value;},setLocked:value=>{locked=value;},
