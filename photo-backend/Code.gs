@@ -7,7 +7,7 @@ var PHOTO_LIMITS_ = Object.freeze({
   accountCeilingBytes: 24000000000, reserveBytes: 1000000000,
   dailyUploads: 1000, dailyReads: 2000, sessionHours: 8,
   sourceUrl: 'https://rep123-seven.vercel.app/addresses.js',
-  rootName: '현장방문_주소사진_v1', indexRootName: '현장방문_사진목록_v3', version: '2026-10-16-mybox-v6-distance', publicEnabled: true, requireCapture: true,
+  rootName: '현장방문_주소사진_v1', indexRootName: '현장방문_사진목록_v3', version: '2026-10-16-mybox-v7-no-gps', publicEnabled: true, requireCapture: true, requireLocation: false,
   webAppUrl: 'https://script.google.com/macros/s/AKfycbxkluXWRelyVJ1D0XtuLHHo1GdF76Dzp4CLHQeC-hlvpW6WmctvD9_60WKqugmfN_PAQw/exec'
 });
 
@@ -77,7 +77,7 @@ function uploadPhoto(session, address, photo) {
   return rpc_(function() {
     var actor=verifySession_(session);
     if(PHOTO_LIMITS_.publicEnabled===true&&(!photo||photo.publicShare!==true))fail_('PUBLIC_CONSENT','이전 사진 화면에서는 등록할 수 없습니다. 새 공개 안내 화면을 다시 여세요.');
-    if(PHOTO_LIMITS_.requireCapture)fail_('CAPTURE','지도 사이트의 새 촬영 화면에서 위치 확인 후 촬영해 주세요.');
+    if(PHOTO_LIMITS_.requireCapture)fail_('CAPTURE','지도 사이트의 새 촬영 화면에서 직접 촬영해 주세요.');
     return uploadForActor_(actor,address,photo);
   });
 }

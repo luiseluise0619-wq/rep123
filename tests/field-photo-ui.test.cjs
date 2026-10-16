@@ -5,16 +5,16 @@ function harness(){const elements=new Map(),events={},stored=new Map(),timers=ne
  const context={measureText:value=>({width:String(value).length*8}),drawImage(){},fillRect(){},fillText(){}};
  const element=()=>({textContent:'',hidden:false,disabled:false,checked:false,value:'',style:{},children:[],classList:{toggle(){}},append(...x){this.children.push(...x);},prepend(x){this.children.unshift(x);},replaceChildren(...x){this.children=x;},remove(){},removeAttribute(){},scrollIntoView(){this.scrolled=true;},getTracks(){return [];},play:async()=>{},getContext:()=>context,toBlob:fn=>fn(new Blob(['test-jpeg-'+(++frames)],{type:'image/jpeg'}))});
  const get=id=>{if(!elements.has(id))elements.set(id,element());return elements.get(id);};
- const window={PHOTO_DISTANCE_:require('../web/lib/visit-distance.js'),PHOTO_CONFIG:{webAppUrl:'https://script.google.com/macros/s/test/exec'},addEventListener:(name,fn)=>events[name]=fn};
+ const window={PHOTO_CONFIG:{webAppUrl:'https://script.google.com/macros/s/test/exec'},addEventListener:(name,fn)=>events[name]=fn};
  const sandbox={window,document:{getElementById:get,querySelectorAll:()=>[],createElement:element,addEventListener(){}},location:{search:'?address=test'},navigator:{},
  crypto:crypto.webcrypto,URL,URLSearchParams,Uint8Array,Date,Intl,JSON,Number,Math,Array,Error,Promise,Set,Map,
  FileReader:class {readAsDataURL(blob){blob.arrayBuffer().then(value=>{this.result='data:image/jpeg;base64,'+Buffer.from(value).toString('base64');this.onload();});}},
  localStorage:{getItem:k=>stored.get(k)||null,setItem:(k,v)=>stored.set(k,v)},setTimeout:(fn,ms)=>{const id=++seq;timers.set(id,{fn,ms});return id;},clearTimeout:id=>timers.delete(id)};
- vm.createContext(sandbox);vm.runInContext(source.replace('init().catch(error=>say(error.message,true));','window.test={once,controls,bridgeOrigin,connected,channel,requests,keepKey,locationText,distanceText,renderPending,capture,openCamera,upload,stopCamera,setDestination:value=>{destination=value;},setPending:value=>{pending=value;},setReady:()=>{canUpload=true;deviceKey="a".repeat(64);},photoState:()=>({deviceKey,busy,stream,pending})};'),sandbox);
+ vm.createContext(sandbox);vm.runInContext(source.replace('init().catch(error=>say(error.message,true));','window.test={once,controls,bridgeOrigin,connected,channel,requests,keepKey,renderPending,capture,openCamera,upload,stopCamera,setPending:value=>{pending=value;},setReady:()=>{canUpload=true;deviceKey="a".repeat(64);},photoState:()=>({deviceKey,busy,stream,pending})};'),sandbox);
  return {sandbox,get,events,timers,run:s=>vm.runInContext(s,sandbox),api:window.test};
 }
 test('only live camera capture exists; album/file selection and GPS in public stamp are absent',()=>{
- assert.ok(!/type=["']file|앨범/.test(html));assert.match(source,/getUserMedia/);assert.match(source,/getCurrentPosition/);
+ assert.ok(!/type=["']file|앨범/.test(html));assert.match(source,/getUserMedia/);assert.doesNotMatch(source,/geolocation|getCurrentPosition|locationConsent|latitude|longitude|accuracy/);
  const stamp=source.slice(source.indexOf('function stamp('),source.indexOf('async function compress('));assert.ok(!/latitude|longitude|accuracy/.test(stamp));
  for(const id of source.matchAll(/\$\('([^']+)'\)/g))assert.ok(html.includes('id="'+id[1]+'"'),id[1]);
 });
@@ -43,23 +43,19 @@ test('upload timeout is bounded, keeps uncertain status distinct, and ignores la
  assert.equal(h.api.requests.size,0);
 });
 
-test('camera and pending cards show destination distance separately from a 24m GPS accuracy',()=>{
- const h=harness(),gps={latitude:37.5665,longitude:126.978,accuracy:24};
- h.api.setDestination({latitude:34.8118,longitude:126.3922,coordinateVerified:true});
- const text=h.api.locationText(gps);assert.match(text,/방문지까지 직선거리 3\d\d\.\d{2}km/);assert.match(text,/GPS 정확도\(휴대폰 추정\) 약 ±24m/);
- assert.doesNotMatch(text,/직선거리 24m/);
- h.api.setPending([{blob:{size:20000},url:'mock-image',gps}]);h.api.renderPending();
- const caption=h.get('pending').children[0].children[1].textContent;assert.match(caption,/직선거리 3\d\d\.\d{2}km/);assert.match(caption,/±24m/);
- h.api.setDestination({...gps,coordinateVerified:false});assert.match(h.api.locationText(gps),/직선거리 0m.*대략 좌표/);
- h.api.setDestination(null);assert.match(h.api.distanceText(gps),/확인 불가/);
+test('camera flow has no GPS UI or permission gate and the photo route blocks geolocation',()=>{
+ const h=harness();h.api.setReady();h.api.controls();assert.equal(h.get('startCamera').disabled,false);assert.equal(h.get('startCamera').textContent,'사진 찍기');
+ assert.doesNotMatch(html,/id="(?:locationConsent|locationInfo|coordinateWarning)"|visit-distance\.js|직선거리|GPS 정확도/);
+ const routes=JSON.parse(fs.readFileSync(require('node:path').join(__dirname,'../web/vercel.json'),'utf8'));
+ const policy=routes.headers.find(r=>r.source==='/photo').headers.find(h=>h.key==='Permissions-Policy').value;assert.match(policy,/geolocation=\(\)/);
 });
 
 function captureHarness(){
  const h=harness(),calls=[];let saved=0,stops=0;
  const remote={postMessage:message=>{calls.push(message.name);const data=message.name==='getPublicUploadReceipt'?{saved:false}:message.name==='uploadPublicPhoto'?(saved++,{}):message.name==='getPublicStatus'?{ready:true,totalCount:saved,photos:[],quota:{canUpload:true}}:{ticket:'test-only-ticket'};queueMicrotask(()=>h.events.message({origin:'https://safe-script.googleusercontent.com',source:remote,data:{channel:h.api.channel,type:'reply',id:message.id,result:{ok:true,data}}}));}};
  h.events.message({origin:'https://safe-script.googleusercontent.com',source:remote,data:{channel:h.api.channel,type:'ready'}});
- h.api.setReady();h.get('locationConsent').checked=true;h.get('cameraVideo').videoWidth=100;h.get('cameraVideo').videoHeight=100;
- h.sandbox.navigator.geolocation={getCurrentPosition:fn=>fn({coords:{latitude:37.599408,longitude:127.06618,accuracy:24},timestamp:Date.now()})};
+ h.api.setReady();h.get('cameraVideo').videoWidth=100;h.get('cameraVideo').videoHeight=100;
+ h.sandbox.navigator.geolocation={getCurrentPosition:()=>{throw Error('GPS must never be requested');}};
  h.sandbox.navigator.mediaDevices={getUserMedia:async()=>({getTracks:()=>[{stop(){stops++;}}]})};
  return {...h,calls,stops:()=>stops};
 }
@@ -70,6 +66,7 @@ test('each photo stops the camera, requires review, then allows one more capture
  assert.equal(h.api.photoState().pending.length,1);assert.equal(h.api.photoState().pending[0].confirmed,false);
  assert.equal(h.get('reviewPanel').hidden,false);assert.equal(h.get('startCamera').hidden,true);assert.equal(h.get('saveControls').hidden,true);
  assert.deepEqual(h.calls,['beginPublicCapture']);
+ assert.ok(!Object.hasOwn(h.api.photoState().pending[0],'gps'));
  h.get('pending').children[0].children[2].onclick();assert.equal(h.api.photoState().pending[0].confirmed,true);
  assert.equal(h.get('startCamera').textContent,'한 장 더 찍기');assert.equal(h.get('startCamera').hidden,false);
  assert.deepEqual(h.calls,['beginPublicCapture'],'confirmation alone never uploads');

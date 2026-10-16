@@ -4,7 +4,7 @@
   "headers": [
     {
       "source": "/photo",
-      "headers": [{"key":"Permissions-Policy","value":"camera=(self), geolocation=(self), microphone=()"},{"key":"Cache-Control","value":"no-store"}]
+      "headers": [{"key":"Permissions-Policy","value":"camera=(self), geolocation=(), microphone=()"},{"key":"Cache-Control","value":"no-store"}]
     },
     {
       "source": "/photo-config.js",

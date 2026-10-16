@@ -14,7 +14,7 @@ function harness(reply=()=>({ok:true,data:{}}),timers={setTimeout,clearTimeout})
   const storage=map=>({getItem:k=>map.get(k)||null,setItem:(k,v)=>map.set(k,v),removeItem:k=>map.delete(k)});
   let success,failure;
   const runner=new Proxy({},{get(target,name){if(name==='withSuccessHandler')return fn=>{success=fn;return runner;};if(name==='withFailureHandler')return fn=>{failure=fn;return runner;};return (...args)=>{calls.push({name,args});const ok=success,fail=failure;Promise.resolve().then(()=>reply(name,args)).then(ok,fail);};}});
-  const window={PHOTO_DISTANCE_:require('../web/lib/visit-distance.js'),google:{script:{run:runner}},localStorage:storage(local),sessionStorage:storage(tab),addEventListener(){},confirm:()=>true};
+  const window={google:{script:{run:runner}},localStorage:storage(local),sessionStorage:storage(tab),addEventListener(){},confirm:()=>true};
   const context=vm.createContext({window,google:window.google,document:{getElementById:get,createElement:element,querySelectorAll:()=>[]},Date,JSON,Math,Number,String,Array,Promise,Error,...timers});
   vm.runInContext(script,context);
   return {get,calls,run:code=>vm.runInContext(code,context)};
@@ -115,9 +115,9 @@ test('admin RPC timeout releases the UI and ignores late replies without replayi
   assert.equal(h.calls.length,1);
 });
 
-test('administrator separates actual destination distance from GPS accuracy, including old destination evidence',()=>{
-  const h=harness();h.run("selectedPhoto={evidence:{latitude:37.5665,longitude:126.978,accuracy:24,destination:{latitude:34.8118,longitude:126.3922,coordinateVerified:false}}}");
-  const text=h.run('locationMeta(selectedPhoto)');assert.match(text,/직선거리 3\d\d\.\d{2}km/);assert.match(text,/대략 좌표 · 참고용/);assert.match(text,/±24m/);
-  assert.match(h.run('locationMeta({evidence:{latitude:37,longitude:127,accuracy:24}})'),/직선거리 확인 불가/);
-  assert.match(h.run('locationMeta({})'),/위치 기록 없음/);
+test('administrator shows timestamps without GPS fields, while the original evidence object is preserved',()=>{
+  const h=harness();h.run("selectedPhoto={evidence:{latitude:37.5665,longitude:126.978,accuracy:24,capturedAt:'2026-10-16T04:00:00Z',receivedAt:'2026-10-16T04:00:01Z'}}");
+  const text=h.run('captureMeta(selectedPhoto)');assert.match(text,/촬영 기록/);assert.match(text,/서버 수신/);assert.doesNotMatch(text,/37\.5665|126\.978|GPS|거리|정확도/);
+  assert.equal(h.run('selectedPhoto.evidence.latitude'),37.5665);assert.match(h.run('captureMeta({})'),/촬영 기록 없음/);
+  assert.doesNotMatch(html,/positionMap|visit-distance\.js|GPS 추정|현재 위도|직선거리/);
 });

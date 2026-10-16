@@ -14,7 +14,7 @@ function fakeJpeg(seed = 1, edge = 100) {
   return Buffer.from([255,216,255,224,0,4,0,0,255,192,0,11,8,edge>>8,edge&255,0,100,1,1,17,0,
     255,218,0,8,1,1,0,0,63,0,seed,0,0,255,217]);
 }
-function harness({sourceText,requireCapture=false} = {}) {
+function harness({sourceText,requireCapture=false,requireLocation=false} = {}) {
   const props = new Map([['MYBOX_TOKEN','mbx_pat_unit_test_fake_123456789'],['PHOTO_ADMIN_PASSWORD',PASSWORD],['PHOTO_TEAM_PASSWORD','old-team-password']]);
   const cache = new Map(), resources = [], reservations = new Map();
   let locked = false, calls = 0, next = 0, used = 0, dropUploadResponse = false, failCatalog=false, dropDeleteResponse=false;
@@ -86,7 +86,7 @@ function harness({sourceText,requireCapture=false} = {}) {
   };
   vm.createContext(sandbox); vm.runInContext(source,sandbox);
   // Existing v3/v4 ownership tests also cover migration. Strict v5 capture is tested separately.
-  sandbox.PHOTO_LIMITS_={...sandbox.PHOTO_LIMITS_,requireCapture};
+  sandbox.PHOTO_LIMITS_={...sandbox.PHOTO_LIMITS_,requireCapture,requireLocation};
   const login=sandbox.loginPhoto('admin',PASSWORD); assert.equal(login.ok,true);
   return {app:sandbox,props,cache,resources,trash,session:login.data.session,
     setUsed:value=>{used=value;},setLocked:value=>{locked=value;},
