@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5.0"/>
-<title>행정동별 사업자 탐색</title>
+<title>현장 방문 지도</title>
 
 <!-- 폰트(Pretendard) — 로드 실패해도 시스템 폰트로 자연 대체 -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css"/>
@@ -189,6 +189,15 @@
   .data-dialog th:first-child,.data-dialog td:first-child{ text-align:left; }
   .scope-note{ padding:10px 16px; font-size:12px; line-height:1.6; color:var(--mut);
     border-bottom:1px solid var(--line); background:var(--surface2); }
+  .searchbar{display:flex;gap:8px;align-items:center;padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--line);flex:none}
+  .searchbar label{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+  .searchbar input{width:100%;min-width:0;min-height:44px;padding:11px 12px;border:1px solid #c9c2b6;border-radius:11px;background:#fff;font:inherit;font-size:16px;color:var(--ink)}
+  .searchbar button{flex:none;min-height:44px;border:1px solid var(--line);border-radius:10px;background:var(--surface2);color:var(--teal-d);font:inherit;font-size:13px;padding:9px 12px;cursor:pointer}
+  .searchbar input:focus-visible,.searchbar button:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+  .addr-row .photo-action{min-height:44px;justify-content:center;border-radius:10px;margin-top:6px;background:var(--teal);color:#fff;border-color:var(--teal);font-size:13px;padding:11px 16px;align-self:flex-start}
+  [hidden]{display:none!important}
+  @media(max-width:600px){.header{padding-left:56px;padding-right:72px}.brand{gap:0}.logo{display:none}.hbtns{gap:5px}.hbtn{padding:6px 9px}.t1{font-size:16px}.gps-btn{right:12px;top:16px;width:44px;height:44px}.leaflet-top.leaflet-left{top:8px}.panel-handle{font-size:13px}}
+  @media(prefers-reduced-motion:reduce){.addr-dot.approx,.sel-dot::after,.my-dot{animation:none}}
 </style>
 </head>
 <body>
@@ -199,7 +208,7 @@
   <div class="brand">
     <div class="logo"><span class="d"></span></div>
     <div class="titles">
-      <div class="t1">행정동별 사업자 탐색</div>
+      <div class="t1">현장 방문 지도</div>
       <div class="t2">
         <span>사업자 <b id="businessCnt">-</b>개</span>
         <span>주소 <b id="totalCnt">-</b>건</span>
@@ -207,9 +216,9 @@
         <span hidden id="nReal">-</span>
       </div>
       <div class="hbtns">
-        <a class="hbtn" href="./duplicates.html" target="_blank" rel="noopener">🏬 같은주소 <b>1,001</b></a>
-        <a class="hbtn warn" href="./check.html" target="_blank" rel="noopener">⚠ 좌표 확인 <b>100</b></a>
-        <button class="hbtn" type="button" id="dataInfoBtn">한글 집계 기준</button>
+        <a class="hbtn" href="./duplicates.html" target="_blank" rel="noopener">같은 주소 <b>1,001</b></a>
+        <a class="hbtn warn" href="./check.html" target="_blank" rel="noopener">위치 확인 <b>100</b></a>
+        <button class="hbtn" type="button" id="dataInfoBtn">집계 기준</button>
         <a class="hbtn" id="photoAdminLink" hidden target="_blank" rel="noopener noreferrer">사진 관리자</a>
       </div>
     </div>
@@ -225,12 +234,9 @@
 </button>
 
 <div id="panel">
-  <div class="panel-handle" id="panelHandle"><span class="bar"></span>📋 시도 · 시군구 · 행정 읍면동 · 주소</div>
+  <div class="panel-handle" id="panelHandle"><span class="bar"></span>방문할 주소 찾기</div>
+  <form class="searchbar" id="addressSearchForm" role="search"><label for="mapSearch">주소 또는 동 이름</label><input id="mapSearch" type="search" maxlength="100" placeholder="주소·동 이름 검색" autocomplete="off" enterkeyhint="search"><button id="clearMapSearch" type="button" hidden>지우기</button></form>
   <div id="crumb"></div>
-  <div id="panelTools">
-    <a class="ptool" href="./duplicates.html" target="_blank" rel="noopener">🏬 같은주소 <b>1,001</b>곳</a>
-    <a class="ptool warn" href="./check.html" target="_blank" rel="noopener">⚠ 좌표 확인 <b>100</b>건</a>
-  </div>
   <div id="list"></div>
 </div>
 
@@ -251,7 +257,8 @@
 
 <script src="./data-meta.js?v=20261015-admin"></script>
 <script src="./addresses.js?v=20261015-admin"></script>
-<script src="./photo-config.js?v=20261016-mybox-v4-public"></script>
+<script src="./address-search.js?v=20261016-ux"></script>
+<script src="./photo-config.js?v=20261016-mybox-v4-ux1"></script>
 <script>
 /* =======================================================================
    전국 주소 지도 — 동작 개요 (초보자용 설명)
@@ -297,6 +304,7 @@ var selIcon   = L.divIcon({ className:'', html:'<div class="sel-dot"></div>', ic
 var redIcon   = L.divIcon({ className:'', html:'<div class="my-dot"></div>', iconSize:[20,20], iconAnchor:[10,10] });
 
 var visibleMode = false;   // 화면에 보이는 주소 목록 모드
+var searchMode=false,searchEngine=null,searchTimer=null;
 var suppressAutoUntil = 0;  // 이 시각 이전의 moveend는 '프로그램 이동'으로 보고 자동목록 억제(자동 만료)
 
 // ── 성능: 마커는 '필요할 때 생성 + 재사용', 표시는 잘게 쪼개 비동기로 ──
@@ -369,6 +377,7 @@ function initMap(){
   // 확대(줌 15↑)하면 화면에 보이는 주소를 자동으로 목록에 띄움 (디바운스로 과도한 갱신 방지)
   var _visTimer=null;
   map.on('moveend', function(){
+    if(searchMode)return;
     if(Date.now() < suppressAutoUntil){ return; }     // 프로그램이 옮긴 거면 무시(자동 만료)
     clearTimeout(_visTimer);
     _visTimer=setTimeout(function(){
@@ -415,8 +424,9 @@ function openPopup(marker, rec){
     (!rec[6] ? '<div class="popup-sub">원주소 분류 · 한글 행정동 대조 대상 외</div>' : '') +
     (approx ? '<div class="popup-warn">⚠ 대략 위치 · 확인필요</div>' : '') +
     '<div class="popup-sub tag-biz">이 주소 사업자수 ' + cnt + '개</div>' +
-    '<a class="pbtn search" href="' + search + '" target="_blank" rel="noopener">🔍 구글지도에서 열기</a>' +
-    '<a class="pbtn nav" href="' + nav + '" target="_blank" rel="noopener">🚗 구글 길안내</a>' + photoLinkHtml(rec[2]);
+    photoLinkHtml(rec[2])+
+    '<a class="pbtn search" href="' + search + '" target="_blank" rel="noopener">구글 지도</a>' +
+    '<a class="pbtn nav" href="' + nav + '" target="_blank" rel="noopener">길찾기</a>';
   // 팝업이 항상 '보이는 영역'(헤더 아래·패널 위)에 뜨도록 자동 이동 여백 지정
   var ph = Math.max(60, panel.getBoundingClientRect().height);
   suppressAutoUntil = Date.now() + 900;   // 이 자동 이동은 화면목록 갱신 대상 아님
@@ -435,8 +445,8 @@ var adminPhotoEntry=photoUrl(''), adminPhotoLink=document.getElementById('photoA
 if(adminPhotoEntry&&adminPhotoLink){adminPhotoLink.href=adminPhotoEntry.replace('?address=&','?page=admin&');adminPhotoLink.hidden=false;}
 function photoLinkHtml(address){
   var url=photoUrl(address);
-  return url ? '<a class="pbtn search" href="'+url+'" target="_blank" rel="noopener noreferrer">📷 현장 촬영 · 사진 2장</a>' :
-    '<div class="popup-sub">📷 MYBOX 사진 연결 준비 중</div>';
+  return url ? '<a class="pbtn search" href="'+url+'" target="_blank" rel="noopener noreferrer">현장 사진 등록·보기</a>' :
+    '<div class="popup-sub">사진 등록을 준비 중입니다.</div>';
 }
 
 function fitToRecords(records){
@@ -474,16 +484,17 @@ listEl.addEventListener('keydown', function(e){
   }
 });
 function addScopeNote(records, extra){
-  var note=document.createElement('div'); note.className='scope-note';
+  var note=document.createElement('details');note.className='scope-note';
   var target=records.filter(function(p){return !!p[6];}).length;
   var pending=records.filter(function(p){return !!p[6] && !p[5];});
-  note.textContent='사업자수 '+countBusinesses(records).toLocaleString()+'개 · 원주소 '+records.length.toLocaleString()+'건. '+
-    (target===records.length ? '한글 행정동 분류 반영.' : target===0 ? '한글 행정동 대조 대상 외: 기존 원주소 분류.' : '한글 대조 대상과 기존 원주소 분류가 함께 있습니다.')+
-    (pending.length ? ' 행정동 미확정 '+countBusinesses(pending)+'개 포함.' : '')+
-    (extra ? ' '+extra : '');
+  var summary=document.createElement('summary'),detail=document.createElement('p');
+  summary.textContent='사업자 '+countBusinesses(records).toLocaleString()+'개 · 주소 '+records.length.toLocaleString()+'곳'+(pending.length?' · 행정동 미확정 '+countBusinesses(pending)+'개':'');
+  detail.textContent=(target===records.length?'한글 문서의 행정동 분류를 반영했습니다.':target===0?'원자료의 주소 분류입니다. 한글 행정동 대조 대상은 아닙니다.':'한글 대조 지역과 원자료 분류가 함께 포함돼 있습니다.')+(extra?' '+extra:'');
+  note.append(summary,detail);
   listEl.appendChild(note);
 }
 function renderSido(){
+  searchMode=false;
   visibleMode=false;
   sel={sido:null,gugun:null,dong:null}; setCrumb(); clearList();
   showMarkers(null, 'ALL');
@@ -544,8 +555,8 @@ function appendAddrRow(p){
     collapsePanel();
   };
   var photo=document.createElement('a'), photoHref=photoUrl(p[2]);
-  photo.className='hbtn'; photo.style.alignSelf='flex-start'; photo.style.marginTop='5px';
-  photo.textContent=photoHref?'📷 현장 촬영 · 사진 2장':'📷 MYBOX 사진 연결 준비 중';
+  photo.className='hbtn photo-action';
+  photo.textContent=photoHref?'사진 등록·보기':'사진 등록 준비 중';
   if(photoHref){
     photo.href=photoHref; photo.target='_blank'; photo.rel='noopener noreferrer';
     photo.onclick=function(e){e.stopPropagation();};
@@ -565,6 +576,7 @@ function showSelected(p){
 
 // 확대(줌 15↑) 시 화면에 보이는 주소들을 목록으로
 function renderVisible(){
+  if(searchMode)return;
   var entering = !visibleMode;
   visibleMode = true;
   sel={sido:null,gugun:null,dong:null};
@@ -667,6 +679,29 @@ document.getElementById('gpsBtn').addEventListener('click', function(){
   setTimeout(function(){ if(!done){ stop(); } }, 35000);
 });
 
+function restoreSearchScope(){
+  searchMode=false;
+  if(sel.dong)renderAddr();else if(sel.gugun)renderDong();else if(sel.sido)renderGugun();else renderSido();
+}
+function renderSearch(fit){
+  var query=document.getElementById('mapSearch').value.trim();
+  document.getElementById('clearMapSearch').hidden=!query;
+  if(!query){restoreSearchScope();return;}
+  searchMode=true;visibleMode=false;crumbEl.textContent='전체 주소 검색';clearList();
+  if(!searchEngine)searchEngine=window.AddressSearch.create(ALL);
+  var result=searchEngine.find(query,60),note=document.createElement('div');note.className='vis-head';note.setAttribute('role','status');
+  note.textContent=result.tooShort?'두 글자 이상 입력해 주세요.':result.total?result.total.toLocaleString()+'곳 · 사업자 '+result.businesses.toLocaleString()+'개':'검색 결과가 없습니다. 지역이나 도로명으로 다시 찾아보세요.';
+  listEl.appendChild(note);result.entries.forEach(function(entry){appendAddrRow(entry.p);});
+  var points=new Set(result.entries.map(function(entry){return entry.p;}));showMarkers(function(entry){return points.has(entry.p);},'SEARCH:'+query);
+  if(fit===true&&result.entries.length)fitToRecords(result.entries.map(function(entry){return entry.p;}));
+  if(result.total>result.entries.length){var more=document.createElement('div');more.className='scope-note';more.textContent='앞에서 60곳만 표시합니다. 지역이나 지번을 더 입력해 주세요.';listEl.appendChild(more);}
+  expandPanel();
+}
+function clearSearch(){clearTimeout(searchTimer);document.getElementById('mapSearch').value='';document.getElementById('clearMapSearch').hidden=true;restoreSearchScope();}
+document.getElementById('mapSearch').oninput=function(){clearTimeout(searchTimer);searchTimer=setTimeout(renderSearch,160);};
+document.getElementById('mapSearch').onkeydown=function(e){if(e.key==='Escape'){e.preventDefault();clearSearch();}};
+document.getElementById('clearMapSearch').onclick=clearSearch;
+document.getElementById('addressSearchForm').onsubmit=function(e){e.preventDefault();clearTimeout(searchTimer);renderSearch(true);document.getElementById('mapSearch').blur();};
 initDataInfo();
 initMap();
 </script>

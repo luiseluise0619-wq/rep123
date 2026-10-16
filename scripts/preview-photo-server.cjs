@@ -10,7 +10,7 @@ let MOCK_OK,MOCK_FAIL;const runner=new Proxy({},{get(target,name){
  if(name==='withSuccessHandler')return fn=>{MOCK_OK=fn;return runner};
  if(name==='withFailureHandler')return fn=>{MOCK_FAIL=fn;return runner};
  return(...args)=>{const ok=MOCK_OK,fail=MOCK_FAIL;fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,args})}).then(r=>r.json()).then(ok,fail)};
-}});window.google={script:{run:runner,url:{getLocation:fn=>fn({hash:location.hash.slice(1)})},history:{replace:()=>{history.replaceState({},'',location.pathname+location.search)}}}};
+}});window.google={script:{run:runner,url:{getLocation:fn=>fn({hash:location.hash.slice(1)})},history:{replace:(state,params,hash)=>{history.replaceState(state,'',location.pathname+'?'+new URLSearchParams(params)+(hash?'#'+hash:''))}}}};
 </script>`;
 function page(admin,address){const initial=JSON.stringify({address:address||'',maxBytes:200000,maxEdge:1600,webAppUrl:'http://127.0.0.1:8765/photos',version:'LOCAL-MOCK-V3'});
  return fs.readFileSync(path.join(root,'photo-backend',admin?'Admin.html':'Photo.html'),'utf8').replace('<?!= initialJson ?>',initial)

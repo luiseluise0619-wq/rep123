@@ -18,33 +18,31 @@ button:disabled{opacity:.5;cursor:not-allowed}.secondary{background:#e9e2d6;colo
 #photoZoom{width:95vw;max-width:1700px;height:90vh;border:0;border-radius:12px;padding:12px;background:#202823;color:#fff;overflow:auto}#photoZoom::backdrop{background:#000b}#photoZoom img{display:block;width:auto;max-width:none;margin-top:10px}#closeZoom{position:sticky;top:0;left:0}
 .topline,.section-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.topline a{font-size:13px;min-height:44px;display:flex;align-items:center}.section-head h2{margin:0}.counter{font-size:24px;font-weight:800;white-space:nowrap;color:var(--teal)}.steps{list-style:none;display:flex;gap:8px;margin:16px 0 4px;padding:0}.steps li{flex:1;padding:8px 3px;border-bottom:3px solid var(--line);font-size:13px;color:var(--mut)}.steps .active{color:var(--teal);border-color:var(--teal);font-weight:700}.choose{width:100%;min-height:88px;border:2px dashed #70a398;background:#e7f1eb;color:#0a594e;margin:14px 0 4px;font-size:17px}.choose span{display:block;font-size:12px;font-weight:400}.savebar{position:sticky;bottom:0;z-index:2;margin:16px -18px -18px;padding:12px 18px max(12px,env(safe-area-inset-bottom));background:#fbf9f3f5;border-top:1px solid var(--line);border-radius:0 0 17px 17px;box-shadow:0 -6px 20px #1835280a}.savebar .actions{margin-top:8px;flex-wrap:nowrap}.savebar #upload{flex:1}.savebar p{margin:0;font-size:12px}.check{padding:8px 0;min-height:44px}.details{margin-top:16px;font-size:12px;color:var(--mut)}.details summary{cursor:pointer;padding:8px 0;font-size:13px}.photo details{font-size:12px;color:var(--mut)}.photo summary{cursor:pointer;padding:8px 0}.login-submit{width:100%;margin-top:12px}#passwordHint{margin:5px 0}#progressText{font-weight:650;color:var(--teal)}
 @media(max-width:440px){.grid{grid-template-columns:1fr}main{padding:16px 12px 40px}.card{padding:15px}h1{font-size:24px}.savebar{margin:16px -15px -15px;padding:12px 15px max(12px,env(safe-area-inset-bottom))}.steps li{font-size:12px}.counter{font-size:21px}input{font-size:16px}}
+.intro{margin-bottom:20px}.intro h1{margin:2px 0 4px}.topline .pill{font-size:12px}.address-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.address-head button{font-size:13px;min-height:40px;padding:8px 12px;flex:none}.address{font-size:17px;line-height:1.5;margin:12px 0 4px}.photo-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0}.photo-actions button,#cameraButton{width:100%;min-height:60px;margin:0;font-size:16px}.photo-actions .choose{border:1px solid #b7cfc7;background:#e7f1eb;color:#185a4e}.date-row{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:12px 0}.date-row label{margin:0}.date-row input{width:170px;min-height:44px}.select-grid label{margin:4px 0;min-width:0}.select-grid select{margin-top:5px}.public-note{font-size:13px;color:#6b6459;margin:12px 0}.public-note b{font-weight:600;color:#5b4634}.section-head .small{margin:0}#mapDetails{margin-top:12px;font-size:13px;color:var(--mut)}#mapDetails summary{padding:8px 0;cursor:pointer;color:var(--teal)}#fieldMap{height:220px}.leaflet-popup-content{min-width:160px;line-height:1.5}.footer{display:flex;justify-content:space-between;gap:12px;padding:20px 2px;font-size:13px}.footer a{min-height:44px;display:inline-flex;align-items:center}.details p{margin:10px 0}.status{font-size:13px;padding:10px 12px}.photo .own{color:#0e6e63}.grid{gap:12px}.steps{margin-top:12px}.check{font-size:14px}.savebar{position:sticky;bottom:0}#remaining{margin:8px 0 14px}#deviceNotice{padding:10px 12px;background:#fff2d8;border-radius:9px}button:focus-visible,select:focus-visible{outline:3px solid #e5007e;outline-offset:3px}@media(max-width:440px){.intro{margin-bottom:16px}.address{font-size:16px}.photo-actions button,#cameraButton{font-size:16px}.select-grid{gap:7px}.select-grid select{padding:10px 6px;font-size:14px}.date-row input{font-size:16px}.photo img{max-height:280px}}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
 </style></head><body>
 <main>
-<div class="topline"><span class="pill">누구나 사진 등록 · 보기</span><a href="https://rep123-seven.vercel.app/" rel="noreferrer">← 지도로</a></div><h1>현장 방문 사진</h1>
-<p class="small">주소당 최대 2장 · 장당 200KB 이하 자동 압축</p>
-<section class="card"><div class="small">원자료 주소</div><p id="address" class="address"></p><p class="small">동일 주소에 사업자가 여러 개 있어도 사진은 이 주소 전체에 2장입니다.</p></section>
-<div id="message" class="status" role="status" aria-live="polite">연결 상태를 확인하는 중…</div>
-<p class="small">사진은 로그인 없이 누구나 볼 수 있습니다. 얼굴·전화번호·개인정보가 담긴 사진은 올리지 마세요. 삭제는 올린 브라우저 또는 관리자만 가능합니다.</p><p id="deviceNotice" class="small"></p>
+<div class="topline"><span class="pill">공개 사진</span><a href="https://rep123-seven.vercel.app/" rel="noreferrer">← 지도</a></div><header class="intro"><h1>현장 사진</h1><p class="small">주소당 2장까지 등록할 수 있습니다.</p></header>
+<section class="card"><div class="address-head"><span class="small">방문 주소</span><button id="changeAddress" class="secondary" type="button">주소 변경</button></div><p id="address" class="address" aria-live="polite"></p><details id="mapDetails"><summary>지도에서 위치 보기</summary><div id="fieldMap" aria-label="주소 위치 지도"></div><p class="small">지도 위치는 참고용입니다. 방문 주소를 함께 확인하세요.</p></details></section>
+<div id="message" class="status" role="status" aria-live="polite">사진을 불러오는 중…</div><p id="deviceNotice" class="small" hidden></p>
 <section id="workspace" hidden>
-<section id="pickAddress" class="card"><h2>방문 주소 선택</h2><details id="addressSelector" open><summary>방문 주소 선택 / 변경</summary><p class="small">지역을 고르고 목록의 주소를 누르세요. 지도 좌표는 참고용이며 원주소가 맞는지 확인하세요.</p><div class="select-grid"><label for="province">시도</label><label for="district">구·군</label><label for="dong">읍·면·동</label><select id="province"><option value="">선택</option></select><select id="district"><option value="">선택</option></select><select id="dong"><option value="">선택</option></select></div><label for="addressSearch">선택한 동의 주소 검색</label><input id="addressSearch" type="search" placeholder="도로·건물·지번"><div id="addressChoices"></div></details><div id="fieldMap" aria-label="선택한 주소 참고 지도"></div><a id="adminLink" hidden>관리자 전체 사진·직원 관리 →</a></section>
-<section class="card"><div class="section-head"><h2>이 주소의 방문 사진</h2><span id="count" class="counter" aria-live="polite">0 / 2장</span></div><p id="remaining" class="small"></p><div id="saved" class="grid"></div><div class="actions"><button id="refresh" class="secondary" type="button">새로고침</button></div>
-<p id="quota" class="small"></p></section>
-<section id="uploadCard" class="card"><h2>사진 추가</h2>
-<ol class="steps" aria-label="사진 저장 순서"><li id="step1" class="active">① 사진 선택</li><li id="step2">② 확대 확인</li><li id="step3">③ 저장 완료</li></ol>
-<label for="visitDate">방문일</label><input id="visitDate" type="date" required><p class="small">오늘 날짜가 기본값입니다. 다른 날 방문했다면 바꿔주세요.</p>
+<section id="pickAddress" class="card"><details id="addressSelector" open><summary>주소 찾기</summary><div class="select-grid"><label for="province">시도<select id="province"><option value="">선택</option></select></label><label for="district">시·군·구<select id="district"><option value="">선택</option></select></label><label for="dong">읍·면·동<select id="dong"><option value="">선택</option></select></label></div><label for="addressSearch">주소 검색</label><input id="addressSearch" type="search" placeholder="선택한 지역의 도로명·건물·지번"><div id="addressChoices"></div></details></section>
+<section id="uploadCard" class="card"><div class="section-head"><h2>사진 등록</h2><span id="chooseHint" class="small">2장까지</span></div>
+<div class="date-row"><label for="visitDate">방문일</label><input id="visitDate" type="date" required></div>
 <input id="files" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" multiple hidden aria-label="현장 사진 파일">
 <input id="camera" type="file" accept="image/*" capture="environment" hidden aria-label="현장 카메라 촬영">
-<button id="cameraButton" type="button">📷 지금 현장 촬영</button><p class="small camera-note">휴대폰에서는 카메라 촬영을 요청합니다. 기기에 따라 사진 선택 화면이 열릴 수도 있습니다. 사진 아래에 앱 기록시각(KST)·방문일(입력)·선택 주소를 원본을 가리지 않는 띠로 추가합니다. 앱 기록시각은 기기 시각이며 GPS·실제 촬영 증명이 아닙니다.</p>
-<button id="choose" class="choose" type="button">＋ 사진 선택 / 촬영<span id="chooseHint">최대 2장 · 자동 압축 · 원본 유지</span></button>
+<div class="photo-actions"><button id="cameraButton" type="button">사진 찍기</button><button id="choose" class="choose" type="button">앨범에서 선택</button></div>
+<p class="small">날짜와 주소가 사진 아래에 표시됩니다. 용량은 자동으로 줄여 저장합니다.</p>
 <p id="compression" class="small"></p><div id="preview" class="grid"></div>
-<label class="check"><input id="readable" type="checkbox"><span>올바른 주소의 사진이고 날짜·현장이 보이며, 개인정보가 없는 사진을 누구나 볼 수 있게 공개 등록하는 데 동의합니다.</span></label>
-<details class="details"><summary>압축·촬영일·무료 한도 안내</summary><p>원본은 기기에 남겨두세요. 사진을 자르지 않고 200KB 이하로 압축합니다. EXIF 촬영일·GPS는 제거되며, 사진에 인쇄된 날짜는 이미지에 남지만 가독성을 직접 확인해야 합니다.</p><p>방문일·담당자명은 직접 입력한 정보입니다. 실제 촬영·방문 시각을 보증하지 않으며 서버 저장 시각은 따로 표시합니다.</p><p>계정 사용량 24GB 이내·여유 1GB 확보·저장 시도 하루 1,000회에서 중단하며 자동 결제하지 않습니다. 서비스 자체 한도가 먼저 적용될 수 있습니다.</p></details>
-<div class="savebar"><p id="saveHint">사진을 먼저 선택하세요.</p><p id="progressText" role="status" aria-live="polite"></p><progress id="progress" max="2" value="0" hidden aria-label="사진 저장 진행"></progress><div class="actions"><button id="upload" type="button" disabled>MYBOX에 저장</button><button id="clear" class="secondary" type="button">선택 취소</button></div></div>
-</section></section>
-<p class="small">삭제키는 이 브라우저에만 자동 저장됩니다. 다른 기기·브라우저에서는 본인 사진도 삭제할 수 없습니다. 브라우저 데이터 삭제·시크릿 모드 종료 후에는 관리자에게 삭제를 요청하세요. 공용 기기에서는 다른 사용자가 이 기기의 사진을 삭제할 수 있습니다.</p>
-<p><a href="https://rep123-seven.vercel.app/" rel="noreferrer">지도로 돌아가기</a></p>
+<div id="reviewBlock" hidden><label class="check"><input id="readable" type="checkbox"><span>주소와 날짜를 확인했으며, 이 사진을 공개로 등록합니다.</span></label></div>
+<p class="public-note"><b>등록한 사진은 누구나 볼 수 있습니다.</b><br>얼굴이나 연락처가 보이지 않는지 확인해 주세요.</p>
+<div id="saveBar" class="savebar" hidden><p id="saveHint">사진을 선택해 주세요.</p><p id="progressText" role="status" aria-live="polite"></p><progress id="progress" max="2" value="0" hidden aria-label="사진 저장 진행"></progress><div class="actions"><button id="upload" type="button" disabled>사진 등록</button><button id="clear" class="secondary" type="button">선택 취소</button></div></div>
+</section>
+<section id="galleryCard" class="card" hidden><div class="section-head"><h2>등록된 사진</h2><span id="count" class="counter" aria-live="polite">0 / 2</span></div><p id="remaining" class="small"></p><div id="saved" class="grid"></div><div class="actions"><button id="refresh" class="secondary" type="button">새로고침</button></div><p id="quota" class="small" hidden></p></section>
+</section>
+<details class="details"><summary>사진 등록·삭제 안내</summary><p>사진은 주소당 2장까지, 장당 200KB 이하로 저장됩니다. 한 주소에 여러 사업자가 있어도 사진은 함께 사용합니다. 원본은 기기에 남겨두세요.</p><p>방문일은 직접 선택한 날짜이고, 기록 시각은 기기 시계 기준입니다. GPS 방문 인증은 아닙니다. EXIF 촬영 정보는 저장하지 않습니다.</p><p>삭제는 사진을 올린 브라우저나 관리자만 할 수 있습니다. 브라우저 데이터를 지우거나 다른 기기로 접속하면 관리자에게 삭제를 요청해야 합니다. 공용 기기에서는 다른 사용자도 삭제할 수 있습니다.</p><p>삭제한 사진은 MYBOX 휴지통으로 이동합니다. 저장 공간이나 일일 이용 한도에 도달하면 등록이 중단되며 자동 결제는 없습니다.</p></details>
+<footer class="footer"><a href="https://rep123-seven.vercel.app/" rel="noreferrer">지도</a><a id="adminLink" hidden>사진 관리</a></footer>
 </main>
-<dialog id="photoZoom" aria-label="사진 원래 해상도로 확대"><button id="closeZoom" type="button">확대 닫기</button><p>날짜 부분까지 스크롤해 가독성을 확인하세요.</p><img id="zoomImage" alt="확대한 사진"></dialog>
+<dialog id="photoZoom" aria-label="사진 크게 보기"><button id="closeZoom" type="button">닫기</button><p>사진을 움직여 날짜와 주소를 확인하세요.</p><img id="zoomImage" alt="확대한 사진"></dialog>
 <script id="initial" type="application/json"><?!= initialJson ?></script>
 <script src="https://rep123-seven.vercel.app/addresses.js?v=20261016-photo"></script>
 <script src="https://rep123-seven.vercel.app/lib/leaflet.js"></script>
@@ -59,13 +57,14 @@ function storageRemove(kind,key) { try { window[kind].removeItem(key); } catch(i
 function storageSet(kind,key,value) { try { window[kind].setItem(key,value); return true; } catch(ignored) { return false; } }
 function storedDeviceKey(){const key=storageGet('localStorage',DEVICE_KEY)||'';return /^[0-9a-f]{64}$/.test(key)?key:'';}
 function ensureDeviceKey(){const existing=storedDeviceKey();if(existing)return existing;try{const bytes=new Uint8Array(32);window.crypto.getRandomValues(bytes);const key=Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');if(storageSet('localStorage',DEVICE_KEY,key)&&storedDeviceKey()===key)return key;}catch(ignored){}return '';}
-let deviceKey=ensureDeviceKey(),currentAddress=INITIAL.address||'',fieldMap=null,fieldMarker=null,viewEpoch=0;
+let deviceKey=ensureDeviceKey(),currentAddress=INITIAL.address||'',currentPoint=null,fieldMap=null,fieldMarker=null,viewEpoch=0;
 let pending = [], savedCount = 0, busy = false, canUpload = false, phase = '';
-$('deviceNotice').textContent=deviceKey?'삭제키를 이 브라우저에 보관합니다. 로그인 없이 등록할 수 있습니다.':'브라우저 저장소가 차단되어 보기만 가능합니다. 업로드하려면 브라우저 저장을 허용하세요.';
-$('address').textContent = INITIAL.address || '아래 지역 목록에서 방문 주소를 선택하세요.';
+$('deviceNotice').hidden=!!deviceKey;
+$('deviceNotice').textContent=deviceKey?'':'이 브라우저에서는 보기만 가능합니다. 사진을 올리려면 브라우저 저장을 허용해 주세요.';
+$('address').textContent=INITIAL.address||'방문할 주소를 선택해 주세요.';
 const today = new Intl.DateTimeFormat('en-CA', {timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 $('visitDate').value = today; $('visitDate').max = today;
-function say(text, error = false) { $('message').textContent = text; $('message').classList.toggle('error', error); }
+function say(text, error = false) { $('message').textContent=text;$('message').hidden=!text;$('message').classList.toggle('error',error); }
 function rpcOnce(name, ...args) { return new Promise((resolve,reject) => {
   if (!window.google || !google.script || !google.script.run) { reject(new Error('업로드 서버가 연결되지 않았습니다.')); return; }
   google.script.run.withSuccessHandler(result => {
@@ -81,7 +80,7 @@ async function rpc(name,...args) {
       // BUSY means the server did not acquire the lock or start the operation.
       // Never replay authentication failures, quota errors or ambiguous network failures.
       if(error.code!=='BUSY' || attempt>=waits.length) throw error;
-      say('다른 직원의 요청을 처리 중입니다. 잠시 기다리면 자동으로 다시 연결합니다. ('+(attempt+1)+'/'+waits.length+')');
+      say('연결 대기 중… ('+(attempt+1)+'/'+waits.length+')');
       await new Promise(resolve=>setTimeout(resolve,waits[attempt]+Math.floor(Math.random()*500)));
     }
   }
@@ -89,15 +88,15 @@ async function rpc(name,...args) {
 function updateControls() {
   $('upload').disabled = busy || !currentAddress || !pending.length || !$('readable').checked || !canUpload || pending.length + savedCount > 2;
   ['files','camera','choose','cameraButton','clear','refresh','visitDate','readable','province','district','dong','addressSearch'].forEach(id => { $(id).disabled = busy; });
+  $('changeAddress').disabled=busy||pending.length>0;
+  $('district').disabled=busy||!$('province').value;$('dong').disabled=busy||!$('district').value;$('addressSearch').disabled=busy||!$('dong').value;
   $('choose').disabled = $('cameraButton').disabled = busy || !currentAddress || pending.length + savedCount >= 2 || !canUpload;
   $('clear').disabled = busy || !pending.length;
   $('visitDate').disabled = busy || pending.length>0;
-  $('upload').textContent = phase==='upload' ? '저장 중…' : pending.length ? '선택한 '+pending.length+'장 저장' : 'MYBOX에 저장';
-  $('chooseHint').textContent = '추가 선택 가능 '+Math.max(0,2-savedCount-pending.length)+'장 · 자동 압축 · 원본 유지';
-  $('saveHint').textContent = busy ? (phase==='upload'?'저장 확인이 끝날 때까지 창을 닫지 마세요.':phase==='compress'?'사진을 압축하고 있습니다…':'저장 상태 확인 중…') : !currentAddress ? '위 목록에서 방문 주소를 선택하세요.' : !canUpload ? '저장 공간 한도로 사진을 추가할 수 없습니다.' : !pending.length ? '사진을 먼저 선택하세요.' : pending.length+savedCount>2 ? '다른 직원이 사진을 추가했습니다. 남은 칸만큼 선택해 주세요.' : !$('readable').checked ? '사진을 확대 확인한 뒤 위 확인란에 체크하세요.' : '준비 완료 · 아래 버튼을 누르면 저장됩니다.';
-  $('step1').classList.toggle('active',!pending.length);
-  $('step2').classList.toggle('active',!!pending.length && phase!=='upload');
-  $('step3').classList.toggle('active',phase==='upload');
+  $('saveBar').hidden=$('reviewBlock').hidden=!pending.length;
+  $('upload').textContent=phase==='upload'?'등록 중…':pending.length?pending.length+'장 등록':'사진 등록';
+  $('chooseHint').textContent=Math.max(0,2-savedCount-pending.length)+'장 더 선택 가능';
+  $('saveHint').textContent=busy?(phase==='upload'?'등록이 끝날 때까지 잠시 기다려 주세요.':phase==='compress'?'사진을 준비하고 있습니다…':phase==='delete'?'삭제 중…':'불러오는 중…'):!currentAddress?'방문 주소를 선택해 주세요.':!deviceKey?'브라우저 저장을 허용해 주세요.':!canUpload?'지금은 사진을 추가할 수 없습니다.':pending.length+savedCount>2?'다른 사진이 먼저 등록됐습니다. 선택한 사진을 줄여 주세요.':!$('readable').checked?'사진을 확인하고 공개 등록에 체크해 주세요.':'아래 버튼을 누르면 등록됩니다.';
   document.querySelectorAll('#preview .remove').forEach(button=>{button.disabled=busy;});
   document.querySelectorAll('#saved button').forEach(button=>{button.disabled=busy;});
 }
@@ -105,41 +104,41 @@ function renderPending() {
   const cards=pending.map((p,index)=>{
     const box=document.createElement('article'); box.className='photo';
     const image=document.createElement('img'); image.src=p.url; image.alt='압축 사진 '+(index+1)+' 미리보기';
-    const note=document.createElement('p'); note.textContent='사진 '+(index+1)+' · '+kb(p.originalSize)+' → '+kb(p.blob.size)+' · '+p.width+' × '+p.height+'px';
-    const remove=document.createElement('button'); remove.type='button'; remove.className='remove'; remove.textContent='이 사진 선택 취소'; remove.setAttribute('aria-label','사진 '+(index+1)+' 선택 취소');
+    const note=document.createElement('p');note.textContent='사진 '+(index+1)+' · '+kb(p.blob.size);
+    const remove=document.createElement('button');remove.type='button';remove.className='remove';remove.textContent='선택 취소';remove.setAttribute('aria-label','사진 '+(index+1)+' 선택 취소');
     remove.onclick=()=>{if(busy)return; pending.splice(index,1); URL.revokeObjectURL(p.url); $('readable').checked=false; renderPending(); updateControls();};
     box.append(image,note,zoomButton(p.url),remove); return box;
   });
   $('preview').replaceChildren(...cards);
-  $('compression').textContent=pending.length ? '선택한 '+pending.length+'장 압축 완료 · 확대해 날짜가 읽히는지 확인하세요.' : '';
+  $('compression').textContent=pending.length?'사진을 눌러 날짜와 주소를 확인해 주세요.':'';
 }
 function clearPending() { pending.forEach(p => URL.revokeObjectURL(p.url)); pending = []; $('files').value = ''; renderPending(); $('readable').checked = false; updateControls(); }
 window.addEventListener('storage',event=>{if(event.key===DEVICE_KEY||event.key===null){deviceKey=storedDeviceKey();clearPending();$('photoZoom').close();$('zoomImage').removeAttribute('src');refresh().catch(handle);}});
 window.addEventListener('beforeunload',event=>{if(busy && (phase==='upload'||pending.length)){event.preventDefault();event.returnValue='';}});
 function handle(error) {say(error.message, true);}
 function kb(bytes) { return (bytes / 1000).toFixed(1) + 'KB'; }
-function zoomButton(src, label) { const button=document.createElement('button'); button.type='button'; button.className='secondary'; button.textContent=label||'미리보기 확대'; button.onclick=()=>{ $('zoomImage').src=src; $('photoZoom').showModal(); }; return button; }
+function zoomButton(src, label) { const button=document.createElement('button');button.type='button';button.className='secondary';button.textContent=label||'크게 보기';button.onclick=()=>{$('zoomImage').src=src;$('photoZoom').showModal();};return button; }
 $('closeZoom').onclick=()=>{ $('photoZoom').close(); $('zoomImage').removeAttribute('src'); };
 function photoCard(photo) {
   const box = document.createElement('article'); box.className = 'photo';
   const text = document.createElement('p'), details=document.createElement('details'), summary=document.createElement('summary');
   let time = '확인 불가'; if (photo.uploadedAt && !isNaN(Date.parse(photo.uploadedAt))) time = new Date(photo.uploadedAt).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'});
-  text.textContent = '서버 저장 시각: ' + time + '\n크기: '+kb(photo.bytes);
+  text.textContent='등록 시각: '+time+'\n파일 크기: '+kb(photo.bytes);
   text.style.whiteSpace = 'pre-line'; summary.textContent='저장 정보'; details.append(summary,text);
-  const label=document.createElement('p'); label.textContent='✓ 사진 '+photo.slot+' · 방문일(입력) '+photo.visitDate; box.append(label,details);
+  const label=document.createElement('p');label.textContent='사진 '+photo.slot+' · 방문일 '+photo.visitDate;box.append(label,details);
   const button = document.createElement('button'); button.type = 'button'; button.className = 'secondary'; button.textContent = '사진 보기';
   button.onclick = async () => {const epoch=viewEpoch;button.disabled = true;button.textContent='불러오는 중…';try {
     const requestedAddress=currentAddress;
     const result=await rpc('getPublicPhoto',requestedAddress,photo.id);
     if(epoch!==viewEpoch||requestedAddress!==currentAddress)return;
     const image = document.createElement('img'); image.alt = '저장된 현장 사진 ' + photo.slot; image.src = 'data:image/jpeg;base64,' + result.base64;
-    box.prepend(image); box.appendChild(zoomButton(image.src,'사진 확대')); button.remove();
+    box.prepend(image);box.appendChild(zoomButton(image.src,'크게 보기'));button.remove();
   }catch(error){if(epoch===viewEpoch)handle(error);button.disabled=false;button.textContent='사진 다시 불러오기';}};
   box.appendChild(button);
   if(photo.canDelete){const address=currentAddress,ownerKey=deviceKey,remove=document.createElement('button'),confirmBox=document.createElement('div'),warning=document.createElement('p'),confirm=document.createElement('button'),cancel=document.createElement('button');
-    remove.type=confirm.type=cancel.type='button';remove.className='secondary danger delete';remove.textContent='내가 올린 사진 삭제';confirmBox.hidden=true;warning.textContent='이 사진을 휴지통으로 이동할까요? 사이트에서 사라지며 관리자가 MYBOX에서 복원할 수 있습니다.';confirm.textContent='삭제 확인';cancel.textContent='삭제 취소';cancel.className='secondary';confirmBox.append(warning,confirm,cancel);
+    remove.type=confirm.type=cancel.type='button';remove.className='secondary danger delete';remove.textContent='내 사진 삭제';confirmBox.hidden=true;warning.textContent='이 사진을 삭제할까요? MYBOX 휴지통으로 이동합니다.';confirm.textContent='삭제';cancel.textContent='취소';cancel.className='secondary';confirmBox.append(warning,confirm,cancel);
     remove.onclick=()=>{if(busy)return;remove.hidden=true;confirmBox.hidden=false;};cancel.onclick=()=>{confirmBox.hidden=true;remove.hidden=false;};
-    confirm.onclick=async()=>{if(busy)return;if(address!==currentAddress||ownerKey!==deviceKey){say('주소 또는 브라우저 삭제키가 바뀌었습니다. 새로고침 후 확인하세요.',true);return;}busy=true;phase='delete';viewEpoch++;updateControls();try{const data=await rpc('deletePhoto','',ownerKey,address,photo.id);$('photoZoom').close();$('zoomImage').removeAttribute('src');await refresh('사진을 휴지통으로 이동했습니다.'+(data.catalogPending?' 관리자 집계는 동기화 대기 중입니다.':''));}catch(e){handle(e);}finally{busy=false;phase='';updateControls();}};box.append(remove,confirmBox);}
+    confirm.onclick=async()=>{if(busy)return;if(address!==currentAddress||ownerKey!==deviceKey){say('주소나 브라우저 정보가 바뀌었습니다. 새로고침해 주세요.',true);return;}busy=true;phase='delete';viewEpoch++;updateControls();say('사진을 삭제하는 중…');try{const data=await rpc('deletePhoto','',ownerKey,address,photo.id);$('photoZoom').close();$('zoomImage').removeAttribute('src');await refresh('사진을 삭제했습니다.'+(data.catalogPending?' 관리자 목록 반영은 잠시 늦어질 수 있습니다.':''));}catch(e){handle(e);}finally{busy=false;phase='';updateControls();}};box.append(remove,confirmBox);}
   return box;
 }
 async function refresh(message) {
@@ -149,16 +148,17 @@ async function refresh(message) {
   if(!data.ready){$('workspace').hidden=true;say('공개 사진 기능 설정이 필요합니다.',true);return;}
   $('workspace').hidden=false;
   savedCount=Number.isInteger(data.totalCount)?data.totalCount:data.photos.length;canUpload=data.quota.canUpload&&!!deviceKey;
-  $('adminLink').hidden=false;$('adminLink').textContent='관리자 사진 관리 →';$('adminLink').href=(INITIAL.webAppUrl||'')+'?page=admin&build='+encodeURIComponent(INITIAL.version||'v4');
-  $('count').textContent = savedCount + ' / 2장';
-  $('remaining').textContent='누구나 볼 수 있는 공개 사진 '+savedCount+'/2장 · '+(savedCount===2?'추가 저장은 차단됩니다.':(2-savedCount)+'장 더 저장할 수 있습니다.');
+  $('adminLink').hidden=false;$('adminLink').textContent='사진 관리';$('adminLink').href=(INITIAL.webAppUrl||'')+'?page=admin&build='+encodeURIComponent(INITIAL.version||'v4');
+  $('count').textContent=savedCount+' / 2';
+  $('remaining').textContent=savedCount===2?'2장이 모두 등록됐습니다. 다른 사진을 올리려면 먼저 삭제해 주세요.':savedCount?'사진 '+(2-savedCount)+'장을 더 등록할 수 있습니다.':'아직 등록된 사진이 없습니다.';
   $('saved').replaceChildren(...data.photos.map(photoCard));
-  if(!data.photos.length){const empty=document.createElement('div');empty.className='empty';empty.textContent='아직 저장된 사진이 없습니다. 아래에서 추가하세요.';$('saved').append(empty);}
+  if(!data.photos.length){const empty=document.createElement('div');empty.className='empty';empty.textContent='방문 사진을 남겨주세요.';$('saved').append(empty);}
   $('quota').textContent='주소당 2장 · 자동 압축 · 무료 운영 안전 한도 내에서만 저장';
   $('uploadCard').hidden = savedCount >= 2 || !currentAddress;
-  say(message||(!currentAddress?'지역과 방문 주소를 먼저 선택하세요.':savedCount===2?'사진 2장이 등록되어 있습니다. 삭제는 올린 브라우저 또는 관리자만 가능합니다.':'로그인 없이 사진을 등록할 수 있습니다. 미리보기와 공개 등록 안내를 확인하세요.'));
-  if(!deviceKey)say('삭제키를 저장할 수 없어 보기만 가능합니다. 브라우저 저장을 허용한 뒤 다시 여세요.',true);
-  else if(!data.quota.canUpload)say('무료 운영 안전 한도에 도달해 업로드를 중단했습니다.',true);
+  $('galleryCard').hidden=!currentAddress;
+  say(message||(!currentAddress?'방문 주소를 선택해 주세요.':''));
+  if(!deviceKey)say('이 브라우저에서는 보기만 가능합니다. 브라우저 저장을 허용한 뒤 다시 열어 주세요.',true);
+  else if(!data.quota.canUpload)say('저장 한도에 도달했습니다. 관리자에게 알려주세요.',true);
   updateControls();
   if(fieldMap)setTimeout(()=>fieldMap.invalidateSize(),0);
 }
@@ -206,9 +206,9 @@ async function selectFiles(files) {
   if (files.length > 2 - savedCount - pending.length) { say('현재 선택한 사진 외에 ' + Math.max(0,2-savedCount-pending.length) + '장을 더 선택할 수 있습니다.',true); return; }
   if (!files.length) return;
   const previousCount=pending.length;
-  busy = true; phase='compress'; $('readable').checked=false; updateControls(); say('사진을 자동 압축하는 중… 원본은 변경하지 않습니다.');
-  try { for (let index=0;index<files.length;index++) { say('사진 '+(index+1)+' / '+files.length+'장 압축 중… 원본은 변경하지 않습니다.'); pending.push(await compress(files[index])); }
-    renderPending(); say('아직 저장되지 않았습니다. 미리보기를 확인하고 저장 버튼을 눌러주세요.');
+  busy=true;phase='compress';$('readable').checked=false;updateControls();say('사진을 준비하는 중…');
+  try{for(let index=0;index<files.length;index++){say('사진 '+(index+1)+' / '+files.length+'장 준비 중…');pending.push(await compress(files[index]));}
+    renderPending();say('사진을 확인한 뒤 등록해 주세요.');
   } catch(error) { pending.splice(previousCount).forEach(p=>URL.revokeObjectURL(p.url)); renderPending(); handle(error); } finally { busy=false; phase=''; updateControls(); }
 }
 $('files').onchange=()=>selectFiles(Array.from($('files').files||[]));
@@ -225,7 +225,7 @@ $('upload').onclick = async () => {
     if(result.catalogPending)catalogPending=true;
     if (!result.alreadySaved) newlySaved++;
     completed++; $('progress').value=completed;
-  } clearPending(); await refresh('새 사진 '+newlySaved+'장 저장을 확인했습니다. 이미 저장된 동일 사진은 중복으로 추가하지 않았습니다.'+(catalogPending?' 관리자 집계는 동기화 대기 중입니다. 사진 자체는 저장되었습니다.':''));
+  }clearPending();await refresh((newlySaved?newlySaved+'장을 등록했습니다.':'이미 등록된 사진입니다.')+(catalogPending?' 관리자 목록 반영은 잠시 늦어질 수 있습니다.':''));
   } catch(error) {
     // Keep only unsaved images; server hash checks also make ambiguous retries idempotent.
     pending.splice(0,completed).forEach(p=>URL.revokeObjectURL(p.url)); renderPending();
@@ -244,29 +244,39 @@ function renderAddressChoices(){
   const p=addressData()[$('province').value]||{},d=p[$('district').value]||{},records=d[$('dong').value]||[],q=$('addressSearch').value.trim().toLowerCase();
   const matches=records.filter(record=>record[2].toLowerCase().includes(q));
   $('addressChoices').replaceChildren(...matches.slice(0,100).map(record=>{const button=document.createElement('button');button.type='button';button.textContent=record[2];button.onclick=()=>chooseAddress(record);return button;}));
-  if(matches.length>100){const note=document.createElement('p');note.className='small';note.textContent=matches.length+'개 중 100개 표시 · 검색어로 좁혀주세요.';$('addressChoices').append(note);}
+  if($('dong').value&&!matches.length){const note=document.createElement('p');note.className='small';note.textContent='찾는 주소가 없습니다. 검색어나 지역을 바꿔보세요.';$('addressChoices').append(note);}
+  if(matches.length>100){const note=document.createElement('p');note.className='small';note.textContent=matches.length+'개 중 100개 표시 · 검색어를 더 입력해 주세요.';$('addressChoices').append(note);}
+}
+function ensureFieldMap(){
+  if(!window.L)return;
+  if(!fieldMap){fieldMap=window.L.map('fieldMap',{preferCanvas:true}).setView([36.4,127.9],7);window.L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',{subdomains:['0','1','2','3'],maxZoom:20,attribution:'© Google Maps'}).addTo(fieldMap);}
+  fieldMap.invalidateSize();if(currentPoint)showPoint(currentPoint);
 }
 function showPoint(record){
+  currentPoint=record;
   if(!window.L || !fieldMap || !record)return;
   const lat=Number(record[0]),lon=Number(record[1]);
   if(fieldMarker){fieldMarker.remove();fieldMarker=null;}
   if(Number.isFinite(lat)&&Number.isFinite(lon)&&lat>=33&&lat<=39&&lon>=124&&lon<=132){
     fieldMap.setView([lat,lon],17);fieldMarker=window.L.marker([lat,lon]).addTo(fieldMap);
-    const label=document.createElement('span');label.textContent=record[2];fieldMarker.bindPopup(label).openPopup();
+    const label=document.createElement('span');label.textContent=record[2];fieldMarker.bindPopup(label,{minWidth:160,maxWidth:260}).openPopup();
   }
 }
 async function chooseAddress(record){
   if(busy)return;
   if(pending.length){say('선택 사진을 저장하거나 선택 취소한 뒤 주소를 바꿔주세요.',true);return;}
-  currentAddress=record[2];$('address').textContent=currentAddress;$('addressSelector').open=false;showPoint(record);busy=true;updateControls();
-  try{await refresh('선택한 주소가 실제 방문 주소인지 확인하고 현장 촬영을 눌러주세요.');}catch(error){handle(error);}finally{busy=false;updateControls();}
+  currentAddress=record[2];$('address').textContent=currentAddress;$('addressSelector').open=false;$('pickAddress').hidden=true;showPoint(record);busy=true;updateControls();
+  if(window.google&&google.script&&google.script.history)google.script.history.replace({},{address:currentAddress,build:INITIAL.version||'v4'},'');
+  try{await refresh();}catch(error){handle(error);}finally{busy=false;updateControls();if(!$('cameraButton').disabled)$('cameraButton').focus();}
 }
 function initPicker(){
   const data=addressData();setOptions('province',Object.keys(data));
-  if(window.L){fieldMap=window.L.map('fieldMap',{preferCanvas:true}).setView([36.4,127.9],7);window.L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',{subdomains:['0','1','2','3'],maxZoom:20,attribution:'© Google Maps'}).addTo(fieldMap);}
-  $('province').onchange=()=>{setOptions('district',Object.keys(data[$('province').value]||{}));setOptions('dong',[]);renderAddressChoices();};
-  $('district').onchange=()=>{setOptions('dong',Object.keys((data[$('province').value]||{})[$('district').value]||{}));renderAddressChoices();};
-  $('dong').onchange=renderAddressChoices;$('addressSearch').oninput=renderAddressChoices;
+  $('pickAddress').hidden=!!currentAddress;
+  $('mapDetails').ontoggle=()=>{if($('mapDetails').open)ensureFieldMap();};
+  $('changeAddress').onclick=()=>{if(busy||pending.length)return;$('pickAddress').hidden=!$('pickAddress').hidden;$('addressSelector').open=!$('pickAddress').hidden;if(!$('pickAddress').hidden)$('province').focus();};
+  $('province').onchange=()=>{setOptions('district',Object.keys(data[$('province').value]||{}));setOptions('dong',[]);$('addressSearch').value='';renderAddressChoices();updateControls();};
+  $('district').onchange=()=>{setOptions('dong',Object.keys((data[$('province').value]||{})[$('district').value]||{}));$('addressSearch').value='';renderAddressChoices();updateControls();};
+  $('dong').onchange=()=>{$('addressSearch').value='';renderAddressChoices();updateControls();};$('addressSearch').oninput=renderAddressChoices;
   if(currentAddress)Object.keys(data).some(p=>Object.keys(data[p]).some(g=>Object.keys(data[p][g]).some(d=>data[p][g][d].some(record=>{
     if(record[2]!==currentAddress)return false;
     $('province').value=p;$('province').onchange();$('district').value=g;$('district').onchange();$('dong').value=d;renderAddressChoices();showPoint(record);$('addressSelector').open=false;return true;

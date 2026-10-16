@@ -14,7 +14,7 @@ function harness({blockedStorage = false, reply,storedKey} = {}) {
     return {textContent:'',value:'',checked:false,disabled:false,hidden:false,children:[],style:{},
       classList:{toggle(){}},append(...values){this.children.push(...values);},appendChild(value){this.children.push(value);},
       prepend(value){this.children.unshift(value);},replaceChildren(...values){this.children=values;},
-      setAttribute(){},removeAttribute(){},remove(){},close(){this.open=false;},showModal(){this.open=true;},reportValidity(){return !!this.value;}};
+      focus(){},setAttribute(){},removeAttribute(){},remove(){},close(){this.open=false;},showModal(){this.open=true;},reportValidity(){return !!this.value;}};
   }
   const get = id => {if(!elements.has(id))elements.set(id,element());return elements.get(id);};
   get('initial').textContent=JSON.stringify({address:'서울특별시 영등포구 당산동 1가 1',maxBytes:200000,maxEdge:1600});
@@ -34,6 +34,12 @@ function harness({blockedStorage = false, reply,storedKey} = {}) {
   vm.runInContext(script,context);
   return {context,get,local,tab,calls,delays,revoked,listeners,run:code=>vm.runInContext(code,context)};
 }
+
+test('every directly referenced control exists in the delivered HTML',()=>{
+  const ids=new Set([...html.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]));
+  assert.equal(ids.size,[...html.matchAll(/\bid="([^"]+)"/g)].length,'HTML IDs must be unique');
+  for(const match of script.matchAll(/\$\('([^']+)'\)/g))assert.ok(ids.has(match[1]),'missing control: '+match[1]);
+});
 
 test('blocked browser storage permits viewing but does not create a disposable upload/delete identity',async()=>{
   const h=harness({blockedStorage:true});
@@ -101,7 +107,7 @@ test('a stale status response cannot replace a newly selected address',async()=>
 test('only server-marked own photos have a delete control; user confirmation precedes deletion',async()=>{
   const h=harness({reply:()=>({ok:true,data:{ready:true,totalCount:0,photos:[],quota:{canUpload:true}}})});
   const other=h.run("photoCard({id:'a'.repeat(64),slot:1,bytes:100,canDelete:false})");
-  assert.equal(other.children.some(c=>c.textContent==='내가 올린 사진 삭제'),false);
+  assert.equal(other.children.some(c=>c.textContent==='내 사진 삭제'),false);
   const own=h.run("photoCard({id:'a'.repeat(64),slot:1,bytes:100,canDelete:true})");
   const remove=own.children.at(-2),confirmation=own.children.at(-1);
   remove.onclick();assert.equal(h.calls.length,0);assert.equal(confirmation.hidden,false);
@@ -121,4 +127,32 @@ test('timestamp footer preserves the whole original and distinguishes device tim
   assert.equal(texts[1][0],'방문일(직접 입력): 2026-10-15');
   assert.ok(texts.some(row=>row[0].includes('당산동1가 256-119')));
   assert.ok(texts.every(row=>row[2]>1067),'footer must not cover original pixels');
+});
+
+test('upload actions appear only after selection, and changing address cannot discard pending photos',()=>{
+  const h=harness();h.run('canUpload=true;updateControls()');
+  assert.equal(h.get('saveBar').hidden,true);assert.equal(h.get('reviewBlock').hidden,true);
+  h.run("pending=[{url:'one',blob:{size:100}}];updateControls()");
+  assert.equal(h.get('saveBar').hidden,false);assert.equal(h.get('reviewBlock').hidden,false);assert.equal(h.get('changeAddress').disabled,true);
+  h.run('clearPending()');assert.equal(h.get('saveBar').hidden,true);assert.equal(h.get('changeAddress').disabled,false);
+});
+test('address picker is folded for a supplied address and the map is initialized only on demand',()=>{
+  const h=harness();let created=0;
+  h.context.window.ADDR_DATA={서울:{영등포구:{당산동:[[37,127,'서울특별시 영등포구 당산동 1가 1']]}}};
+  h.context.window.L={map:()=>{created++;return {setView(){return this;},invalidateSize(){}};},tileLayer:()=>({addTo(){}}),marker:()=>({remove(){},addTo(){return this;},bindPopup(){return this;},openPopup(){return this;}})};
+  h.run('initPicker()');assert.equal(created,0);assert.equal(h.get('pickAddress').hidden,true);
+  h.get('mapDetails').open=true;h.get('mapDetails').ontoggle();assert.equal(created,1);
+  h.get('mapDetails').ontoggle();assert.equal(created,1,'reopening must reuse the map');
+});
+
+test('changing address keeps a reloadable link without including the browser deletion key',async()=>{
+  const h=harness({reply:()=>({ok:true,data:{ready:true,totalCount:0,photos:[],quota:{canUpload:true}}})});
+  let updated;
+  h.context.google.script.history={replace:(state,params,fragment)=>{updated={state,params,fragment};}};
+  await h.run("chooseAddress([37,127,'서울특별시 영등포구 당산동1가 14-2'])");
+  assert.equal(h.get('address').textContent,'서울특별시 영등포구 당산동1가 14-2');
+  assert.equal(updated.params.address,h.get('address').textContent);
+  assert.deepEqual(Object.keys(updated.params).sort(),['address','build']);
+  assert.ok(!JSON.stringify(updated).includes(h.run('deviceKey')));
+  assert.equal(h.get('pickAddress').hidden,true);
 });

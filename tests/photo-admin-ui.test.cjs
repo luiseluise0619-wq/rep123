@@ -4,7 +4,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const vm=require('node:vm');
 const html=fs.readFileSync(path.join(__dirname,'../photo-backend/Admin.html'),'utf8');
-const script=html.match(/<script>\s*('use strict';[\s\S]*?)<\/script>/)[1].replace('refresh().catch(handle);','');
+const script=html.match(/<script>\s*('use strict';[\s\S]*?)<\/script>/)[1].replace('openAdmin().catch(handle);','');
 function harness(reply=()=>({ok:true,data:{}})){
   const elements=new Map(),calls=[],local=new Map(),tab=new Map();
   function element(){return {textContent:'',value:'',checked:false,disabled:false,hidden:false,children:[],style:{},classList:{toggle(){}},
