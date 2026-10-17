@@ -112,10 +112,17 @@ async function encode(blob){return new Promise((resolve,reject)=>{const reader=n
 async function upload(){await withBusy(async()=>{
   if(!pending.length||pending.some(photo=>!photo.confirmed))throw Error('사진마다 ‘확인’을 누른 뒤 전송해 주세요.');
   if(!$('publicConsent').checked)throw Error('공개 등록 안내에 체크해 주세요.');sending=true;stopCamera();let saved=0;
-  try{while(pending.length){const photo=pending[0];$('saveProgress').textContent=(saved+1)+'번째 사진 처리 중…';say('기존 저장 여부를 먼저 확인하는 중…');
-    // Resolve a previous ambiguous reply before replaying any mutation.
-    const receipt=await rpc('getPublicUploadReceipt',deviceKey,address,photo.hash);
-    if(!receipt.saved){say('사진을 저장하는 중… 응답이 늦어지면 저장 상태를 다시 확인합니다.');await rpc('uploadPublicPhoto',deviceKey,address,{base64:await encode(photo.blob),visitDate:photo.visitDate,confirmReadable:true,publicShare:true,captureTicket:photo.ticket,capturedAt:photo.capturedAt});}
+  try{while(pending.length){const photo=pending[0];$('saveProgress').textContent=(saved+1)+'번째 사진 처리 중…';
+    // A fresh upload is already idempotent on the server. Check a receipt only after an uncertain reply.
+    let alreadySaved=false;
+    if(photo.uncertain){say('앞선 등록 여부를 확인하는 중…');alreadySaved=(await rpc('getPublicUploadReceipt',deviceKey,address,photo.hash)).saved;}
+    if(!alreadySaved){say('사진을 저장하는 중…');try{
+      await rpc('uploadPublicPhoto',deviceKey,address,{base64:await encode(photo.blob),visitDate:photo.visitDate,confirmReadable:true,publicShare:true,captureTicket:photo.ticket,capturedAt:photo.capturedAt});
+    }catch(error){if(['TIMEOUT','CONNECTION','UPLOAD','VERIFY'].includes(error.code)){
+      photo.uncertain=true;say('저장 응답을 확인하는 중…');
+      try{alreadySaved=(await rpc('getPublicUploadReceipt',deviceKey,address,photo.hash)).saved;}catch(ignored){}
+      if(!alreadySaved)throw error;
+    }else throw error;}}
     pending.shift();URL.revokeObjectURL(photo.url);saved++;renderPending();
   }singlePhotoMode=false;await refresh();say(saved+'장을 등록했습니다.');
   }catch(error){singlePhotoMode=!!pending.length;try{await refresh();}catch(ignored){}throw error;}finally{sending=false;$('saveProgress').textContent='';}

@@ -75,8 +75,8 @@
 </dialog>
 
 <script src="./data-meta.js?v=20261015-admin"></script>
-<script src="./addresses.js?v=20261016-followup35"></script>
-<script src="./coordinate-review.js?v=20261016-followup35"></script>
+<script src="./addresses.js?v=20261017-followup28"></script>
+<script src="./coordinate-review.js?v=20261017-followup28"></script>
 <script src="./address-search.js?v=20261016-ux"></script>
 <script src="./photo-config.js?v=20261016-simple-ui"></script>
 <script>
@@ -116,7 +116,7 @@ function countSido(s){ var n=0; for(var g in s) n+=countGugun(s[g]); return n; }
 function hasCoordinates(p){ return p[0]!=null && p[1]!=null && Number.isFinite(p[0]) && Number.isFinite(p[1]) && Math.abs(p[0])<=90 && Math.abs(p[1])<=180; }
 function coordinateReview(p){var records=(window.COORD_REVIEW||{}).records||{};return Object.prototype.hasOwnProperty.call(records,p[2])?records[p[2]]:null;}
 function coordinateNeedsReview(p){var review=coordinateReview(p);return !p[4]||!!(review&&review.status!=='verified');}
-function coordinateLabel(p){var review=coordinateReview(p);if(!review||review.status==='verified')return '';return review.status==='address-mismatch'?'주소 불일치':review.status==='representative-only'?'단지 대표 위치 · 개별 동 미확인':review.status==='insufficient-address'?'번지·건물 정보 없음':'위치 미확인';}
+function coordinateLabel(p){var review=coordinateReview(p);if(!review||review.status==='verified')return '';return review.status==='address-mismatch'?'주소 불일치':review.status==='representative-only'?'건물·필지 대표 위치 · 상세 위치 미확인':review.status==='insufficient-address'?'번지·건물 정보 없음':'위치 미확인';}
 // collect*: 한 구/시도 안의 모든 주소를 하나의 목록으로 합침(지도 범위 맞출 때 사용)
 function collectGugun(g){ var out=[]; for(var d in g) out=out.concat(g[d]); return out; }
 function collectSido(s){ var out=[]; for(var g in s) out=out.concat(collectGugun(s[g])); return out; }
@@ -244,7 +244,7 @@ function openPopup(marker, rec){
   var cnt = rec[3] || 1;
   var approx = coordinateNeedsReview(rec),review=coordinateReview(rec),reviewHtml='';
   if(review&&review.status!=='verified'){
-    var label=review.status==='address-mismatch'?'원주소와 지도 검색 결과 불일치':review.status==='representative-only'?'단지 대표 위치 · 개별 동·호수 미확인':review.status==='insufficient-address'?'번지·건물 정보 없음 · 정확한 위치 확인 불가':'정확한 위치 미확인';
+    var label=review.status==='address-mismatch'?'원주소와 지도 검색 결과 불일치':review.status==='representative-only'?'건물·필지 대표 위치 · 상세 위치 미확인':review.status==='insufficient-address'?'번지·건물 정보 없음 · 정확한 위치 확인 불가':'정확한 위치 미확인';
     reviewHtml='<div class="popup-warn'+(review.status==='address-mismatch'?' mismatch':'')+'">'+esc(label)+'</div>'+(review.matchedAddress?'<div class="popup-sub">지도 검색 결과: '+esc(review.matchedAddress)+'</div>':'')+'<div class="popup-sub">'+esc(review.note||'원주소의 위치가 확인되지 않아 기존 근사 좌표를 유지했습니다.')+'</div>';
   }else if(review){reviewHtml='<div class="popup-sub">지도에서 건물·지번 위치 대조 완료 · 층·호수의 실제 방문 위치를 보증하지 않습니다.</div>';}
   var entry = recordByPoint.get(rec);

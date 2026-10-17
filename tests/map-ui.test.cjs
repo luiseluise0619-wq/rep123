@@ -66,9 +66,9 @@ test('mismatched addresses show a permanent marker label and escaped source-resu
 });
 test('complex representative points remain warned on the marker and in its popup',()=>{
  const h=harness(),p=h.point;p[4]=0;h.ui.window.COORD_REVIEW={records:{[p[2]]:{status:'representative-only',matchedAddress:'동탄영천로 150',note:'S01동은 미확정'}}};
- assert.equal(h.ui.coordinateNeedsReview(p),true);assert.equal(h.ui.coordinateLabel(p),'단지 대표 위치 · 개별 동 미확인');h.ui.appendAddrRow(p);
- assert.match(h.get('list').children[0].children[1].innerHTML,/단지 대표 위치/);assert.ok(h.get('list').children[0].children[2].href);
- h.ui.openPopup({bindPopup(content){assert.match(content,/단지 대표 위치 · 개별 동·호수 미확인/);assert.match(content,/S01동은 미확정/);return {openPopup(){}};}},p);
+ assert.equal(h.ui.coordinateNeedsReview(p),true);assert.equal(h.ui.coordinateLabel(p),'건물·필지 대표 위치 · 상세 위치 미확인');h.ui.appendAddrRow(p);
+ assert.match(h.get('list').children[0].children[1].innerHTML,/건물·필지 대표 위치/);assert.ok(h.get('list').children[0].children[2].href);
+ h.ui.openPopup({bindPopup(content){assert.match(content,/건물·필지 대표 위치 · 상세 위치 미확인/);assert.match(content,/S01동은 미확정/);return {openPopup(){}};}},p);
 });
 test('region drilldown keeps weighted business counts and keyboard-accessible breadcrumb buttons',()=>{
  const h=harness();h.ui.renderSido();const region=h.get('list').children.find(r=>r.attributes.role==='button');

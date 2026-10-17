@@ -50,11 +50,12 @@ test('camera flow has no GPS UI or permission gate and the photo route blocks ge
  const policy=routes.headers.find(r=>r.source==='/photo').headers.find(h=>h.key==='Permissions-Policy').value;assert.match(policy,/geolocation=\(\)/);
 });
 
-function captureHarness({failUploadAt=0}={}){
+function captureHarness({failUploadAt=0,uncertainSavedAt=0}={}){
  const h=harness(),calls=[];let saved=0,stops=0,attempts=0;
  const remote={postMessage:message=>{calls.push(message.name);let result;
   if(message.name==='uploadPublicPhoto'&&++attempts===failUploadAt)result={ok:false,code:'STORAGE_ERROR',message:'모의 저장 실패'};
-  else {const data=message.name==='getPublicUploadReceipt'?{saved:false}:message.name==='uploadPublicPhoto'?(saved++,{}):message.name==='getPublicStatus'?{ready:true,totalCount:saved,photos:[],quota:{canUpload:true}}:{ticket:'test-only-ticket'};result={ok:true,data};}
+  else if(message.name==='uploadPublicPhoto'&&attempts===uncertainSavedAt){saved++;result={ok:false,code:'CONNECTION',message:'응답 유실'};}
+  else {const data=message.name==='getPublicUploadReceipt'?{saved:saved>0}:message.name==='uploadPublicPhoto'?(saved++,{}):message.name==='getPublicStatus'?{ready:true,totalCount:saved,photos:[],quota:{canUpload:true}}:{ticket:'test-only-ticket'};result={ok:true,data};}
   queueMicrotask(()=>h.events.message({origin:'https://safe-script.googleusercontent.com',source:remote,data:{channel:h.api.channel,type:'reply',id:message.id,result}}));}};
  h.events.message({origin:'https://safe-script.googleusercontent.com',source:remote,data:{channel:h.api.channel,type:'ready'}});
  h.api.setReady();h.get('cameraVideo').videoWidth=100;h.get('cameraVideo').videoHeight=100;
@@ -83,6 +84,15 @@ test('combined review actions open the next camera and send both photos without 
  assert.equal(h.get('upload').textContent,'확인하고 전송');await h.get('upload').onclick();
  assert.equal(h.api.photoState().pending.length,0);assert.equal(h.get('count').textContent,'2 / 2');
  assert.equal(h.calls.filter(name=>name==='uploadPublicPhoto').length,2);assert.equal(h.api.photoState().stream,null);
+ assert.equal(h.calls.filter(name=>name==='getPublicUploadReceipt').length,0,'normal registration skips the redundant receipt round trip');
+});
+
+test('uncertain upload reply checks the receipt and does not submit the same photo twice',async()=>{
+ const h=captureHarness({uncertainSavedAt:1});await h.api.openCamera();await h.api.capture();
+ h.get('singlePhotoToggle').onclick();h.get('publicConsent').checked=true;await h.get('upload').onclick();
+ assert.equal(h.api.photoState().pending.length,0);assert.equal(h.get('count').textContent,'1 / 2');
+ assert.equal(h.calls.filter(name=>name==='uploadPublicPhoto').length,1);
+ assert.equal(h.calls.filter(name=>name==='getPublicUploadReceipt').length,1);
 });
 
 test('an unconfirmed photo cannot be uploaded or skipped, and retake preserves an earlier confirmed photo',async()=>{
