@@ -35,7 +35,9 @@ async function mybox(path, method = 'GET', body) {
     throw failure('MYBOX_AUTH', 502, 'MYBOX 토큰 인증 실패(401). Vercel의 MYBOX_TOKEN 값과 유효기간을 확인하고 재배포해 주세요.');
   if (!response.ok) throw failure('MYBOX', 502, 'MYBOX 요청이 실패했습니다. HTTP ' + response.status);
   if (response.status === 204) return {};
-  try { return await response.json(); }
+  const raw = await response.text();
+  if (!raw) return {};
+  try { return JSON.parse(raw); }
   catch { throw failure('MYBOX_RESPONSE', 502, 'MYBOX 응답을 읽지 못했습니다.'); }
 }
 async function items(parent = '') {

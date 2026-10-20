@@ -4,6 +4,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const handler = require('../web/api/mybox-direct-probe.js');
+const {fakeJpeg} = require('./helpers/photo-harness.cjs');
+const {createService,validJpeg} = require('../web/api/_lib/photo-direct-core.cjs');
 
 function response() {
   return {statusCode:200,headers:{},body:null,
@@ -70,7 +72,7 @@ test('authenticated probe reserves a one-use URL and cleans only its diagnostic 
       assert.equal(options.method,'DELETE');deleted=true;
       return {ok:true,status:204};
     } else throw Error('unexpected path '+pathname);
-    return {ok:true,status:pathname==='/v1/drive/files'?201:200,json:async()=>body};
+    return {ok:true,status:pathname==='/v1/drive/files'?201:200,text:async()=>JSON.stringify(body)};
   };
   try {
     const no=response();await handler(request('reserve','wrong-key',{size:123}),no);
@@ -112,7 +114,7 @@ test('batch probe reserves distinct URLs and cleans only named diagnostic files'
       const name=[...files.entries()].find(([,id])=>pathname.endsWith('/'+id))?.[0];
       assert.ok(name);files.delete(name);return {ok:true,status:204};
     }else throw Error('unexpected path '+pathname);
-    return {ok:true,status,json:async()=>body};
+    return {ok:true,status,text:async()=>JSON.stringify(body)};
   };
   try{
     const bad=response();await handler(request('reserveBatch',ACCESS,{size:123,count:101}),bad);
@@ -144,14 +146,14 @@ test('isolated lock probe requires one MYBOX folder creation to conflict and cle
   const created=new Map();let next=0,deleted=0;
   global.fetch=async(url,options)=>{
     const pathname=new URL(url).pathname,method=options.method;
-    if(pathname==='/v1/drive/resources')return {ok:true,status:200,json:async()=>({resources:[{name:'연결점검_현장방문아님',type:'folder',resourceId:'root'}]})};
-    if(pathname==='/v1/drive/folders/root/resources')return {ok:true,status:200,json:async()=>({resources:[{name:'직접전송_잠금점검',type:'folder',resourceId:'parent'}]})};
-    if(pathname==='/v1/drive/folders/parent/resources')return {ok:true,status:200,json:async()=>({resources:[...created.entries()].map(([name,id])=>({name,type:'folder',resourceId:id}))})};
+    if(pathname==='/v1/drive/resources')return {ok:true,status:200,text:async()=>JSON.stringify({resources:[{name:'연결점검_현장방문아님',type:'folder',resourceId:'root'}]})};
+    if(pathname==='/v1/drive/folders/root/resources')return {ok:true,status:200,text:async()=>JSON.stringify({resources:[{name:'직접전송_잠금점검',type:'folder',resourceId:'parent'}]})};
+    if(pathname==='/v1/drive/folders/parent/resources')return {ok:true,status:200,text:async()=>JSON.stringify({resources:[...created.entries()].map(([name,id])=>({name,type:'folder',resourceId:id}))})};
     if(pathname==='/v1/drive/folders'&&method==='POST'){
       const body=JSON.parse(options.body);assert.equal(body.parentId,'parent');
       if(created.has(body.folderName))return {ok:false,status:409};
       const id='test'+(++next);created.set(body.folderName,id);
-      return {ok:true,status:201,json:async()=>({resourceId:id})};
+      return {ok:true,status:201,text:async()=>JSON.stringify({resourceId:id})};
     }
     if(pathname.startsWith('/v1/drive/resources/test')&&method==='DELETE'){
       for(const [name,id] of created)if(pathname.endsWith('/'+id))created.delete(name);
@@ -162,6 +164,63 @@ test('isolated lock probe requires one MYBOX folder creation to conflict and cle
   try{const res=response();await handler(request('lockCheck',ACCESS),res);
     assert.equal(res.statusCode,200);assert.equal(res.body.atomic,true);
     assert.deepEqual(res.body.statuses.sort(),[201,409]);assert.equal(deleted,1);assert.equal(created.size,0);
+  }finally{
+    if(oldToken===undefined)delete process.env.MYBOX_TOKEN;else process.env.MYBOX_TOKEN=oldToken;
+    if(oldKey===undefined)delete process.env.MYBOX_DIRECT_PROBE_KEY;else process.env.MYBOX_DIRECT_PROBE_KEY=oldKey;
+    global.fetch=oldFetch;
+  }
+});
+
+test('pipeline probe accepts MYBOX move HTTP 200 with an empty body and cleans test files',async()=>{
+  const oldToken=process.env.MYBOX_TOKEN,oldKey=process.env.MYBOX_DIRECT_PROBE_KEY,oldFetch=global.fetch;
+  process.env.MYBOX_TOKEN='fake-private-test-token';process.env.MYBOX_DIRECT_PROBE_KEY=ACCESS;
+  const name='DIRECT_BROWSER_TEST_NOT_A_FIELD_VISIT__12345678-1234-1234-1234-123456789abc.jpg';
+  const files=new Map([['photo',{resourceId:'photo',parentId:'root',name,type:'file',bytes:fakeJpeg()}]]);
+  let folder=false,deleted=0,moved=false;const seen=[];
+  const list=parent=>[...files.values()].filter(file=>file.parentId===parent)
+    .map(file=>({resourceId:file.resourceId,parentId:file.parentId,name:file.name,type:'file',size:file.bytes.length}));
+  global.fetch=async(url,options={})=>{
+    const parsed=new URL(url),pathname=parsed.pathname,method=options.method||'GET';seen.push(method+' '+pathname);
+    if(parsed.hostname==='storage.test'){
+      const id=parsed.searchParams.get('id');
+      if(pathname.endsWith('/download'))return new Response(files.get(id).bytes);
+      if(pathname.endsWith('/upload')){
+        const bytes=Buffer.from(await options.body.get('Filedata').arrayBuffer());
+        files.set('index',{resourceId:'index',parentId:'dest',name:parsed.searchParams.get('name'),type:'file',bytes});
+        return new Response('',{status:201});
+      }
+    }
+    if(pathname==='/v1/drive/resources')return Response.json({resources:[{name:'연결점검_현장방문아님',type:'folder',resourceId:'root'}]});
+    if(pathname==='/v1/drive/folders/root/resources')return Response.json({resources:[
+      ...(folder?[{name:'직접전송_저장단계점검',type:'folder',resourceId:'dest'}]:[]),...list('root')]});
+    if(pathname==='/v1/drive/folders/dest/resources')return Response.json({resources:list('dest')});
+    if(pathname==='/v1/drive/folders'&&method==='POST'){folder=true;return Response.json({resourceId:'dest'},{status:201});}
+    if(pathname==='/v1/drive/files/photo/download'||pathname==='/v1/drive/files/index/download')
+      return Response.json({downloadUrl:'https://storage.test/v1/storage/download?id='+pathname.split('/')[4]});
+    if(pathname==='/v1/drive/resources/photo/rename'&&method==='POST'){
+      files.get('photo').name=JSON.parse(options.body).name;
+      return Response.json({name:files.get('photo').name});
+    }
+    if(pathname==='/v1/drive/resources/photo/move'&&method==='POST'){
+      assert.equal(JSON.parse(options.body).parentId,'dest');files.get('photo').parentId='dest';moved=true;
+      return {ok:true,status:200,text:async()=>''};
+    }
+    if(pathname==='/v1/drive/files'&&method==='POST'){
+      const body=JSON.parse(options.body);
+      return Response.json({uploadUrl:'https://storage.test/v1/storage/upload?id=index&name='+encodeURIComponent(body.fileName)},{status:201});
+    }
+    if(pathname==='/v1/drive/resources/photo'||pathname==='/v1/drive/resources/index'){
+      assert.equal(method,'DELETE');files.delete(pathname.split('/')[4]);deleted++;return new Response(null,{status:204});
+    }
+    throw Error('unexpected path '+pathname);
+  };
+  try{
+    const bytes=await createService({token:'fake-private-test-token'}).readBytes({resourceId:'photo',size:fakeJpeg().length});
+    assert.doesNotThrow(()=>validJpeg(bytes));
+    const res=response();await handler(request('pipelineCheck',ACCESS,{name}),res);
+    assert.equal(res.statusCode,200,JSON.stringify({body:res.body,seen}));
+    assert.equal(res.body.passed,true);assert.equal(res.body.indexVerified,true);
+    assert.equal(res.body.trashed,2);assert.equal(deleted,2);assert.equal(moved,true);assert.equal(files.size,0);
   }finally{
     if(oldToken===undefined)delete process.env.MYBOX_TOKEN;else process.env.MYBOX_TOKEN=oldToken;
     if(oldKey===undefined)delete process.env.MYBOX_DIRECT_PROBE_KEY;else process.env.MYBOX_DIRECT_PROBE_KEY=oldKey;
