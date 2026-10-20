@@ -14,7 +14,7 @@ function response() {
 function request(action,key,extra={}) {
   return {method:'POST',headers:{'x-probe-key':key},body:{action,...extra}};
 }
-const ACCESS='test-probe-only-secret-more-than-32-characters';
+const ACCESS='test-only-key-16';
 test('diagnostic page script parses and does not embed account credentials',()=>{
   const html=fs.readFileSync(path.join(__dirname,'../web/direct-upload-probe.html'),'utf8');
   const script=html.match(/<script>([\s\S]*?)<\/script>/);
@@ -60,6 +60,10 @@ test('authenticated probe reserves a one-use URL and cleans only its diagnostic 
   try {
     const no=response();await handler(request('reserve','wrong-key',{size:123}),no);
     assert.equal(no.statusCode,403);
+    process.env.MYBOX_DIRECT_PROBE_KEY='short-key';
+    const short=response();await handler(request('reserve','short-key',{size:123}),short);
+    assert.equal(short.statusCode,403);
+    process.env.MYBOX_DIRECT_PROBE_KEY=ACCESS;
     const reserve=response();await handler(request('reserve',ACCESS,{size:123}),reserve);
     assert.equal(reserve.statusCode,200);assert.match(reserve.body.name,/^DIRECT_BROWSER_TEST_NOT_A_FIELD_VISIT__/);
     assert.equal(reserve.body.uploadUrl,'https://storage.example.net/v1/storage/upload?token=one-use');

@@ -13,7 +13,7 @@ function failure(code, status, message) {
   return error;
 }
 function authorized(value, expected) {
-  if (typeof value !== 'string' || typeof expected !== 'string' || expected.length < 32) return false;
+  if (typeof value !== 'string' || typeof expected !== 'string' || expected.length < 16) return false;
   const a = Buffer.from(value), b = Buffer.from(expected);
   return a.length === b.length && timingSafeEqual(a, b);
 }
