@@ -34,7 +34,6 @@ function publicFile_(address,photoId){
 function getPublicPhoto(address,photoId){
   return rpc_(function(){requirePublic_();var file=publicFile_(address,photoId).file;
     if(!file)fail_('NOT_FOUND','삭제되었거나 저장된 사진이 없습니다.');
-    takeBudget_('reads',PHOTO_LIMITS_.dailyReads,true);
     if(Number(file.size)>PHOTO_LIMITS_.maxBytes)fail_('SIZE','허용된 사진 크기를 초과했습니다.');
     var target=api_('/drive/files/'+encodeURIComponent(file.resourceId)+'/download');
     var response=fetch_(storageUrl_(target.downloadUrl,'download'),{muteHttpExceptions:true,followRedirects:false});
@@ -56,7 +55,7 @@ function deletePhoto(session,deviceKey,address,photoId){
     var actor=admin||deviceActor_(deviceKey,true),target=publicFile_(address,photoId),file=target.file;
     if(!file)return {deleted:true,alreadyDeleted:true,catalogPending:pendingCatalog_().some(function(p){return p.address===address;})};
     if(!canSeePhoto_(actor,file))fail_('FORBIDDEN','관리자 또는 사진을 올린 브라우저만 삭제할 수 있습니다.');
-    takeBudget_('deletes',2000,true);markCatalogPending_(address);
+    markCatalogPending_(address);
     // Only a verified JPEG inside this exact source-address folder can be moved to Trash.
     api_('/drive/resources/'+encodeURIComponent(file.resourceId),'delete');
     var after=photoFiles_(target.folder);

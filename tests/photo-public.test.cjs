@@ -62,7 +62,7 @@ test('ambiguous deletion is not misreported as reversible rollback; retry and ca
   for(let i=0;i<25;i++)h.app.syncAdminCatalog(h.session,false);
   const result=h.app.getAdminOverview(h.session).data;assert.equal(result.photos,0);assert.equal(result.pending,0);
 });
-test('public feature gate and ordinary storage/daily safety limits remain closed when disabled/exhausted',()=>{
+test('public feature gate and storage ceiling remain closed when disabled/exhausted',()=>{
   const h=harness();h.app.PHOTO_LIMITS_={...h.app.PHOTO_LIMITS_,publicEnabled:false};
   assert.equal(h.app.getPublicStatus(ADDRESS,A).code,'CLOSED');assert.equal(h.app.uploadPublicPhoto(A,ADDRESS,photo()).code,'CLOSED');
   h.app.PHOTO_LIMITS_={...h.app.PHOTO_LIMITS_,publicEnabled:true};h.setUsed(24000000000);

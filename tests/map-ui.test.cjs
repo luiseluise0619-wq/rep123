@@ -4,7 +4,7 @@ const script=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map
 function harness(width=390){
  const elements=new Map(),events={},calls=[],timers=new Map();let seq=0;
  function element(tag='div'){
-  const classes=new Set(),listeners={},e={tagName:tag.toUpperCase(),children:[],attributes:{},hidden:false,open:false,textContent:'',value:'',innerHTML:'',style:{setProperty(k,v){this[k]=v;}},
+  const classes=new Set(),listeners={},e={tagName:tag.toUpperCase(),children:[],attributes:{},dataset:{},hidden:false,open:false,textContent:'',value:'',innerHTML:'',style:{setProperty(k,v){this[k]=v;}},
    classList:{add:c=>classes.add(c),remove:c=>classes.delete(c),contains:c=>classes.has(c),toggle(c,force){if(force===undefined)force=!classes.has(c);if(force)classes.add(c);else classes.delete(c);}},
    addEventListener:(name,fn)=>listeners[name]=fn,setAttribute(k,v){this.attributes[k]=v;},append(...nodes){this.children.push(...nodes);},appendChild(node){this.children.push(node);},replaceChildren(...nodes){this.children=nodes;},focus(){this.focused=true;},blur(){this.blurred=true;},showModal(){this.open=true;},close(){this.open=false;},contains:target=>target===e,
    getBoundingClientRect(){return {height:parseFloat(e.style.height)||400,right:416,bottom:84};},listeners};
@@ -16,13 +16,13 @@ function harness(width=390){
  const window={ADDR_DATA:source,ADDR_META:{},PHOTO_CONFIG:{webAppUrl:'https://script.google.com/macros/s/test/exec',build:'test'},innerWidth:width,innerHeight:844,addEventListener:(name,fn)=>{(events[name]??=[]).push(fn);},AddressSearch:require('../web/address-search.js')};
  const map={setView:(...args)=>calls.push(['setView',...args]),fitBounds:(...args)=>calls.push(['fitBounds',...args]),removeLayer:layer=>calls.push(['removeLayer',layer]),getBounds:()=>({contains:()=>true})};
  const marker={addTo:()=>marker,on:()=>marker,bindPopup(content,options){calls.push(['popup',content,options]);return marker;},openPopup:()=>marker};
- const L={divIcon:()=>({}),point:(x,y)=>({x,y}),latLngBounds:pts=>pts,marker:()=>marker};
- const sandbox={window,document:{getElementById:get,createElement:element},L,Map,Set,Number,Math,Date,navigator:{},setTimeout:fn=>{timers.set(++seq,fn);return seq;},clearTimeout:id=>timers.delete(id),alert:message=>calls.push(['alert',message])};
+ const L={divIcon:options=>options,point:(x,y)=>({x,y}),latLngBounds:pts=>pts,marker:()=>marker};
+ const sandbox={window,document:{getElementById:get,createElement:element,querySelectorAll:()=>[]},L,Map,Set,Number,Math,Date,navigator:{},setTimeout:fn=>{timers.set(++seq,fn);return seq;},clearTimeout:id=>timers.delete(id),alert:message=>calls.push(['alert',message])};
  vm.createContext(sandbox);vm.runInContext(script,sandbox);sandbox.map=map;sandbox.cluster={clearLayers(){},addLayers(){}};sandbox.buildIndex();
  return {ui:sandbox,get,events,calls,point,timers};
 }
 test('map uses the photo-page palette and keeps secondary actions inside the more menu',()=>{
- assert.match(html,/map-ui\.css\?v=20261016-simple-map/);assert.match(css,/--accent:#2563eb/);assert.doesNotMatch(css,/#EFEBE3|#E5007E|#FF6A00|animation:(?:spread|ripple)/i);
+ assert.match(html,/map-ui\.css\?v=20261020-progress/);assert.match(css,/--accent:#2563eb/);assert.doesNotMatch(css,/#EFEBE3|#E5007E|#FF6A00|animation:(?:spread|ripple)/i);
  const menu=html.slice(html.indexOf('<details class="map-menu"'),html.indexOf('</details>'));
  for(const token of ['duplicates.html','coordinate-review.html','dataInfoBtn','photoAdminLink','nApprox'])assert.ok(menu.includes(token));
  assert.match(menu,/지도에 표시된 숫자는 주소 수/);assert.match(html,/id="panelToggle"[^>]*aria-expanded="true"/);
@@ -55,6 +55,19 @@ test('coordinate warnings and missing coordinates remain explicit, without block
  assert.match(h.get('list').children[0].children[1].innerHTML,/좌표 확인필요/);assert.match(h.get('list').children[0].children[1].innerHTML,/행정동 미확정/);
  h.ui.openPopup({bindPopup(content){assert.match(content,/&lt;주소&gt;/);assert.match(content,/근사 좌표/);return {openPopup(){}};}},approx);
  h.ui.appendAddrRow([null,null,'좌표 없음',1,0]);const missing=h.get('list').children[1];missing.children[0].onclick();assert.equal(h.calls.at(-1)[0],'alert');assert.ok(missing.children[2].href);
+});
+test('two stored photos turn a verified address green while coordinate warnings remain visible',()=>{
+ const h=harness(),rec=h.ui.recordByPoint.get(h.point);
+ assert.match(h.ui.markerIcon(rec).html,/addr-dot/);
+ assert.doesNotMatch(h.ui.markerIcon(rec).html,/completed/);
+ h.ui.applyPhotoCount(h.point[2],2);
+ assert.match(h.ui.markerIcon(rec).html,/addr-dot completed/);
+ h.ui.appendAddrRow(h.point);
+ assert.equal(h.get('list').children[0].children[2].textContent,'등록 완료 · 사진 보기');
+ const warning=[37,127,'좌표 경고 주소',1,0,'','서울'];
+ h.ui.applyPhotoCount(warning[2],2);
+ assert.match(h.ui.markerIcon({p:warning,real:false}).html,/addr-dot approx completed/);
+ assert.match(css,/\.addr-dot\.completed\.approx/);
 });
 
 test('mismatched addresses show a permanent marker label and escaped source-result warning without blocking photos',()=>{

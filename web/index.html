@@ -11,7 +11,7 @@
 <script src="./lib/leaflet.js"></script>
 <script src="./lib/leaflet.markercluster.js"></script>
 
-<link rel="stylesheet" href="./map-ui.css?v=20261016-simple-map"/>
+<link rel="stylesheet" href="./map-ui.css?v=20261020-progress"/>
 </head>
 <body>
 <div id="map"></div>
@@ -36,7 +36,7 @@
           <button class="hbtn" type="button" id="dataInfoBtn">집계 기준</button>
           <a class="hbtn" id="photoAdminLink" hidden target="_blank" rel="noopener noreferrer">사진 관리</a>
         </nav>
-        <div class="map-legend"><span><i class="lg teal" aria-hidden="true"></i>주소 위치</span><span><i class="lg amber" aria-hidden="true"></i>좌표 확인 필요</span><p>지도에 표시된 숫자는 주소 수입니다.</p></div>
+        <div class="map-legend"><span><i class="lg teal" aria-hidden="true"></i>주소 위치</span><span><i class="lg green" aria-hidden="true"></i>사진 2장 등록</span><span><i class="lg amber" aria-hidden="true"></i>좌표 확인 필요</span><p>완료 색은 저장된 사진 2장을 확인한 주소에만 표시됩니다. 지도에 표시된 숫자는 주소 수입니다.</p></div>
       </div>
     </details>
   </div>
@@ -78,7 +78,8 @@
 <script src="./addresses.js?v=20261017-followup28"></script>
 <script src="./coordinate-review.js?v=20261017-followup28"></script>
 <script src="./address-search.js?v=20261016-ux"></script>
-<script src="./photo-config.js?v=20261016-simple-ui"></script>
+<script src="./photo-config.js?v=20261020-progress"></script>
+<script src="./photo-progress.js?v=20261020-progress"></script>
 <script>
 /* =======================================================================
    전국 주소 지도 — 동작 개요 (초보자용 설명)
@@ -124,6 +125,7 @@ function collectSido(s){ var out=[]; for(var g in s) out=out.concat(collectGugun
 var dotIcon   = L.divIcon({ className:'', html:'<div class="addr-dot"></div>', iconSize:[16,16], iconAnchor:[8,8] });
 var dotApprox = L.divIcon({ className:'', html:'<div class="addr-dot approx"></div>', iconSize:[16,16], iconAnchor:[8,8] });
 var selIcon   = L.divIcon({ className:'', html:'<div class="sel-dot"></div>', iconSize:[22,22], iconAnchor:[11,11] });
+var selDoneIcon = L.divIcon({ className:'', html:'<div class="sel-dot completed"></div>', iconSize:[22,22], iconAnchor:[11,11] });
 var redIcon   = L.divIcon({ className:'', html:'<div class="my-dot"></div>', iconSize:[20,20], iconAnchor:[10,10] });
 
 var visibleMode = false;   // 화면에 보이는 주소 목록 모드
@@ -135,8 +137,30 @@ var suppressAutoUntil = 0;  // 이 시각 이전의 moveend는 '프로그램 이
 // 그래서 (1) 목록부터 그리고 (2) 마커는 선택 범위만 지연 생성/캐시한다.
 var ALL = [];                    // 평면 인덱스 {p, real, s, g, d}
 var recordByPoint = new Map();
+var recordsByAddress = new Map();
 var markerCache = new Map();     // 점 → L.marker (한 번만 생성)
 var _showToken = 0;              // 표시 작업 토큰(새 선택이 오면 옛 작업 취소)
+var completedAddresses=new Set(),exactPhotoCounts=new Map(),photoProgress=null;
+function photoCount(address){return exactPhotoCounts.has(address)?exactPhotoCounts.get(address):(completedAddresses.has(address)?2:null);}
+function photoStatusLabel(address){var count=photoCount(address);return count===2?'사진 2장 등록 완료':count===1?'사진 1/2장 등록':count===0?'등록 사진 없음':'사진 현황 확인 중…';}
+function markerIcon(rec){
+  var label=coordinateLabel(rec.p),review=coordinateReview(rec.p),completed=photoCount(rec.p[2])===2;
+  if(label)return L.divIcon({className:'',html:'<div class="addr-dot approx'+(review.status==='address-mismatch'?' mismatch':'')+(completed?' completed':'')+'"><span class="map-pin-label">'+esc(label)+'</span></div>',iconSize:[16,16],iconAnchor:[8,8]});
+  if(!rec.real)return completed?L.divIcon({className:'',html:'<div class="addr-dot approx completed"></div>',iconSize:[16,16],iconAnchor:[8,8]}):dotApprox;
+  return completed?L.divIcon({className:'',html:'<div class="addr-dot completed"></div>',iconSize:[16,16],iconAnchor:[8,8]}):dotIcon;
+}
+function updatePhotoAddress(address){
+  (recordsByAddress.get(address)||[]).forEach(function(rec){var marker=markerCache.get(rec.p);if(marker){marker.setIcon(markerIcon(rec));marker.options.title=photoCount(address)===2?address+' · 사진 2장 등록 완료':address;}});
+  if(selMarker&&selMarker._d&&selMarker._d[2]===address)selMarker.setIcon(photoCount(address)===2?selDoneIcon:selIcon);
+  document.querySelectorAll('.photo-action[data-photo-address]').forEach(function(link){if(link.dataset.photoAddress===address){link.textContent=photoCount(address)===2?'등록 완료 · 사진 보기':'사진 등록·보기';link.classList.toggle('completed',photoCount(address)===2);}});
+  document.querySelectorAll('.popup-photo-action[data-photo-address]').forEach(function(link){if(link.dataset.photoAddress===address){link.textContent=photoCount(address)===2?'등록 완료 · 사진 보기':'현장 사진 등록·보기';link.classList.toggle('completed',photoCount(address)===2);}});
+  document.querySelectorAll('.popup-photo-status[data-photo-address]').forEach(function(label){if(label.dataset.photoAddress===address)label.textContent=photoStatusLabel(address);});
+}
+function applyPhotoSnapshot(next,meta){var previous=completedAddresses,checked=[...exactPhotoCounts.keys()];completedAddresses=next;
+  if(meta&&meta.pending===0)exactPhotoCounts.clear();
+  new Set([...previous,...next,...checked]).forEach(function(address){updatePhotoAddress(address);});
+}
+function applyPhotoCount(address,count){exactPhotoCounts.set(address,count);updatePhotoAddress(address);}
 
 // buildIndex: 3중으로 중첩된 데이터(시도>구>동)를 훑어서
 //   ALL(주소 한 줄짜리 평평한 목록)로 펼친다. 정밀/대략 개수도 함께 센다.
@@ -149,6 +173,8 @@ function buildIndex(){
       var real = hasCoordinates(p) && !coordinateNeedsReview(p);
       var entry = { p:p, real:real, s:sido, g:gugun, d:dong };
       ALL.push(entry); recordByPoint.set(p,entry);
+      if(!recordsByAddress.has(p[2]))recordsByAddress.set(p[2],[]);
+      recordsByAddress.get(p[2]).push(entry);
       if(real) nReal++; else nApprox++;
     }
   }
@@ -159,9 +185,8 @@ function buildIndex(){
 function getMarker(rec){
   var m = markerCache.get(rec.p);
   if(m) return m;
-  var label=coordinateLabel(rec.p),review=coordinateReview(rec.p);
-  var icon=label?L.divIcon({className:'',html:'<div class="addr-dot approx'+(review.status==='address-mismatch'?' mismatch':'')+'"><span class="map-pin-label">'+esc(label)+'</span></div>',iconSize:[16,16],iconAnchor:[8,8]}):rec.real?dotIcon:dotApprox;
-  m = L.marker([rec.p[0], rec.p[1]], { icon:icon,title:label||rec.p[2] });
+  var label=coordinateLabel(rec.p);
+  m = L.marker([rec.p[0], rec.p[1]], { icon:markerIcon(rec),title:label||rec.p[2] });
   m._d = rec.p; m._s = rec.s; m._g = rec.g; m._n = rec.d;
   m.on('click', function(e){ openPopup(e.target, e.target._d); });
   markerCache.set(rec.p, m);
@@ -199,6 +224,7 @@ function initMap(){
   renderSido();                                     // ★ 목록 먼저 → 버튼 즉시 작동
   var _ld=document.getElementById('loading'); if(_ld) _ld.remove();   // 로딩 표시 제거
   setTimeout(function(){ showMarkers(null, 'ALL'); }, 0);  // 전체 마커는 뒤에서 천천히
+  setTimeout(function(){startPhotoProgress();if(photoProgress)photoProgress.refresh().catch(function(){});},1200); // 지도 표시 후 사진 현황 확인
 
   // 확대(줌 15↑)하면 화면에 보이는 주소를 자동으로 목록에 띄움 (디바운스로 과도한 갱신 방지)
   var _visTimer=null;
@@ -255,6 +281,7 @@ function openPopup(marker, rec){
     (!rec[6] ? '<div class="popup-sub">원주소 분류 · 한글 행정동 대조 대상 외</div>' : '') +
     reviewHtml+(approx&&!review ? '<div class="popup-warn">근사 좌표 · 위치 확인 필요</div>' : '') +
     '<div class="popup-sub tag-biz">이 주소 사업자수 ' + cnt + '개</div>' +
+    '<div class="popup-sub popup-photo-status" data-photo-address="'+esc(rec[2]).replace(/"/g,'&quot;')+'">'+photoStatusLabel(rec[2])+'</div>' +
     photoLinkHtml(rec[2])+
     '<div class="popup-links"><a class="pbtn" href="' + search + '" target="_blank" rel="noopener">구글 지도</a>' +
     '<a class="pbtn" href="' + nav + '" target="_blank" rel="noopener">길찾기</a></div>';
@@ -264,6 +291,11 @@ function openPopup(marker, rec){
   marker.bindPopup(html, {maxWidth:264, autoPan:true,
     autoPanPaddingTopLeft: inset.topLeft,
     autoPanPaddingBottomRight: inset.bottomRight}).openPopup();
+  startPhotoProgress();
+  if(photoProgress)photoProgress.check(rec[2]).catch(function(){
+    var popup=marker.getPopup(),el=popup&&popup.getElement();
+    if(el){var label=el.querySelector('.popup-photo-status');if(label&&label.dataset.photoAddress===rec[2])label.textContent='사진 현황을 확인하지 못했습니다.';}
+  });
 }
 
 // Public endpoint only; credentials are never included in the map or its links.
@@ -276,8 +308,18 @@ var adminPhotoEntry=photoUrl(''), adminPhotoLink=document.getElementById('photoA
 if(adminPhotoEntry&&adminPhotoLink){adminPhotoLink.href=window.PHOTO_CONFIG.webAppUrl+'?page=admin&build='+encodeURIComponent(window.PHOTO_CONFIG.build||'v5');adminPhotoLink.hidden=false;}
 function photoLinkHtml(address){
   var url=photoUrl(address);
-  return url ? '<a class="pbtn search" href="'+url+'" target="_blank" rel="noopener noreferrer">현장 사진 등록·보기</a>' :
+  return url ? '<a class="pbtn search popup-photo-action'+(photoCount(address)===2?' completed':'')+'" data-photo-address="'+esc(address).replace(/"/g,'&quot;')+'" href="'+url+'" target="_blank" rel="noopener noreferrer">'+(photoCount(address)===2?'등록 완료 · 사진 보기':'현장 사진 등록·보기')+'</a>' :
     '<div class="popup-sub">사진 등록을 준비 중입니다.</div>';
+}
+function startPhotoProgress(){
+  if(photoProgress||!window.PhotoMapProgress)return;
+  photoProgress=window.PhotoMapProgress.create(window.PHOTO_CONFIG||{},applyPhotoSnapshot,applyPhotoCount);
+  if(!photoProgress)return;
+  window.addEventListener('focus',function(){photoProgress.refresh().catch(function(){});});
+  window.addEventListener('storage',function(event){
+    if(event.key!=='photoProgressV1'||!event.newValue)return;
+    try{var item=JSON.parse(event.newValue);if(typeof item.address==='string'&&Number.isInteger(item.count)&&item.count>=0&&item.count<=2)applyPhotoCount(item.address,item.count);}catch(ignored){}
+  });
 }
 
 function fitToRecords(records){
@@ -395,9 +437,10 @@ function appendAddrRow(p){
   };
   var photo=document.createElement('a'), photoHref=photoUrl(p[2]);
   photo.className='photo-action';
-  photo.textContent=photoHref?'사진 등록·보기':'사진 등록 준비 중';
+  photo.textContent=photoHref?(photoCount(p[2])===2?'등록 완료 · 사진 보기':'사진 등록·보기'):'사진 등록 준비 중';
   if(photoHref){
     photo.href=photoHref; photo.target='_blank'; photo.rel='noopener noreferrer';
+    photo.dataset.photoAddress=p[2];photo.classList.toggle('completed',photoCount(p[2])===2);
     photo.onclick=function(e){e.stopPropagation();};
   } else { photo.setAttribute('aria-disabled','true'); }
   r.appendChild(photo);
@@ -408,7 +451,7 @@ function appendAddrRow(p){
 var selMarker = null;
 function showSelected(p){
   if(selMarker){ map.removeLayer(selMarker); selMarker=null; }   // 이전 선택 마커 먼저 제거
-  selMarker = L.marker([p[0],p[1]], {icon:selIcon, zIndexOffset:900}).addTo(map);
+  selMarker = L.marker([p[0],p[1]], {icon:photoCount(p[2])===2?selDoneIcon:selIcon, zIndexOffset:900}).addTo(map);
   selMarker.on('popupclose', function(){ if(selMarker){ map.removeLayer(selMarker); selMarker=null; } });
   openPopup(selMarker, p);
 }

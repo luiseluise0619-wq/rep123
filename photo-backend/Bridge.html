@@ -2,7 +2,7 @@
 <script id="initial" type="application/json"><?!= initialJson ?></script><script>
 'use strict';
 const init=JSON.parse(document.getElementById('initial').textContent),origin='https://rep123-seven.vercel.app';
-const allowed=new Set(['getPublicStatus','beginPublicCapture','uploadPublicPhoto','getPublicPhoto','deletePhoto','getPublicUploadReceipt']);
+const allowed=new Set(['getPublicStatus','getPublicCompletionMeta','getPublicCompletionChunk','beginPublicCapture','uploadPublicPhoto','getPublicPhoto','deletePhoto','getPublicUploadReceipt']);
 const channel=init.channel;
 function send(value){window.top.postMessage({...value,channel},origin);}
 window.addEventListener('message',event=>{

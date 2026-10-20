@@ -5,9 +5,9 @@
 var PHOTO_LIMITS_ = Object.freeze({
   maxBytes: 200000, maxEdge: 1600, slots: 2,
   accountCeilingBytes: 24000000000, reserveBytes: 1000000000,
-  dailyUploads: 1000, dailyReads: 2000, sessionHours: 8,
+  sessionHours: 8,
   sourceUrl: 'https://rep123-seven.vercel.app/addresses.js',
-  rootName: '현장방문_주소사진_v1', indexRootName: '현장방문_사진목록_v3', version: '2026-10-16-mybox-v9-fast-refresh', publicEnabled: true, requireCapture: true, requireLocation: false,
+  rootName: '현장방문_주소사진_v1', indexRootName: '현장방문_사진목록_v3', version: '2026-10-20-mybox-v11-progress-no-daily-cap', publicEnabled: true, requireCapture: true, requireLocation: false,
   webAppUrl: 'https://script.google.com/macros/s/AKfycbxkluXWRelyVJ1D0XtuLHHo1GdF76Dzp4CLHQeC-hlvpW6WmctvD9_60WKqugmfN_PAQw/exec'
 });
 
@@ -104,7 +104,6 @@ function uploadForActor_(user,address,photo) {
       var quota = quota_();
       if (!quota.canUpload || quota.usedBytes + bytes.length > quota.stopAtBytes)
         fail_('STORAGE', '무료 운영 안전 한도에 도달했습니다. 용량을 확인한 후 다시 시도하세요.');
-      takeBudget_('uploads', PHOTO_LIMITS_.dailyUploads, true);
       markCatalogPending_(address);
       var slot = files.some(function(f) { return /^1__/.test(f.name); }) ? 2 : 1;
       var timestamp = new Date().toISOString();
@@ -135,7 +134,6 @@ function getPhoto(session, address, slot) {
     var file = folder && photoFiles_(folder).filter(function(f) { return Number(f.name[0]) === slot; })[0];
     if (!file) fail_('NOT_FOUND', '저장된 사진이 없습니다.');
     if (!canSeePhoto_(user, file)) fail_('FORBIDDEN', '본인이 등록한 사진만 볼 수 있습니다.');
-    takeBudget_('reads', PHOTO_LIMITS_.dailyReads, true);
     if (Number(file.size) > PHOTO_LIMITS_.maxBytes) fail_('SIZE', '허용된 사진 크기를 초과했습니다.');
     var target = api_('/drive/files/' + encodeURIComponent(file.resourceId) + '/download');
     var response = fetch_(storageUrl_(target.downloadUrl, 'download'),
@@ -148,7 +146,6 @@ function getPhoto(session, address, slot) {
   });
 }
 
-var PHOTO_FETCH_BUDGET_ = null;
 var PHOTO_STAGE_ = '';
 function rpc_(fn) {
   var lock = LockService.getScriptLock(), locked = false;
@@ -157,10 +154,6 @@ function rpc_(fn) {
     locked = true;
     PHOTO_STAGE_='start';
     PHOTO_INDEX_CONTEXT_ = null; PHOTO_SOURCE_ = null; PHOTO_SOURCE_INDEX_ = null;
-    var props = PropertiesService.getScriptProperties();
-    var today = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd');
-    var previous = JSON.parse(props.getProperty('BUDGET_fetch') || '{}');
-    PHOTO_FETCH_BUDGET_ = {date: today, count: previous.date === today ? Number(previous.count || 0) : 0};
     return {ok: true, data: fn()};
   }
   catch (error) {
@@ -169,18 +162,10 @@ function rpc_(fn) {
     return {ok: false, code: error.photoCode || 'SERVICE', message: error.photoCode ? error.message :
       '서비스 연결 또는 무료 사용 한도 문제가 발생했습니다. 잠시 후 다시 시도하거나 관리자에게 알려주세요.'};
   } finally {
-    if (locked) {
-      try { if (PHOTO_FETCH_BUDGET_) PropertiesService.getScriptProperties().setProperty('BUDGET_fetch', JSON.stringify(PHOTO_FETCH_BUDGET_)); }
-      finally { PHOTO_FETCH_BUDGET_ = null; PHOTO_INDEX_CONTEXT_ = null; PHOTO_SOURCE_ = null; PHOTO_SOURCE_INDEX_ = null; lock.releaseLock(); }
-    }
+    if (locked) { PHOTO_INDEX_CONTEXT_ = null; PHOTO_SOURCE_ = null; PHOTO_SOURCE_INDEX_ = null; lock.releaseLock(); }
   }
 }
-function fetch_(url, options) {
-  if (!PHOTO_FETCH_BUDGET_ || PHOTO_FETCH_BUDGET_.count >= 10000)
-    fail_('DAILY_LIMIT', '오늘의 무료 운영 통신 안전 한도에 도달했습니다. 내일 다시 시도하세요.');
-  PHOTO_FETCH_BUDGET_.count++;
-  return UrlFetchApp.fetch(url, options);
-}
+function fetch_(url, options) { return UrlFetchApp.fetch(url, options); }
 function fail_(code, message) { var e = new Error(message); e.photoCode = code; throw e; }
 function secret_(key) { return String(PropertiesService.getScriptProperties().getProperty(key) || '').trim(); }
 function setupProblems_() {
@@ -380,16 +365,4 @@ function publicPhoto_(file) {
   return {id:photoId_(file),slot: Number(parts[0]), visitDate: parts[3], uploader: parts.slice(photoOwner_(file) ? 5 : 4).join('__').replace(/\.jpg$/, ''),
     legacy: !photoOwner_(file),
     uploadedAt: isNaN(Date.parse(serverTime)) ? (file.createdAt || file.createdTime || null) : serverTime, bytes: Number(file.size)};
-}
-function takeBudget_(kind, limit, alreadyLocked) {
-  var lock = alreadyLocked ? null : LockService.getScriptLock();
-  if (lock && !lock.tryLock(1000)) fail_('BUSY', '저장 작업 중입니다. 잠시 후 다시 시도하세요.');
-  try {
-    var props = PropertiesService.getScriptProperties();
-    var today = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd');
-    var key = 'BUDGET_' + kind, value = JSON.parse(props.getProperty(key) || '{}');
-    var count = value.date === today ? Number(value.count || 0) : 0;
-    if (count >= limit) fail_('DAILY_LIMIT', '오늘의 무료 운영 안전 한도에 도달했습니다. 내일 다시 시도하세요.');
-    props.setProperty(key, JSON.stringify({date: today, count: count + 1}));
-  } finally { if (lock) lock.releaseLock(); }
 }

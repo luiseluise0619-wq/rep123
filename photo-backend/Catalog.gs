@@ -43,6 +43,10 @@ function indexWrite_(name, value) {
   context.files=listResources_(context.folder);
   if(!context.files.some(function(f){return f.name===name && Number(f.size)===size;})) fail_('CATALOG','관리자 목록 저장 확인이 지연됩니다.');
   context.json[name]=value;
+  try {var cache=CacheService.getScriptCache();
+    if(name==='manifest.json')cache.remove('public-completion-meta-v1');
+    else if(/^shard-[0-9a-f]\.json$/.test(name))cache.remove('public-completion-'+name.charAt(6)+'-v1');
+  } catch(ignored) {} // A cache failure must not turn a verified MYBOX write into an upload failure.
 }
 function manifest_() {
   var value=indexRead_('manifest.json',{v:3,shards:{},scanComplete:false,updatedAt:null});
@@ -100,6 +104,39 @@ function getAdminOverview(session) {
 function getAdminChunk(session,key) {
   return rpc_(function(){requireAdmin_(session);var data=shard_(String(key||''));
     return {rows:Object.keys(data.rows).map(function(k){return data.rows[k];})};
+  });
+}
+// Public map progress contains only addresses with both photo slots filled.
+// Cache avoids a MYBOX read on every map visit; indexWrite_ invalidates changed data.
+// The catalog is a snapshot; a clicked address still checks its live folder.
+function completionSummary_() {
+  var cache=CacheService.getScriptCache(),key='public-completion-meta-v1',cached=cache.get(key);
+  if(cached)return JSON.parse(cached);
+  var m=manifest_(),value={keys:Object.keys(m.shards).filter(function(k){return m.shards[k].photos>m.shards[k].addresses;}).sort(),
+    updatedAt:m.updatedAt,scanComplete:!!m.scanComplete};
+  try {cache.put(key,JSON.stringify(value),300);} catch(ignored) {}
+  return value;
+}
+function getPublicCompletionMeta() {
+  return rpc_(function(){requirePublic_();var summary=completionSummary_(),pending=pendingCatalog_();
+    return {keys:summary.keys,updatedAt:summary.updatedAt,scanComplete:summary.scanComplete,
+      pending:pending.length,pendingAddresses:pending.map(function(item){return item.address;}).sort()};
+  });
+}
+function getPublicCompletionChunk(key) {
+  return rpc_(function(){requirePublic_();key=String(key||'');
+    if(!/^[0-9a-f]$/.test(key))fail_('CATALOG','목록 번호가 올바르지 않습니다.');
+    var summary=completionSummary_(),addresses=[],cache=CacheService.getScriptCache(),cacheKey='public-completion-'+key+'-v1';
+    if(summary.keys.indexOf(key)<0)return {key:key,addresses:addresses,updatedAt:summary.updatedAt};
+    var cached=cache.get(cacheKey);
+    if(cached)addresses=JSON.parse(cached);
+    else {var rows=shard_(key).rows;
+      addresses=Object.keys(rows).filter(function(hash){return rows[hash].photos.length===2;})
+        .map(function(hash){return rows[hash].address;});
+      var value=JSON.stringify(addresses);
+      try {if(Utilities.newBlob(value,'application/json').getBytes().length<90000)cache.put(cacheKey,value,300);} catch(ignored) {}
+    }
+    return {key:key,addresses:addresses,updatedAt:summary.updatedAt};
   });
 }
 function sourceAddressForFolder_(name) {

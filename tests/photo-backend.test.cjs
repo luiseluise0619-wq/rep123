@@ -50,6 +50,22 @@ test('two photos per original address including multiple businesses, no third ph
   assert.ok(!JSON.stringify(status).includes('mbx_pat_'));
   assert.ok(!JSON.stringify(status).includes('resourceId'));
 });
+test('public map completion exposes only original addresses with exactly two stored photos',()=>{
+  const h=harness();
+  assert.deepEqual(Array.from(h.app.getPublicCompletionMeta().data.keys),[]);
+  assert.equal(h.app.uploadPhoto(h.session,ADDRESS,photo(1)).ok,true);
+  assert.deepEqual(Array.from(h.app.getPublicCompletionMeta().data.keys),[]);
+  assert.equal(h.app.uploadPhoto(h.session,ADDRESS,photo(2)).ok,true);
+  const meta=h.app.getPublicCompletionMeta().data;
+  assert.equal(meta.keys.length,1);
+  assert.deepEqual(Array.from(h.app.getPublicCompletionChunk(meta.keys[0]).data.addresses),[ADDRESS]);
+  const requests=h.calls();
+  assert.deepEqual(Array.from(h.app.getPublicCompletionMeta().data.keys),Array.from(meta.keys));
+  assert.deepEqual(Array.from(h.app.getPublicCompletionChunk(meta.keys[0]).data.addresses),[ADDRESS]);
+  assert.equal(h.calls(),requests,'warm map progress must not call MYBOX again');
+  assert.equal(h.app.getPublicCompletionChunk('not-a-shard').code,'CATALOG');
+  assert.ok(!JSON.stringify(meta).includes('resourceId'));
+});
 test('ambiguous network failure after storage is idempotent on retry',()=>{
   const h=harness();h.dropNextUploadResponse();
   const result=h.app.uploadPhoto(h.session,ADDRESS,photo(1));
@@ -68,14 +84,16 @@ test('server rejects oversized/non-JPEG/high-resolution/unconfirmed/invalid-date
   const metadata=Buffer.concat([Buffer.from([255,216,255,225,0,4,0,0]),fakeJpeg().subarray(2)]);
   assert.equal(h.app.uploadPhoto(h.session,ADDRESS,{...photo(),base64:metadata.toString('base64')}).code,'METADATA');
 });
-test('storage and daily communication safety limits fail closed without a payment path',()=>{
+test('storage ceiling remains, while obsolete application-level daily counters no longer block requests',()=>{
   const h=harness();h.setUsed(24000000000-100);
   assert.equal(h.app.uploadPhoto(h.session,ADDRESS,photo()).code,'STORAGE');
   assert.equal(h.resources.filter(r=>r.type==='file'&&r.name.endsWith('.jpg')).length,0);
   h.setUsed(0);
   const date=h.app.Utilities.formatDate(new Date(),'Asia/Seoul');
   h.props.set('BUDGET_fetch',JSON.stringify({date,count:10000}));
-  assert.equal(h.app.getStatus(h.session,ADDRESS).code,'DAILY_LIMIT');
+  h.props.set('BUDGET_uploads',JSON.stringify({date,count:1000}));
+  assert.equal(h.app.getStatus(h.session,ADDRESS).ok,true);
+  assert.equal(h.app.uploadPhoto(h.session,ADDRESS,photo()).ok,true);
 });
 test('browser ICC color profile is allowed but arbitrary APP2 payload is rejected',()=>{
   const h=harness();
@@ -101,7 +119,7 @@ test('doGet escapes script tags in user-controlled address; helper functions sta
   assert.ok(!template.initialJson.includes('<'));
   assert.ok(template.initialJson.includes('\\u003c'));
   const exposed=[...source.matchAll(/^function (\w+)\(/gm)].map(m=>m[1]).filter(n=>!n.endsWith('_'));
-  assert.deepEqual(exposed,['doGet','getStatus','loginPhoto','uploadPhoto','getPhoto','listEmployees','manageEmployee','getAdminOverview','getAdminChunk','repairAdminCatalog','syncAdminCatalog','getPublicStatus','uploadPublicPhoto','getPublicPhoto','getPublicUploadReceipt','deletePhoto','beginPublicCapture','diagnosePhotoStorage']);
+  assert.deepEqual(exposed,['doGet','getStatus','loginPhoto','uploadPhoto','getPhoto','listEmployees','manageEmployee','getAdminOverview','getAdminChunk','getPublicCompletionMeta','getPublicCompletionChunk','repairAdminCatalog','syncAdminCatalog','getPublicStatus','uploadPublicPhoto','getPublicPhoto','getPublicUploadReceipt','deletePhoto','beginPublicCapture','diagnosePhotoStorage']);
 });
 
 test('staff with identical display names see only immutable account-owned photos; admin sees both',()=>{
