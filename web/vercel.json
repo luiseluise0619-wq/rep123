@@ -7,6 +7,10 @@
       "headers": [{"key":"Permissions-Policy","value":"camera=(self), geolocation=(), microphone=()"},{"key":"Cache-Control","value":"no-store"}]
     },
     {
+      "source": "/direct-upload-probe",
+      "headers": [{"key":"Cache-Control","value":"no-store"},{"key":"Referrer-Policy","value":"no-referrer"}]
+    },
+    {
       "source": "/photo-config.js",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }]
     },

@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<title>MYBOX 직접 업로드 점검</title>
+<style>
+body{font:16px/1.5 system-ui,'Malgun Gothic',sans-serif;color:#18212d;background:#f5f6f8;margin:0}
+main{max-width:520px;margin:48px auto;padding:24px;background:#fff;border-radius:14px}
+h1{font-size:23px;margin:0 0 10px}p{color:#4b5563}label{display:block;margin:18px 0 8px;font-weight:600}
+input{width:100%;box-sizing:border-box;padding:12px;font:inherit;border:1px solid #9ca3af;border-radius:8px}
+button{background:#2563eb;color:#fff;border:0;border-radius:8px;padding:12px 18px;font:inherit;margin-top:14px;cursor:pointer}
+button:disabled{opacity:.55}#cleanup{background:#4b5563;margin-left:8px}#result{white-space:pre-wrap;background:#f5f6f8;padding:14px;border-radius:8px;margin-top:20px}
+</style>
+</head>
+<body><main>
+<h1>MYBOX 직접 업로드 점검</h1>
+<p>현장 사진이 아닌 작은 테스트 이미지를 MYBOX 별도 점검 폴더에 올립니다. 주소별 사진 수에는 포함되지 않습니다. 점검 후 MYBOX 휴지통으로 이동합니다.</p>
+<label for="key">점검 접근키</label><input id="key" type="password" autocomplete="off" spellcheck="false">
+<button id="run" type="button">직접 업로드 시험</button><button id="cleanup" type="button" hidden>점검 파일 정리 재시도</button>
+<div id="result" role="status" aria-live="polite">아직 시험하지 않았습니다.</div>
+</main><script>
+const run=document.getElementById('run'),clean=document.getElementById('cleanup'),result=document.getElementById('result'),key=document.getElementById('key');
+let pendingName=sessionStorage.getItem('myboxDirectProbePending')||'';
+clean.hidden=!pendingName;
+const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+function say(text){result.textContent=text;}
+async function api(action,extra={}){
+  const response=await fetch('/api/mybox-direct-probe',{method:'POST',cache:'no-store',referrerPolicy:'no-referrer',
+    headers:{'Content-Type':'application/json','X-Probe-Key':key.value},body:JSON.stringify({action,...extra})});
+  const body=await response.json();if(!response.ok||!body.ok)throw Error(body.message||'점검 서버가 요청을 처리하지 못했습니다.');return body;
+}
+function photo(){return new Promise((resolve,reject)=>{
+  const canvas=document.createElement('canvas');canvas.width=640;canvas.height=360;
+  const ctx=canvas.getContext('2d');ctx.fillStyle='#e8effc';ctx.fillRect(0,0,640,360);
+  ctx.fillStyle='#16253d';ctx.font='bold 28px system-ui';ctx.fillText('MYBOX CONNECTION TEST',30,160);
+  ctx.font='20px system-ui';ctx.fillText('NOT A FIELD VISIT',30,205);
+  canvas.toBlob(blob=>blob?resolve(blob):reject(Error('점검 이미지를 만들지 못했습니다.')),'image/jpeg',.7);
+});}
+async function inspect(name){for(let i=0;i<3;i++){const value=await api('inspect',{name});if(value.found)return value;await pause(1200);}return {found:false};}
+async function finish(name){const value=await api('finish',{name});if(value.movedToTrash){sessionStorage.removeItem('myboxDirectProbePending');pendingName='';clean.hidden=true;}return value;}
+clean.onclick=async()=>{if(!pendingName)return;clean.disabled=true;try{const value=await finish(pendingName);say(value.movedToTrash?'점검 사진을 MYBOX 휴지통으로 이동했습니다.':'점검 파일이 없습니다.');}catch(error){say(error.message);}finally{clean.disabled=false;}};
+run.onclick=async()=>{
+  if(!key.value){say('점검 접근키를 입력해 주세요.');return;}
+  run.disabled=true;let name='',direct='',fallback='',found=false,start=performance.now(),reserveMs=0,uploadMs=0;
+  try{
+    say('MYBOX 업로드 URL을 발급받는 중…');const blob=await photo(),reserved=await api('reserve',{size:blob.size});
+    reserveMs=Math.round(performance.now()-start);name=reserved.name;pendingName=name;
+    sessionStorage.setItem('myboxDirectProbePending',name);clean.hidden=false;
+    const form=new FormData();form.append('Filedata',blob,name);const begun=performance.now();
+    say('휴대폰 브라우저에서 MYBOX로 직접 보내는 중…');
+    try{const response=await fetch(reserved.uploadUrl,{method:'POST',mode:'cors',credentials:'omit',referrerPolicy:'no-referrer',body:form,redirect:'error'});
+      direct='브라우저 응답 HTTP '+response.status;
+    }catch(error){direct='브라우저가 업로드 응답을 읽지 못함(CORS 또는 연결 오류)';}
+    uploadMs=Math.round(performance.now()-begun);
+    found=(await inspect(name)).found;
+    if(!found&&direct.startsWith('브라우저가')){
+      say('브라우저의 응답 제한을 확인했습니다. 응답을 읽지 않는 전송도 시험 중…');
+      try{await fetch(reserved.uploadUrl,{method:'POST',mode:'no-cors',credentials:'omit',referrerPolicy:'no-referrer',body:form});fallback='응답을 읽지 않는 전송 요청 완료';}
+      catch(error){fallback='응답을 읽지 않는 전송도 브라우저가 거절함';}
+      found=(await inspect(name)).found;
+    }
+    const cleanup=await finish(name);
+    say('URL 발급: '+reserveMs+'ms\n직접 전송 시도: '+uploadMs+'ms\n'+direct+
+      (fallback?'\n'+fallback:'')+'\nMYBOX 파일 확인: '+(found?'저장됨':'저장 안 됨')+
+      '\n점검 파일: '+(cleanup.movedToTrash?'휴지통으로 이동':'저장된 파일 없음'));
+  }catch(error){say('점검 중단: '+error.message+'\n'+(name?'점검 파일이 남았을 수 있습니다. 정리 재시도 버튼을 눌러주세요.':''));}
+  finally{run.disabled=false;}
+};
+</script></body></html>

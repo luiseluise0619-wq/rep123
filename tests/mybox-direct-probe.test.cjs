@@ -1,0 +1,67 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const handler = require('../web/api/mybox-direct-probe.js');
+
+function response() {
+  return {statusCode:200,headers:{},body:null,
+    setHeader(key,value){this.headers[key]=value;},
+    status(value){this.statusCode=value;return this;},
+    json(value){this.body=value;return this;}};
+}
+function request(action,key,extra={}) {
+  return {method:'POST',headers:{'x-probe-key':key},body:{action,...extra}};
+}
+const ACCESS='test-probe-only-secret-more-than-32-characters';
+test('direct probe is closed without both server secrets and never returns the PAT', async()=>{
+  const oldToken=process.env.MYBOX_TOKEN,oldKey=process.env.MYBOX_DIRECT_PROBE_KEY;
+  const oldFetch=global.fetch;let calls=0;
+  try {
+    delete process.env.MYBOX_TOKEN;delete process.env.MYBOX_DIRECT_PROBE_KEY;
+    global.fetch=async()=>{calls++;throw Error('unexpected network');};
+    const res=response();await handler(request('reserve',ACCESS,{size:1000}),res);
+    assert.equal(res.statusCode,403);assert.equal(calls,0);
+  } finally {
+    if(oldToken===undefined)delete process.env.MYBOX_TOKEN;else process.env.MYBOX_TOKEN=oldToken;
+    if(oldKey===undefined)delete process.env.MYBOX_DIRECT_PROBE_KEY;else process.env.MYBOX_DIRECT_PROBE_KEY=oldKey;
+    global.fetch=oldFetch;
+  }
+});
+test('authenticated probe reserves a one-use URL and cleans only its diagnostic photo', async()=>{
+  const oldToken=process.env.MYBOX_TOKEN,oldKey=process.env.MYBOX_DIRECT_PROBE_KEY,oldFetch=global.fetch;
+  process.env.MYBOX_TOKEN='fake-private-test-token';process.env.MYBOX_DIRECT_PROBE_KEY=ACCESS;
+  let name='',deleted=false;
+  global.fetch=async(url,options)=>{
+    assert.equal(options.headers.Authorization,'Bearer fake-private-test-token');
+    assert.equal(options.redirect,'manual');
+    const pathname=new URL(url).pathname;
+    let body;
+    if(pathname==='/v1/drive/resources')body={resources:[{name:'연결점검_현장방문아님',type:'folder',resourceId:'folder1'}]};
+    else if(pathname==='/v1/drive/folders/folder1/resources')body={resources:name&&!deleted?[{name,type:'file',size:123,resourceId:'file1'}]:[]};
+    else if(pathname==='/v1/drive/files'){
+      name=JSON.parse(options.body).fileName;
+      body={uploadUrl:'https://storage.example.net/v1/storage/upload?token=one-use'};
+    } else if(pathname==='/v1/drive/resources/file1'){
+      assert.equal(options.method,'DELETE');deleted=true;
+      return {ok:true,status:204};
+    } else throw Error('unexpected path '+pathname);
+    return {ok:true,status:pathname==='/v1/drive/files'?201:200,json:async()=>body};
+  };
+  try {
+    const no=response();await handler(request('reserve','wrong-key',{size:123}),no);
+    assert.equal(no.statusCode,403);
+    const reserve=response();await handler(request('reserve',ACCESS,{size:123}),reserve);
+    assert.equal(reserve.statusCode,200);assert.match(reserve.body.name,/^DIRECT_BROWSER_TEST_NOT_A_FIELD_VISIT__/);
+    assert.equal(reserve.body.uploadUrl,'https://storage.example.net/v1/storage/upload?token=one-use');
+    assert.ok(!JSON.stringify(reserve.body).includes('fake-private-test-token'));
+    const inspect=response();await handler(request('inspect',ACCESS,{name}),inspect);
+    assert.equal(inspect.body.found,true);assert.equal(inspect.body.movedToTrash,false);
+    const finish=response();await handler(request('finish',ACCESS,{name}),finish);
+    assert.equal(finish.body.movedToTrash,true);assert.equal(deleted,true);
+    const invalid=response();await handler(request('finish',ACCESS,{name:'../field-photo.jpg'}),invalid);
+    assert.equal(invalid.statusCode,400);
+  } finally {
+    if(oldToken===undefined)delete process.env.MYBOX_TOKEN;else process.env.MYBOX_TOKEN=oldToken;
+    if(oldKey===undefined)delete process.env.MYBOX_DIRECT_PROBE_KEY;else process.env.MYBOX_DIRECT_PROBE_KEY=oldKey;
+    global.fetch=oldFetch;
+  }
+});
