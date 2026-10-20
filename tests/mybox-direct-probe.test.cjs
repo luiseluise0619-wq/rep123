@@ -1,5 +1,8 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
 const handler = require('../web/api/mybox-direct-probe.js');
 
 function response() {
@@ -12,6 +15,14 @@ function request(action,key,extra={}) {
   return {method:'POST',headers:{'x-probe-key':key},body:{action,...extra}};
 }
 const ACCESS='test-probe-only-secret-more-than-32-characters';
+test('diagnostic page script parses and does not embed account credentials',()=>{
+  const html=fs.readFileSync(path.join(__dirname,'../web/direct-upload-probe.html'),'utf8');
+  const script=html.match(/<script>([\s\S]*?)<\/script>/);
+  assert.ok(script);
+  assert.doesNotThrow(()=>new vm.Script(script[1]));
+  assert.ok(!html.includes('MYBOX_TOKEN'));
+  assert.ok(!html.includes('mbx_pat_'));
+});
 test('direct probe is closed without both server secrets and never returns the PAT', async()=>{
   const oldToken=process.env.MYBOX_TOKEN,oldKey=process.env.MYBOX_DIRECT_PROBE_KEY;
   const oldFetch=global.fetch;let calls=0;
