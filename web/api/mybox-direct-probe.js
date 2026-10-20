@@ -82,7 +82,7 @@ async function limited(values, limit, work) {
   return results;
 }
 function batchNames(value) {
-  if (!Array.isArray(value) || value.length < 1 || value.length > 30 ||
+  if (!Array.isArray(value) || value.length < 1 || value.length > 100 ||
       new Set(value).size !== value.length || !value.every(validName))
     throw failure('INPUT', 400, '점검 파일 목록 형식이 올바르지 않습니다.');
   return value;
@@ -104,8 +104,8 @@ module.exports = async function handler(req, res) {
       if (!Number.isInteger(size) || size < 32 || size > 200000)
         throw failure('SIZE', 400, '점검 사진은 200KB 이하여야 합니다.');
       const count = body.action === 'reserveBatch' ? Number(body.count) : 1;
-      if (!Number.isInteger(count) || count < 1 || count > 30)
-        throw failure('COUNT', 400, '한 번에 30건까지만 점검할 수 있습니다.');
+      if (!Number.isInteger(count) || count < 1 || count > 100)
+        throw failure('COUNT', 400, '한 번에 100건까지만 점검할 수 있습니다.');
       const folder = await probeFolder(true);
       if (body.action === 'reserve') return res.status(200).json({ok:true,...await reserveFile(folder,size)});
       const results = await limited(Array.from({length:count}), 4, async () => {

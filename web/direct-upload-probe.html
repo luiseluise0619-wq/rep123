@@ -18,13 +18,13 @@ button:disabled{opacity:.55}#cleanup,#cleanupBatch{background:#4b5563}#result{wh
 <p>현장 사진이 아닌 작은 테스트 이미지를 MYBOX 별도 점검 폴더에 올립니다. 주소별 사진 수에는 포함되지 않습니다. 점검 후 MYBOX 휴지통으로 이동합니다.</p>
 <label for="key">점검 접근키</label><input id="key" type="password" autocomplete="off" spellcheck="false">
 <button id="run" type="button">직접 업로드 시험</button><button id="cleanup" type="button" hidden>점검 파일 정리 재시도</button>
-<p>동시 시험은 5건이 모두 저장·정리된 뒤 30건을 진행할 수 있습니다. 시험 이미지만 사용합니다.</p>
-<button id="runFive" type="button">5건 동시 시험</button> <button id="runThirty" type="button" disabled>30건 동시 시험</button>
+<p>5건, 30건, 100건 순서로 시험합니다. 100건에는 약 180KB의 시험 이미지를 사용하며, 방문 실적으로 등록되지 않습니다.</p>
+<button id="runFive" type="button">5건 동시 시험</button> <button id="runThirty" type="button" disabled>30건 동시 시험</button> <button id="runHundred" type="button" disabled>100건 동시 시험</button>
 <button id="cleanupBatch" type="button" hidden>동시 시험 파일 정리 재시도</button>
 <div id="result" role="status" aria-live="polite">아직 시험하지 않았습니다.</div>
 </main><script>
 const run=document.getElementById('run'),clean=document.getElementById('cleanup'),result=document.getElementById('result'),key=document.getElementById('key');
-const runFive=document.getElementById('runFive'),runThirty=document.getElementById('runThirty'),cleanBatch=document.getElementById('cleanupBatch');
+const runFive=document.getElementById('runFive'),runThirty=document.getElementById('runThirty'),runHundred=document.getElementById('runHundred'),cleanBatch=document.getElementById('cleanupBatch');
 let pendingName=sessionStorage.getItem('myboxDirectProbePending')||'';
 let pendingBatch=[];try{const saved=JSON.parse(sessionStorage.getItem('myboxDirectProbeBatchPending')||'[]');if(Array.isArray(saved))pendingBatch=saved;}catch(ignored){}
 clean.hidden=!pendingName;
@@ -43,6 +43,18 @@ function photo(){return new Promise((resolve,reject)=>{
   ctx.font='20px system-ui';ctx.fillText('NOT A FIELD VISIT',30,205);
   canvas.toBlob(blob=>blob?resolve(blob):reject(Error('점검 이미지를 만들지 못했습니다.')),'image/jpeg',.7);
 });}
+async function batchPhoto(){
+  const original=new Uint8Array(await (await photo()).arrayBuffer());
+  const target=180000,parts=[original.slice(0,2)];
+  let remaining=target-original.length;
+  while(remaining>=4){
+    const payload=Math.min(65533,remaining-4),segment=new Uint8Array(payload+4);
+    segment[0]=0xff;segment[1]=0xfe;segment[2]=(payload+2)>>8;segment[3]=(payload+2)&255;
+    parts.push(segment);remaining-=segment.length;
+  }
+  parts.push(original.slice(2));
+  return new Blob(parts,{type:'image/jpeg'});
+}
 async function inspect(name){for(let i=0;i<3;i++){const value=await api('inspect',{name});if(value.found)return value;await pause(1200);}return {found:false};}
 async function finish(name){const value=await api('finish',{name});if(value.movedToTrash){sessionStorage.removeItem('myboxDirectProbePending');pendingName='';clean.hidden=true;}return value;}
 clean.onclick=async()=>{if(!pendingName)return;clean.disabled=true;try{const value=await finish(pendingName);say(value.movedToTrash?'점검 사진을 MYBOX 휴지통으로 이동했습니다.':'점검 파일이 없습니다.');}catch(error){say(error.message);}finally{clean.disabled=false;}};
@@ -84,10 +96,10 @@ run.onclick=async()=>{
 };
 async function batch(count){
   if(!key.value){say('점검 접근키를 입력해 주세요.');return;}
-  run.disabled=runFive.disabled=runThirty.disabled=true;
+  run.disabled=runFive.disabled=runThirty.disabled=runHundred.disabled=true;
   const lines=[],names=[];let allGood=false;
   try{
-    const blob=await photo(),start=performance.now();say(count+'건 업로드 URL을 준비하는 중…');
+    const blob=await batchPhoto(),start=performance.now();say(count+'건 업로드 URL을 준비하는 중…');
     const reserved=await api('reserveBatch',{count,size:blob.size});
     const reserveMs=Math.round(performance.now()-start),items=reserved.results.filter(item=>item.ok);
     names.push(...items.map(item=>item.name));keepBatch([...pendingBatch,...names]);
@@ -101,14 +113,17 @@ async function batch(count){
       catch(error){return {name:item.name,status:0,ok:false};}
     }));
     const uploadMs=Math.round(performance.now()-uploadStart),uploadOk=uploads.filter(item=>item.ok).length;
+    const totalMB=(blob.size*items.length/1000000).toFixed(2);
+    const throughput=uploadMs>0?(blob.size*items.length/uploadMs/1000).toFixed(2):'—';
     lines.push('동시 전송 HTTP 성공 '+uploadOk+'/'+items.length+'건 · '+uploadMs+'ms');
+    lines.push('시험 데이터 '+totalMB+'MB · 전송 구간 평균 '+throughput+'MB/s');
     let checked={present:[],missing:names};
     for(let attempt=0;attempt<3;attempt++){
       checked=await api('statusBatch',{names});if(!checked.missing.length)break;await pause(1200);
     }
     lines.push('MYBOX 저장 확인 '+checked.present.length+'/'+items.length+'건');
     allGood=items.length===count&&uploadOk===count&&checked.present.length===count;
-    if(!allGood)lines.push('일부 실패 또는 지연이 있습니다. 이 결과만으로 30명 동시 업로드를 보장할 수 없습니다.');
+    if(!allGood)lines.push('일부 실패 또는 지연이 있습니다. 이 결과만으로 독립 사용자들의 동시 업로드를 보장할 수 없습니다.');
   }catch(error){lines.push('점검 중단: '+error.message);}
   finally{
     if(names.length){
@@ -117,10 +132,13 @@ async function batch(count){
         allGood=allGood&&cleaned.trashed===names.length;}
       catch(error){lines.push('정리 실패: '+error.message+' · 정리 재시도 버튼을 눌러주세요.');allGood=false;}
     }
-    run.disabled=runFive.disabled=false;runThirty.disabled=!(count===5&&allGood);
+    run.disabled=runFive.disabled=false;
+    if(count===5)runThirty.disabled=!allGood;
+    else if(count===30)runHundred.disabled=!allGood;
     say(lines.join('\n'));
   }
 }
 runFive.onclick=()=>batch(5);
 runThirty.onclick=()=>batch(30);
+runHundred.onclick=()=>batch(100);
 </script></body></html>

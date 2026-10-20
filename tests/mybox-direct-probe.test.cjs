@@ -115,16 +115,16 @@ test('batch probe reserves distinct URLs and cleans only named diagnostic files'
     return {ok:true,status,json:async()=>body};
   };
   try{
-    const bad=response();await handler(request('reserveBatch',ACCESS,{size:123,count:31}),bad);
+    const bad=response();await handler(request('reserveBatch',ACCESS,{size:123,count:101}),bad);
     assert.equal(bad.statusCode,400);assert.equal(created,0);
-    const reserve=response();await handler(request('reserveBatch',ACCESS,{size:123,count:5}),reserve);
-    assert.equal(reserve.statusCode,200);assert.equal(reserve.body.results.length,5);
+    const reserve=response();await handler(request('reserveBatch',ACCESS,{size:123,count:100}),reserve);
+    assert.equal(reserve.statusCode,200);assert.equal(reserve.body.results.length,100);
     const names=reserve.body.results.map(item=>item.name);
-    assert.equal(new Set(names).size,5);assert.ok(!JSON.stringify(reserve.body).includes('fake-private-test-token'));
+    assert.equal(new Set(names).size,100);assert.ok(!JSON.stringify(reserve.body).includes('fake-private-test-token'));
     const status=response();await handler(request('statusBatch',ACCESS,{names}),status);
     assert.deepEqual(status.body.present,names);
     const finish=response();await handler(request('finishBatch',ACCESS,{names}),finish);
-    assert.equal(finish.body.results.filter(item=>item.trashed).length,5);
+    assert.equal(finish.body.results.filter(item=>item.trashed).length,100);
     assert.equal(files.size,0);
     const invalid=response();await handler(request('finishBatch',ACCESS,{names:['field-photo.jpg']}),invalid);
     assert.equal(invalid.statusCode,400);
