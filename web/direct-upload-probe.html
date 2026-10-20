@@ -20,11 +20,13 @@ button:disabled{opacity:.55}#cleanup,#cleanupBatch{background:#4b5563}#result{wh
 <button id="run" type="button">직접 업로드 시험</button><button id="cleanup" type="button" hidden>점검 파일 정리 재시도</button>
 <p>5건, 30건, 100건 순서로 시험합니다. 100건에는 약 180KB의 시험 이미지를 사용하며, 방문 실적으로 등록되지 않습니다.</p>
 <button id="runFive" type="button">5건 동시 시험</button> <button id="runThirty" type="button" disabled>30건 동시 시험</button> <button id="runHundred" type="button" disabled>100건 동시 시험</button>
+<button id="runLock" type="button">동시 저장 잠금 시험</button>
 <button id="cleanupBatch" type="button" hidden>동시 시험 파일 정리 재시도</button>
 <div id="result" role="status" aria-live="polite">아직 시험하지 않았습니다.</div>
 </main><script>
 const run=document.getElementById('run'),clean=document.getElementById('cleanup'),result=document.getElementById('result'),key=document.getElementById('key');
 const runFive=document.getElementById('runFive'),runThirty=document.getElementById('runThirty'),runHundred=document.getElementById('runHundred'),cleanBatch=document.getElementById('cleanupBatch');
+const runLock=document.getElementById('runLock');
 let pendingName=sessionStorage.getItem('myboxDirectProbePending')||'';
 let pendingBatch=[];try{const saved=JSON.parse(sessionStorage.getItem('myboxDirectProbeBatchPending')||'[]');if(Array.isArray(saved))pendingBatch=saved;}catch(ignored){}
 clean.hidden=!pendingName;
@@ -143,4 +145,13 @@ async function batch(count){
 runFive.onclick=()=>batch(5);
 runThirty.onclick=()=>batch(30);
 runHundred.onclick=()=>batch(100);
+runLock.onclick=async()=>{
+  if(!key.value){say('점검 접근키를 입력해 주세요.');return;}
+  runLock.disabled=true;say('MYBOX 같은 이름 폴더의 동시 생성을 확인하는 중…');
+  try{const value=await api('lockCheck');say('동시 생성 응답: '+value.statuses.join(' / ')+
+    '\n같은 이름 폴더: '+value.sameNameFolders+'개\n시험 폴더 휴지통 이동: '+value.trashed+'개'+
+    '\n주소별 2장 제한에 필요한 잠금: '+(value.atomic?'정상':'검증 실패')+
+    (value.cleanupNeeded?'\n점검 폴더 정리가 필요합니다.':''));}
+  catch(error){say('잠금 점검 실패: '+error.message);}finally{runLock.disabled=false;}
+};
 </script></body></html>

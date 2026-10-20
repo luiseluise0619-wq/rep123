@@ -3,6 +3,7 @@
 const {randomUUID, timingSafeEqual} = require('node:crypto');
 
 const ROOT = '연결점검_현장방문아님';
+const LOCK_ROOT = '직접전송_잠금점검';
 const PREFIX = 'DIRECT_BROWSER_TEST_NOT_A_FIELD_VISIT__';
 const API = 'https://open-api.mybox.naver.com/v1';
 
@@ -58,6 +59,39 @@ async function probeFolder(create) {
   if (!result.resourceId) throw failure('FOLDER', 502, '점검 폴더를 만들지 못했습니다.');
   return result.resourceId;
 }
+async function checkFolderLock() {
+  const parent = await probeFolder(true);
+  let matches = (await items(parent)).filter(item => item.name === LOCK_ROOT);
+  if (matches.length > 1 || matches.length && matches[0].type !== 'folder')
+    throw failure('FOLDER', 409, '잠금 점검 폴더가 중복됩니다.');
+  let folderId = matches[0]?.resourceId;
+  if (!folderId) {
+    try { folderId = (await mybox('/drive/folders', 'POST', {parentId: parent, folderName: LOCK_ROOT})).resourceId; }
+    catch (error) {
+      if (error.code !== 'MYBOX' || !error.message.includes('409')) throw error;
+      matches = (await items(parent)).filter(item => item.name === LOCK_ROOT && item.type === 'folder');
+      if (matches.length !== 1) throw failure('FOLDER', 409, '잠금 점검 폴더를 확인할 수 없습니다.');
+      folderId = matches[0].resourceId;
+    }
+  }
+  if (!folderId) throw failure('FOLDER', 502, '잠금 점검 폴더를 만들지 못했습니다.');
+  const name = 'LOCK_TEST_NOT_A_FIELD_VISIT__' + randomUUID();
+  const attempts = await Promise.all(Array.from({length: 2}, async () => {
+    try { const item = await mybox('/drive/folders', 'POST', {parentId: folderId, folderName: name});
+      return {status: 201, id: item.resourceId || ''}; }
+    catch (error) { return {status: error.code === 'MYBOX' && error.message.includes('409') ? 409 : 0, code: error.code || 'SERVICE'}; }
+  }));
+  const created = (await items(folderId)).filter(item => item.name === name);
+  const ids = new Set([...attempts.map(item => item.id).filter(Boolean), ...created.map(item => item.resourceId)]);
+  let trashed = 0;
+  for (const id of ids) {
+    try { await mybox('/drive/resources/' + encodeURIComponent(id), 'DELETE'); trashed++; }
+    catch (error) { console.warn(JSON.stringify({event:'mybox_lock_test_cleanup_failed',code:error.code||'SERVICE'})); }
+  }
+  return {atomic: attempts.filter(item => item.status === 201).length === 1 &&
+    attempts.filter(item => item.status === 409).length === 1 && created.length === 1 && trashed === ids.size,
+    statuses: attempts.map(item => item.status), sameNameFolders: created.length, trashed, cleanupNeeded: trashed !== ids.size};
+}
 function uploadUrl(target) {
   if (typeof target.uploadUrl !== 'string' ||
       !/^https:\/\/[a-z0-9.-]+(?::443)?\/v1\/storage\/upload\?/i.test(target.uploadUrl))
@@ -99,6 +133,8 @@ module.exports = async function handler(req, res) {
     return res.status(403).json({ok:false,code:'INVALID_PROBE_KEY',message:'점검 접근키가 Vercel에 저장된 값과 다릅니다.'});
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body || {};
+    if (body.action === 'lockCheck')
+      return res.status(200).json({ok:true,...await checkFolderLock()});
     if (body.action === 'reserve' || body.action === 'reserveBatch') {
       const size = Number(body.size);
       if (!Number.isInteger(size) || size < 32 || size > 200000)

@@ -138,3 +138,33 @@ test('batch probe reserves distinct URLs and cleans only named diagnostic files'
     global.fetch=oldFetch;
   }
 });
+test('isolated lock probe requires one MYBOX folder creation to conflict and cleans the test folder',async()=>{
+  const oldToken=process.env.MYBOX_TOKEN,oldKey=process.env.MYBOX_DIRECT_PROBE_KEY,oldFetch=global.fetch;
+  process.env.MYBOX_TOKEN='fake-private-test-token';process.env.MYBOX_DIRECT_PROBE_KEY=ACCESS;
+  const created=new Map();let next=0,deleted=0;
+  global.fetch=async(url,options)=>{
+    const pathname=new URL(url).pathname,method=options.method;
+    if(pathname==='/v1/drive/resources')return {ok:true,status:200,json:async()=>({resources:[{name:'연결점검_현장방문아님',type:'folder',resourceId:'root'}]})};
+    if(pathname==='/v1/drive/folders/root/resources')return {ok:true,status:200,json:async()=>({resources:[{name:'직접전송_잠금점검',type:'folder',resourceId:'parent'}]})};
+    if(pathname==='/v1/drive/folders/parent/resources')return {ok:true,status:200,json:async()=>({resources:[...created.entries()].map(([name,id])=>({name,type:'folder',resourceId:id}))})};
+    if(pathname==='/v1/drive/folders'&&method==='POST'){
+      const body=JSON.parse(options.body);assert.equal(body.parentId,'parent');
+      if(created.has(body.folderName))return {ok:false,status:409};
+      const id='test'+(++next);created.set(body.folderName,id);
+      return {ok:true,status:201,json:async()=>({resourceId:id})};
+    }
+    if(pathname.startsWith('/v1/drive/resources/test')&&method==='DELETE'){
+      for(const [name,id] of created)if(pathname.endsWith('/'+id))created.delete(name);
+      deleted++;return {ok:true,status:204};
+    }
+    throw Error('unexpected path '+pathname);
+  };
+  try{const res=response();await handler(request('lockCheck',ACCESS),res);
+    assert.equal(res.statusCode,200);assert.equal(res.body.atomic,true);
+    assert.deepEqual(res.body.statuses.sort(),[201,409]);assert.equal(deleted,1);assert.equal(created.size,0);
+  }finally{
+    if(oldToken===undefined)delete process.env.MYBOX_TOKEN;else process.env.MYBOX_TOKEN=oldToken;
+    if(oldKey===undefined)delete process.env.MYBOX_DIRECT_PROBE_KEY;else process.env.MYBOX_DIRECT_PROBE_KEY=oldKey;
+    global.fetch=oldFetch;
+  }
+});
