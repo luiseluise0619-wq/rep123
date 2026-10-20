@@ -30,7 +30,7 @@ test('direct probe is closed without both server secrets and never returns the P
     delete process.env.MYBOX_TOKEN;delete process.env.MYBOX_DIRECT_PROBE_KEY;
     global.fetch=async()=>{calls++;throw Error('unexpected network');};
     const res=response();await handler(request('reserve',ACCESS,{size:1000}),res);
-    assert.equal(res.statusCode,403);assert.equal(calls,0);
+    assert.equal(res.statusCode,503);assert.equal(res.body.code,'SETUP_REQUIRED');assert.equal(calls,0);
   } finally {
     if(oldToken===undefined)delete process.env.MYBOX_TOKEN;else process.env.MYBOX_TOKEN=oldToken;
     if(oldKey===undefined)delete process.env.MYBOX_DIRECT_PROBE_KEY;else process.env.MYBOX_DIRECT_PROBE_KEY=oldKey;
@@ -59,10 +59,10 @@ test('authenticated probe reserves a one-use URL and cleans only its diagnostic 
   };
   try {
     const no=response();await handler(request('reserve','wrong-key',{size:123}),no);
-    assert.equal(no.statusCode,403);
+    assert.equal(no.statusCode,403);assert.equal(no.body.code,'INVALID_PROBE_KEY');
     process.env.MYBOX_DIRECT_PROBE_KEY='short-key';
     const short=response();await handler(request('reserve','short-key',{size:123}),short);
-    assert.equal(short.statusCode,403);
+    assert.equal(short.statusCode,503);assert.equal(short.body.code,'SETUP_REQUIRED');
     process.env.MYBOX_DIRECT_PROBE_KEY=ACCESS;
     const reserve=response();await handler(request('reserve',ACCESS,{size:123}),reserve);
     assert.equal(reserve.statusCode,200);assert.match(reserve.body.name,/^DIRECT_BROWSER_TEST_NOT_A_FIELD_VISIT__/);

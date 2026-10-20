@@ -61,8 +61,10 @@ module.exports = async function handler(req, res) {
   res.setHeader('Referrer-Policy', 'no-referrer');
   if (req.method !== 'POST') { res.setHeader('Allow', 'POST'); return res.status(405).json({ok:false,code:'METHOD'}); }
   if (!process.env.MYBOX_TOKEN || !process.env.MYBOX_DIRECT_PROBE_KEY ||
-      !authorized(req.headers['x-probe-key'], process.env.MYBOX_DIRECT_PROBE_KEY))
-    return res.status(403).json({ok:false,code:'NOT_READY',message:'점검용 서버 설정 또는 접근키를 확인해 주세요.'});
+      process.env.MYBOX_DIRECT_PROBE_KEY.length < 12)
+    return res.status(503).json({ok:false,code:'SETUP_REQUIRED',message:'Vercel 서버 환경변수와 재배포 상태를 확인해 주세요.'});
+  if (!authorized(req.headers['x-probe-key'], process.env.MYBOX_DIRECT_PROBE_KEY))
+    return res.status(403).json({ok:false,code:'INVALID_PROBE_KEY',message:'점검 접근키가 Vercel에 저장된 값과 다릅니다.'});
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body || {};
     if (body.action === 'reserve') {
