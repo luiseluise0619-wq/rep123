@@ -11,7 +11,7 @@
 <script src="./lib/leaflet.js"></script>
 <script src="./lib/leaflet.markercluster.js"></script>
 
-<link rel="stylesheet" href="./map-ui.css?v=20261020-progress"/>
+<link rel="stylesheet" href="./map-ui.css?v=20261020-partial-photo"/>
 </head>
 <body>
 <div id="map"></div>
@@ -36,7 +36,7 @@
           <button class="hbtn" type="button" id="dataInfoBtn">집계 기준</button>
           <a class="hbtn" id="photoAdminLink" hidden target="_blank" rel="noopener noreferrer">사진 관리</a>
         </nav>
-        <div class="map-legend"><span><i class="lg teal" aria-hidden="true"></i>주소 위치</span><span><i class="lg green" aria-hidden="true"></i>사진 2장 등록</span><span><i class="lg amber" aria-hidden="true"></i>좌표 확인 필요</span><p>사진 완료 색은 주소를 확인하거나 이 브라우저에서 등록한 뒤 표시됩니다. 지도에 표시된 숫자는 주소 수입니다.</p></div>
+        <div class="map-legend"><span><i class="lg teal" aria-hidden="true"></i>주소 위치</span><span><i class="lg purple" aria-hidden="true"></i>사진 1장</span><span><i class="lg green" aria-hidden="true"></i>사진 2장 완료</span><span><i class="lg amber" aria-hidden="true"></i>좌표 확인 필요</span><p>사진 수는 주소를 확인하거나 이 브라우저에서 등록한 뒤 표시됩니다. 지도에 표시된 숫자는 주소 수입니다.</p></div>
       </div>
     </details>
   </div>
@@ -125,6 +125,7 @@ function collectSido(s){ var out=[]; for(var g in s) out=out.concat(collectGugun
 var dotIcon   = L.divIcon({ className:'', html:'<div class="addr-dot"></div>', iconSize:[16,16], iconAnchor:[8,8] });
 var dotApprox = L.divIcon({ className:'', html:'<div class="addr-dot approx"></div>', iconSize:[16,16], iconAnchor:[8,8] });
 var selIcon   = L.divIcon({ className:'', html:'<div class="sel-dot"></div>', iconSize:[22,22], iconAnchor:[11,11] });
+var selPartialIcon = L.divIcon({ className:'', html:'<div class="sel-dot partial"><span class="photo-count-label">1장</span></div>', iconSize:[22,22], iconAnchor:[11,11] });
 var selDoneIcon = L.divIcon({ className:'', html:'<div class="sel-dot completed"></div>', iconSize:[22,22], iconAnchor:[11,11] });
 var redIcon   = L.divIcon({ className:'', html:'<div class="my-dot"></div>', iconSize:[20,20], iconAnchor:[10,10] });
 
@@ -142,18 +143,22 @@ var markerCache = new Map();     // 점 → L.marker (한 번만 생성)
 var _showToken = 0;              // 표시 작업 토큰(새 선택이 오면 옛 작업 취소)
 var completedAddresses=new Set(),exactPhotoCounts=new Map(),photoProgress=null;
 function photoCount(address){return exactPhotoCounts.has(address)?exactPhotoCounts.get(address):(completedAddresses.has(address)?2:null);}
-function photoStatusLabel(address){var count=photoCount(address);return count===2?'사진 2장 등록 완료':count===1?'사진 1/2장 등록':count===0?'등록 사진 없음':'사진 현황 확인 중…';}
+function photoStatusLabel(address){var count=photoCount(address);return count===2?'사진 2장 등록 완료':count===1?'사진 1장 등록 · 1장 남음':count===0?'등록 사진 없음':'사진 현황 확인 중…';}
+function photoActionLabel(address,popup){var count=photoCount(address);return count===2?'등록 완료 · 사진 보기':count===1?'사진 1장 등록 · 한 장 더':popup?'현장 사진 등록·보기':'사진 등록·보기';}
+function selectedPhotoIcon(address){var count=photoCount(address);return count===2?selDoneIcon:count===1?selPartialIcon:selIcon;}
 function markerIcon(rec){
-  var label=coordinateLabel(rec.p),review=coordinateReview(rec.p),completed=photoCount(rec.p[2])===2;
-  if(label)return L.divIcon({className:'',html:'<div class="addr-dot approx'+(review.status==='address-mismatch'?' mismatch':'')+(completed?' completed':'')+'"><span class="map-pin-label">'+esc(label)+'</span></div>',iconSize:[16,16],iconAnchor:[8,8]});
-  if(!rec.real)return completed?L.divIcon({className:'',html:'<div class="addr-dot approx completed"></div>',iconSize:[16,16],iconAnchor:[8,8]}):dotApprox;
-  return completed?L.divIcon({className:'',html:'<div class="addr-dot completed"></div>',iconSize:[16,16],iconAnchor:[8,8]}):dotIcon;
+  var label=coordinateLabel(rec.p),review=coordinateReview(rec.p),count=photoCount(rec.p[2]);
+  var state=count===2?' completed':count===1?' partial':'',badge=count===1?'<span class="photo-count-label">1장</span>':'';
+  if(label)return L.divIcon({className:'',html:'<div class="addr-dot approx'+(review.status==='address-mismatch'?' mismatch':'')+state+'"><span class="map-pin-label">'+esc(label)+'</span>'+badge+'</div>',iconSize:[16,16],iconAnchor:[8,8]});
+  if(!rec.real)return state?L.divIcon({className:'',html:'<div class="addr-dot approx'+state+'">'+badge+'</div>',iconSize:[16,16],iconAnchor:[8,8]}):dotApprox;
+  return state?L.divIcon({className:'',html:'<div class="addr-dot'+state+'">'+badge+'</div>',iconSize:[16,16],iconAnchor:[8,8]}):dotIcon;
 }
 function updatePhotoAddress(address){
-  (recordsByAddress.get(address)||[]).forEach(function(rec){var marker=markerCache.get(rec.p);if(marker){marker.setIcon(markerIcon(rec));marker.options.title=photoCount(address)===2?address+' · 사진 2장 등록 완료':address;}});
-  if(selMarker&&selMarker._d&&selMarker._d[2]===address)selMarker.setIcon(photoCount(address)===2?selDoneIcon:selIcon);
-  document.querySelectorAll('.photo-action[data-photo-address]').forEach(function(link){if(link.dataset.photoAddress===address){link.textContent=photoCount(address)===2?'등록 완료 · 사진 보기':'사진 등록·보기';link.classList.toggle('completed',photoCount(address)===2);}});
-  document.querySelectorAll('.popup-photo-action[data-photo-address]').forEach(function(link){if(link.dataset.photoAddress===address){link.textContent=photoCount(address)===2?'등록 완료 · 사진 보기':'현장 사진 등록·보기';link.classList.toggle('completed',photoCount(address)===2);}});
+  var count=photoCount(address);
+  (recordsByAddress.get(address)||[]).forEach(function(rec){var marker=markerCache.get(rec.p);if(marker){marker.setIcon(markerIcon(rec));marker.options.title=address+(count===2?' · 사진 2장 등록 완료':count===1?' · 사진 1장 등록':'');}});
+  if(selMarker&&selMarker._d&&selMarker._d[2]===address)selMarker.setIcon(selectedPhotoIcon(address));
+  document.querySelectorAll('.photo-action[data-photo-address]').forEach(function(link){if(link.dataset.photoAddress===address){link.textContent=photoActionLabel(address,false);link.classList.toggle('completed',count===2);link.classList.toggle('partial',count===1);}});
+  document.querySelectorAll('.popup-photo-action[data-photo-address]').forEach(function(link){if(link.dataset.photoAddress===address){link.textContent=photoActionLabel(address,true);link.classList.toggle('completed',count===2);link.classList.toggle('partial',count===1);}});
   document.querySelectorAll('.popup-photo-status[data-photo-address]').forEach(function(label){if(label.dataset.photoAddress===address)label.textContent=photoStatusLabel(address);});
 }
 function applyPhotoSnapshot(next,meta){var previous=completedAddresses,checked=[...exactPhotoCounts.keys()];completedAddresses=next;
@@ -307,7 +312,7 @@ var adminPhotoEntry=photoUrl(''), adminPhotoLink=document.getElementById('photoA
 if(adminPhotoEntry&&adminPhotoLink){adminPhotoLink.href='/photo-admin';adminPhotoLink.hidden=false;}
 function photoLinkHtml(address){
   var url=photoUrl(address);
-  return url ? '<a class="pbtn search popup-photo-action'+(photoCount(address)===2?' completed':'')+'" data-photo-address="'+esc(address).replace(/"/g,'&quot;')+'" href="'+url+'" target="_blank" rel="noopener noreferrer">'+(photoCount(address)===2?'등록 완료 · 사진 보기':'현장 사진 등록·보기')+'</a>' :
+  return url ? '<a class="pbtn search popup-photo-action'+(photoCount(address)===2?' completed':photoCount(address)===1?' partial':'')+'" data-photo-address="'+esc(address).replace(/"/g,'&quot;')+'" href="'+url+'" target="_blank" rel="noopener noreferrer">'+photoActionLabel(address,true)+'</a>' :
     '<div class="popup-sub">사진 등록을 준비 중입니다.</div>';
 }
 function startPhotoProgress(){
@@ -435,10 +440,10 @@ function appendAddrRow(p){
   };
   var photo=document.createElement('a'), photoHref=photoUrl(p[2]);
   photo.className='photo-action';
-  photo.textContent=photoHref?(photoCount(p[2])===2?'등록 완료 · 사진 보기':'사진 등록·보기'):'사진 등록 준비 중';
+  photo.textContent=photoHref?photoActionLabel(p[2],false):'사진 등록 준비 중';
   if(photoHref){
     photo.href=photoHref; photo.target='_blank'; photo.rel='noopener noreferrer';
-    photo.dataset.photoAddress=p[2];photo.classList.toggle('completed',photoCount(p[2])===2);
+    photo.dataset.photoAddress=p[2];photo.classList.toggle('completed',photoCount(p[2])===2);photo.classList.toggle('partial',photoCount(p[2])===1);
     photo.onclick=function(e){e.stopPropagation();};
   } else { photo.setAttribute('aria-disabled','true'); }
   r.appendChild(photo);
@@ -449,7 +454,7 @@ function appendAddrRow(p){
 var selMarker = null;
 function showSelected(p){
   if(selMarker){ map.removeLayer(selMarker); selMarker=null; }   // 이전 선택 마커 먼저 제거
-  selMarker = L.marker([p[0],p[1]], {icon:photoCount(p[2])===2?selDoneIcon:selIcon, zIndexOffset:900}).addTo(map);
+  selMarker = L.marker([p[0],p[1]], {icon:selectedPhotoIcon(p[2]), zIndexOffset:900}).addTo(map);
   selMarker.on('popupclose', function(){ if(selMarker){ map.removeLayer(selMarker); selMarker=null; } });
   openPopup(selMarker, p);
 }

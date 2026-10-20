@@ -22,7 +22,7 @@ function harness(width=390,directEnabled=false){
  return {ui:sandbox,get,events,calls,point,timers};
 }
 test('map uses the photo-page palette and keeps secondary actions inside the more menu',()=>{
- assert.match(html,/map-ui\.css\?v=20261020-progress/);assert.match(css,/--accent:#2563eb/);assert.doesNotMatch(css,/#EFEBE3|#E5007E|#FF6A00|animation:(?:spread|ripple)/i);
+ assert.match(html,/map-ui\.css\?v=20261020-partial-photo/);assert.match(css,/--accent:#2563eb/);assert.doesNotMatch(css,/#EFEBE3|#E5007E|#FF6A00|animation:(?:spread|ripple)/i);
  const menu=html.slice(html.indexOf('<details class="map-menu"'),html.indexOf('</details>'));
  for(const token of ['duplicates.html','coordinate-review.html','dataInfoBtn','photoAdminLink','nApprox'])assert.ok(menu.includes(token));
  assert.match(menu,/지도에 표시된 숫자는 주소 수/);assert.match(html,/id="panelToggle"[^>]*aria-expanded="true"/);
@@ -39,6 +39,8 @@ test('map skips the automatic photo lookup but updates a completed marker after 
  h.ui.startPhotoProgress();
  assert.equal(refreshes,0);assert.equal(h.events.focus,undefined);
  assert.doesNotMatch(html,/photoProgress\.refresh\(\)/);
+ h.events.storage[0]({key:'photoProgressV1',newValue:JSON.stringify({address:h.point[2],count:1})});
+ assert.match(h.ui.markerIcon(rec).html,/addr-dot partial/);
  h.events.storage[0]({key:'photoProgressV1',newValue:JSON.stringify({address:h.point[2],count:2})});
  assert.match(h.ui.markerIcon(rec).html,/addr-dot completed/);
 });
@@ -83,6 +85,22 @@ test('two stored photos turn a verified address green while coordinate warnings 
  h.ui.applyPhotoCount(warning[2],2);
  assert.match(h.ui.markerIcon({p:warning,real:false}).html,/addr-dot approx completed/);
  assert.match(css,/\.addr-dot\.completed\.approx/);
+});
+test('one stored photo gets a purple 1-photo marker, selected icon, and another-photo action',()=>{
+ const h=harness(),rec=h.ui.recordByPoint.get(h.point),address=h.point[2];
+ h.ui.applyPhotoCount(address,1);
+ assert.match(h.ui.markerIcon(rec).html,/addr-dot partial/);
+ assert.match(h.ui.markerIcon(rec).html,/>1장</);
+ assert.match(h.ui.selectedPhotoIcon(address).html,/sel-dot partial/);
+ assert.match(h.ui.photoLinkHtml(address),/popup-photo-action partial/);
+ assert.match(h.ui.photoLinkHtml(address),/사진 1장 등록 · 한 장 더/);
+ h.ui.appendAddrRow(h.point);
+ assert.equal(h.get('list').children[0].children[2].textContent,'사진 1장 등록 · 한 장 더');
+ assert.match(css,/\.addr-dot\.partial/);
+ assert.match(css,/\.photo-count-label/);
+ h.ui.applyPhotoCount(address,2);
+ assert.match(h.ui.markerIcon(rec).html,/addr-dot completed/);
+ assert.doesNotMatch(h.ui.markerIcon(rec).html,/>1장</);
 });
 
 test('mismatched addresses show a permanent marker label and escaped source-result warning without blocking photos',()=>{
