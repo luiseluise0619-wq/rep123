@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
-  "functions": {"api/mybox-direct-probe.js": {"maxDuration": 60}},
+  "functions": {"api/mybox-direct-probe.js": {"maxDuration": 60}, "api/photo-direct.js": {"maxDuration": 60}},
   "headers": [
     {
       "source": "/photo",
@@ -9,6 +9,10 @@
     },
     {
       "source": "/direct-upload-probe",
+      "headers": [{"key":"Cache-Control","value":"no-store"},{"key":"Referrer-Policy","value":"no-referrer"}]
+    },
+    {
+      "source": "/photo-admin",
       "headers": [{"key":"Cache-Control","value":"no-store"},{"key":"Referrer-Policy","value":"no-referrer"}]
     },
     {

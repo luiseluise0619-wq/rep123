@@ -7,6 +7,7 @@ let remote=null,remoteOrigin='',deviceKey='',busy=false,sending=false,singlePhot
 let connectResolve,connectReject;
 const connected=new Promise((resolve,reject)=>{connectResolve=resolve;connectReject=reject;});
 const connectionTimer=setTimeout(()=>connectReject(Error('저장 서버에 연결되지 않았습니다. 잠시 후 이 화면을 다시 열어 주세요.')),30000);
+if(config.directEnabled){clearTimeout(connectionTimer);deviceKey=keepKey();connectResolve();}
 function say(text,error=false){$('message').textContent=text;$('message').hidden=!text;$('message').classList.toggle('error',error);}
 function readKey(){try{const key=localStorage.getItem(KEY)||'';return /^[a-f0-9]{64}$/.test(key)?key:'';}catch(ignored){return '';}}
 function keepKey(legacy){let key=readKey()||(/^[a-f0-9]{64}$/.test(legacy||'')?legacy:random(32));try{localStorage.setItem(KEY,key);return readKey()===key?key:'';}catch(ignored){return '';}}
@@ -19,9 +20,46 @@ window.addEventListener('message',event=>{
   if(data.result&&data.result.ok)request.resolve(data.result.data);else{const error=Error(data.result&&data.result.message||'요청을 완료하지 못했습니다.');error.code=data.result&&data.result.code;request.reject(error);}
 });
 async function once(name,...args){await connected;return new Promise((resolve,reject)=>{
+  if(config.directEnabled){
+    const names={getPublicStatus:'status',beginPublicCapture:'capture',getPublicPhoto:'photo',
+      getPublicUploadReceipt:'receipt',deletePhoto:'remove'};
+    const action=names[name];if(!action){reject(Error('사진 요청 형식이 올바르지 않습니다.'));return;}
+    const body=action==='status'?{address:args[0],deviceKey:args[1]}:
+      action==='capture'?{deviceKey:args[0],address:args[1]}:
+      action==='photo'?{address:args[0],photoId:args[1]}:
+      action==='receipt'?{deviceKey:args[0],address:args[1],hash:args[2]}:
+      {deviceKey:args[1],address:args[2],photoId:args[3]};
+    directApi(action,body).then(resolve,reject);return;
+  }
   const id=random(12),timer=setTimeout(()=>{requests.delete(id);const error=Error(name==='uploadPublicPhoto'?'등록 응답이 늦어 저장 여부를 확인하지 못했습니다. 사진은 그대로 두고 ‘등록 현황 확인’을 눌러주세요.':'서버 응답이 늦습니다. 잠시 후 다시 확인해 주세요.');error.code='TIMEOUT';reject(error);},name==='uploadPublicPhoto'?90000:30000);
   requests.set(id,{resolve,reject,timer});remote.postMessage({channel,id,name,args},remoteOrigin);
 });}
+async function directApi(action,fields){
+  let response;
+  try{response=await fetch('/api/photo-direct',{method:'POST',cache:'no-store',referrerPolicy:'no-referrer',
+    headers:{'Content-Type':'application/json'},body:JSON.stringify({action,...fields}),signal:AbortSignal.timeout(90000)});}
+  catch{const e=Error('사진 저장 서버의 응답이 늦습니다. 등록 현황을 확인해 주세요.');e.code='TIMEOUT';throw e;}
+  const value=await response.json();if(!response.ok||!value.ok){const e=Error(value.message||'사진 요청을 완료하지 못했습니다.');e.code=value.code;throw e;}
+  return value.data;
+}
+async function directUpload(photo){
+  const reserved=photo.directReservation||await directApi('reserve',{address,deviceKey,hash:photo.hash,size:photo.blob.size,
+    visitDate:photo.visitDate,captureTicket:photo.ticket,capturedAt:photo.capturedAt,consent:true});
+  if(reserved.alreadySaved)return reserved;
+  photo.directReservation=reserved;
+  const form=new FormData();form.append('Filedata',photo.blob,'pending.jpg');
+  // A network/CORS error can still mean MYBOX saved the bytes; finalize verifies
+  // the staging folder instead of blindly creating a second reservation.
+  if(!photo.directSent){try{const response=await fetch(reserved.uploadUrl,{method:'POST',body:form,mode:'cors',credentials:'omit',
+    referrerPolicy:'no-referrer',redirect:'error'});
+    if(!response.ok)throw Error('MYBOX가 사진 전송을 완료하지 못했습니다.');photo.directSent=true;}
+  catch(error){photo.uncertain=true;}}
+  for(let attempt=0;attempt<3;attempt++){
+    try{const result=await directApi('finish',{reservation:reserved.reservation,deviceKey});photo.directReservation=null;return result;}
+    catch(error){if(error.code!=='PENDING'||attempt===2)throw error;
+      await new Promise(resolve=>setTimeout(resolve,1200*(attempt+1)));}
+  }
+}
 async function rpc(name,...args){for(let attempt=0;;attempt++){try{return await once(name,...args);}catch(error){if(error.code!=='BUSY'||attempt>=3)throw error;await new Promise(resolve=>setTimeout(resolve,1500*(attempt+1)));}}}
 function controls(){
   const needsReview=pending.some(photo=>!photo.confirmed),full=savedCount+pending.length>=2;
@@ -120,7 +158,8 @@ async function upload(){await withBusy(async()=>{
     let alreadySaved=false;
     if(photo.uncertain){say('앞선 등록 여부를 확인하는 중…');alreadySaved=(await rpc('getPublicUploadReceipt',deviceKey,address,photo.hash)).saved;}
     if(!alreadySaved){say('사진을 저장하는 중…');try{
-      await rpc('uploadPublicPhoto',deviceKey,address,{base64:await encode(photo.blob),visitDate:photo.visitDate,confirmReadable:true,publicShare:true,captureTicket:photo.ticket,capturedAt:photo.capturedAt});
+      if(config.directEnabled)await directUpload(photo);
+      else await rpc('uploadPublicPhoto',deviceKey,address,{base64:await encode(photo.blob),visitDate:photo.visitDate,confirmReadable:true,publicShare:true,captureTicket:photo.ticket,capturedAt:photo.capturedAt});
     }catch(error){if(['TIMEOUT','CONNECTION','UPLOAD','VERIFY'].includes(error.code)){
       photo.uncertain=true;say('저장 응답을 확인하는 중…');
       try{alreadySaved=(await rpc('getPublicUploadReceipt',deviceKey,address,photo.hash)).saved;}catch(ignored){}
@@ -138,13 +177,13 @@ window.addEventListener('beforeunload',event=>{if(busy||pending.length){event.pr
 window.addEventListener('storage',event=>{if(event.key===KEY||event.key===null){deviceKey=readKey();canUpload=false;stopCamera();say('브라우저 삭제키가 변경됐습니다. 이 화면을 다시 열어 주세요.',true);controls();}});
 async function init(){
   $('entryLoading').hidden=false;$('retryConnection').hidden=true;
-  $('address').textContent=address;$('admin').href=config.webAppUrl+'?page=admin&build='+encodeURIComponent(config.build||'v5');
+  $('address').textContent=address;$('admin').href=config.directEnabled?'/photo-admin':config.webAppUrl+'?page=admin&build='+encodeURIComponent(config.build||'v5');
   // Show the camera immediately; the server still verifies exact source membership before capture and upload.
   if(!address||address.length>1000||/[\u0000-\u001f]/.test(address))throw Error('지도에서 방문 주소를 다시 선택해 주세요.');
   $('addressMap').href='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(address);$('addressMap').hidden=false;
   localReady=true;controls();
   initialStatusPromise=connected.then(()=>{ $('entryDetail').textContent='주소와 등록된 사진을 확인하고 있습니다.';return refresh(); });
-  const bridgeUrl=new URL(config.webAppUrl);bridgeUrl.searchParams.set('page','bridge');bridgeUrl.searchParams.set('channel',channel);bridgeUrl.searchParams.set('build',config.build||'v5');$('bridge').src=bridgeUrl.toString();
+  if(!config.directEnabled){const bridgeUrl=new URL(config.webAppUrl);bridgeUrl.searchParams.set('page','bridge');bridgeUrl.searchParams.set('channel',channel);bridgeUrl.searchParams.set('build',config.build||'v5');$('bridge').src=bridgeUrl.toString();}
   await initialStatusPromise;$('entryLoading').hidden=true;
   if(!canUpload&&stream){stopCamera();say(savedCount>=2?'이 주소에는 이미 사진 2장이 등록돼 있습니다.':'지금은 사진을 등록할 수 없습니다.',true);}
   else if(!deviceKey)say('이 브라우저에서는 보기만 가능합니다. 브라우저 저장을 허용해 주세요.',true);
