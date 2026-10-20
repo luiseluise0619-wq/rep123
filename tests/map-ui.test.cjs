@@ -1,7 +1,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const html=fs.readFileSync(path.join(__dirname,'../web/index.html'),'utf8'),css=fs.readFileSync(path.join(__dirname,'../web/map-ui.css'),'utf8');
 const script=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).filter(Boolean).join('\n').replace(/initDataInfo\(\);\s*initMap\(\);\s*$/,'');
-function harness(width=390){
+function harness(width=390,directEnabled=false){
  const elements=new Map(),events={},calls=[],timers=new Map();let seq=0;
  function element(tag='div'){
   const classes=new Set(),listeners={},e={tagName:tag.toUpperCase(),children:[],attributes:{},dataset:{},hidden:false,open:false,textContent:'',value:'',innerHTML:'',style:{setProperty(k,v){this[k]=v;}},
@@ -13,7 +13,7 @@ function harness(width=390){
  const get=id=>{if(!elements.has(id))elements.set(id,element());return elements.get(id);};
  const point=[37.5,127,'서울특별시 영등포구 당산동1가 256-119',3,1,'1123075000','서울'];
  const source={서울특별시:{영등포구:{당산1동:[point]}}};
- const window={ADDR_DATA:source,ADDR_META:{},PHOTO_CONFIG:{webAppUrl:'https://script.google.com/macros/s/test/exec',build:'test'},innerWidth:width,innerHeight:844,addEventListener:(name,fn)=>{(events[name]??=[]).push(fn);},AddressSearch:require('../web/address-search.js')};
+ const window={ADDR_DATA:source,ADDR_META:{},PHOTO_CONFIG:{webAppUrl:'https://script.google.com/macros/s/test/exec',build:'test',directEnabled},innerWidth:width,innerHeight:844,addEventListener:(name,fn)=>{(events[name]??=[]).push(fn);},AddressSearch:require('../web/address-search.js')};
  const map={setView:(...args)=>calls.push(['setView',...args]),fitBounds:(...args)=>calls.push(['fitBounds',...args]),removeLayer:layer=>calls.push(['removeLayer',layer]),getBounds:()=>({contains:()=>true})};
  const marker={addTo:()=>marker,on:()=>marker,bindPopup(content,options){calls.push(['popup',content,options]);return marker;},openPopup:()=>marker};
  const L={divIcon:options=>options,point:(x,y)=>({x,y}),latLngBounds:pts=>pts,marker:()=>marker};
@@ -26,6 +26,12 @@ test('map uses the photo-page palette and keeps secondary actions inside the mor
  const menu=html.slice(html.indexOf('<details class="map-menu"'),html.indexOf('</details>'));
  for(const token of ['duplicates.html','coordinate-review.html','dataInfoBtn','photoAdminLink','nApprox'])assert.ok(menu.includes(token));
  assert.match(menu,/지도에 표시된 숫자는 주소 수/);assert.match(html,/id="panelToggle"[^>]*aria-expanded="true"/);
+});
+test('direct-photo map links to local registration and administration, not Apps Script',()=>{
+ const h=harness(390,true);
+ assert.equal(h.get('photoAdminLink').href,'/photo-admin');
+ const url=new URL(h.ui.photoUrl(h.point[2]),'https://rep123-seven.vercel.app/');
+ assert.equal(url.pathname,'/photo');assert.equal(url.searchParams.get('address'),h.point[2]);
 });
 test('panel can be collapsed and reopened with a native button without losing region or search state',()=>{
  const h=harness();h.ui.sel.sido='서울특별시';h.get('mapSearch').value='당산동';h.ui.setPanel(h.ui.defaultH());

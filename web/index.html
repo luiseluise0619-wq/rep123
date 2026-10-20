@@ -301,11 +301,11 @@ function openPopup(marker, rec){
 // Public endpoint only; credentials are never included in the map or its links.
 function photoUrl(address){
   var config=window.PHOTO_CONFIG||{}, base=String(config.webAppUrl||'');
-  if(!/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(base)) return '';
+  if(!config.directEnabled&&!/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(base)) return '';
   return './photo?address='+encodeURIComponent(address)+'&build='+encodeURIComponent(config.build||'v5');
 }
 var adminPhotoEntry=photoUrl(''), adminPhotoLink=document.getElementById('photoAdminLink');
-if(adminPhotoEntry&&adminPhotoLink){adminPhotoLink.href=window.PHOTO_CONFIG.webAppUrl+'?page=admin&build='+encodeURIComponent(window.PHOTO_CONFIG.build||'v5');adminPhotoLink.hidden=false;}
+if(adminPhotoEntry&&adminPhotoLink){adminPhotoLink.href=window.PHOTO_CONFIG.directEnabled?'/photo-admin':window.PHOTO_CONFIG.webAppUrl+'?page=admin&build='+encodeURIComponent(window.PHOTO_CONFIG.build||'v5');adminPhotoLink.hidden=false;}
 function photoLinkHtml(address){
   var url=photoUrl(address);
   return url ? '<a class="pbtn search popup-photo-action'+(photoCount(address)===2?' completed':'')+'" data-photo-address="'+esc(address).replace(/"/g,'&quot;')+'" href="'+url+'" target="_blank" rel="noopener noreferrer">'+(photoCount(address)===2?'등록 완료 · 사진 보기':'현장 사진 등록·보기')+'</a>' :
