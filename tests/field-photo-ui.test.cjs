@@ -1,15 +1,16 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),crypto=require('node:crypto');
 const source=fs.readFileSync(require('node:path').join(__dirname,'../web/field-photo.js'),'utf8');
 const html=fs.readFileSync(require('node:path').join(__dirname,'../web/photo.html'),'utf8');
-function harness(){const elements=new Map(),events={},stored=new Map(),timers=new Map();let seq=0,frames=0;
+function harness({directEnabled=false,fetcher}={}){const elements=new Map(),events={},stored=new Map(),timers=new Map();let seq=0,frames=0;
  const context={measureText:value=>({width:String(value).length*8}),drawImage(){},fillRect(){},fillText(){}};
  const element=()=>({textContent:'',hidden:false,disabled:false,checked:false,value:'',style:{},children:[],attributes:{},classList:{toggle(){}},setAttribute(k,v){this.attributes[k]=v;},showModal(){this.open=true;},close(){this.open=false;},append(...x){this.children.push(...x);},prepend(x){this.children.unshift(x);},replaceChildren(...x){this.children=x;},remove(){},removeAttribute(){},scrollIntoView(){this.scrolled=true;},getTracks(){return [];},play:async()=>{},getContext:()=>context,toBlob:fn=>fn(new Blob(['test-jpeg-'+(++frames)],{type:'image/jpeg'}))});
  const get=id=>{if(!elements.has(id))elements.set(id,element());return elements.get(id);};
- const window={PHOTO_CONFIG:{webAppUrl:'https://script.google.com/macros/s/test/exec'},addEventListener:(name,fn)=>events[name]=fn};
+ const window={PHOTO_CONFIG:{webAppUrl:'https://script.google.com/macros/s/test/exec',directEnabled},addEventListener:(name,fn)=>events[name]=fn};
  const sandbox={window,document:{getElementById:get,querySelectorAll:()=>[],createElement:element,addEventListener(){}},location:{search:'?address=test'},navigator:{},
- crypto:crypto.webcrypto,URL,URLSearchParams,Uint8Array,Date,Intl,JSON,Number,Math,Array,Error,Promise,Set,Map,
+ crypto:crypto.webcrypto,URL,URLSearchParams,Uint8Array,Date,Intl,JSON,Number,Math,Array,Error,Promise,Set,Map,AbortSignal,
  FileReader:class {readAsDataURL(blob){blob.arrayBuffer().then(value=>{this.result='data:image/jpeg;base64,'+Buffer.from(value).toString('base64');this.onload();});}},
- localStorage:{getItem:k=>stored.get(k)||null,setItem:(k,v)=>stored.set(k,v)},setTimeout:(fn,ms)=>{const id=++seq;timers.set(id,{fn,ms});return id;},clearTimeout:id=>timers.delete(id)};
+ localStorage:{getItem:k=>stored.get(k)||null,setItem:(k,v)=>stored.set(k,v)},setTimeout:(fn,ms)=>{const id=++seq;timers.set(id,{fn,ms});return id;},clearTimeout:id=>timers.delete(id),
+ fetch:fetcher};
  vm.createContext(sandbox);vm.runInContext(source.replace('init().catch(entryError);','window.test={init,entryError,once,controls,bridgeOrigin,connected,channel,requests,keepKey,renderPending,capture,openCamera,upload,stopCamera,setPending:value=>{pending=value;},setReady:()=>{localReady=true;addressReady=true;canUpload=true;deviceKey="a".repeat(64);},photoState:()=>({deviceKey,busy,stream,pending})};'),sandbox);
  return {sandbox,get,events,timers,run:s=>vm.runInContext(s,sandbox),api:window.test};
 }
@@ -31,6 +32,17 @@ test('bridge validates origin, nonce and reply window, preserving legacy browser
  h.events.message({origin:'https://safe-script.googleusercontent.com',source:{},data});assert.equal(h.api.requests.size,1);
  h.events.message({origin:'https://safe-script.googleusercontent.com',source:remote,data});assert.equal((await call).done,true);
  assert.equal(h.api.requests.size,0);
+});
+test('direct photo screen gets status and camera permit from Vercel without an Apps Script iframe',async()=>{
+ const calls=[],h=harness({directEnabled:true,fetcher:async(url,options)=>{
+   assert.equal(url,'/api/photo-direct');const value=JSON.parse(options.body);calls.push(value.action);
+   const data=value.action==='status'?{ready:true,totalCount:0,photos:[],quota:{canUpload:true}}:{ticket:'direct-test-ticket'};
+   return Response.json({ok:true,data});
+ }});
+ await h.api.init();assert.equal(h.get('bridge').src,undefined);
+ assert.equal(h.get('admin').href,'/photo-admin');assert.equal(h.api.photoState().deviceKey.length,64);
+ const permit=await h.api.once('beginPublicCapture',h.api.photoState().deviceKey,'test');
+ assert.equal(permit.ticket,'direct-test-ticket');assert.deepEqual(calls,['status','capture']);
 });
 test('upload timeout is bounded, keeps uncertain status distinct, and ignores late replies',async()=>{
  const h=harness(),sent=[],remote={postMessage:value=>sent.push(value)};
