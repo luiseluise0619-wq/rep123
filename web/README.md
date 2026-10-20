@@ -54,10 +54,9 @@ node --test tests/address-data.test.cjs
 ```
 
 검산 결과는 `data-validation.json`, 화면 집계 기준은 `data-meta.js`에 있습니다.
-사진 기능 코드는 `../photo-backend/`에 있습니다. MYBOX 인증키·팀 암호는 공개 저장소가 아니라
-Apps Script의 스크립트 속성에만 소유자가 직접 등록합니다. 연결·배포 절차와 무료 안전 한도는
-`../photo-backend/README.md`를 참고하세요. `photo-config.js`에는 공개 `/exec` 주소만 넣습니다.
-빈 값이면 지도는 사진 연결 준비 중으로 표시하며 업로드로 이동하지 않습니다.
+사진 기능은 `api/photo-direct.js`와 MYBOX를 사용합니다. 인증키와 관리자 암호는 공개 저장소가
+아닌 Vercel Production 환경변수에만 둡니다. 연결·배포 절차는 `PHOTO_DIRECT.md`를 참고하세요.
+`photo-config.js`에는 비밀 값을 넣지 않습니다.
 카드 등록이나 유료 서비스 활성화를 자동으로 수행하는 코드는 없습니다.
 
 ### 이전 주소문자열 기반 생성기 (현재 한글 집계를 덮어쓰면 안 됨)

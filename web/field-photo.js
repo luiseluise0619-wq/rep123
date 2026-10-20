@@ -1,39 +1,24 @@
 (function(){
 'use strict';
-const $=id=>document.getElementById(id),config=window.PHOTO_CONFIG||{},address=new URLSearchParams(location.search).get('address')||'';
+const $=id=>document.getElementById(id),address=new URLSearchParams(location.search).get('address')||'';
 const random=bytes=>Array.from(crypto.getRandomValues(new Uint8Array(bytes)),b=>b.toString(16).padStart(2,'0')).join('');
-const channel=random(32),requests=new Map(),KEY='photoDeviceKeyV4';
-let remote=null,remoteOrigin='',deviceKey='',busy=false,sending=false,singlePhotoMode=false,localReady=false,addressReady=false,savedCount=0,canUpload=false,stream=null,pending=[],epoch=0,initialStatusPromise=null;
-let connectResolve,connectReject;
-const connected=new Promise((resolve,reject)=>{connectResolve=resolve;connectReject=reject;});
-const connectionTimer=setTimeout(()=>connectReject(Error('저장 서버에 연결되지 않았습니다. 잠시 후 이 화면을 다시 열어 주세요.')),30000);
-if(config.directEnabled){clearTimeout(connectionTimer);deviceKey=keepKey();connectResolve();}
+const KEY='photoDeviceKeyV4';
+let deviceKey='',busy=false,sending=false,singlePhotoMode=false,localReady=false,addressReady=false,savedCount=0,canUpload=false,stream=null,pending=[],epoch=0,initialStatusPromise=null;
 function say(text,error=false){$('message').textContent=text;$('message').hidden=!text;$('message').classList.toggle('error',error);}
 function readKey(){try{const key=localStorage.getItem(KEY)||'';return /^[a-f0-9]{64}$/.test(key)?key:'';}catch(ignored){return '';}}
-function keepKey(legacy){let key=readKey()||(/^[a-f0-9]{64}$/.test(legacy||'')?legacy:random(32));try{localStorage.setItem(KEY,key);return readKey()===key?key:'';}catch(ignored){return '';}}
-function bridgeOrigin(value){return value==='https://script.google.com'||/^https:\/\/[a-z0-9-]+-script\.googleusercontent\.com$/.test(value);}
-window.addEventListener('message',event=>{
-  const data=event.data;if(!data||data.channel!==channel||!bridgeOrigin(event.origin))return;
-  if(data.type==='ready'&&!remote){remote=event.source;remoteOrigin=event.origin;clearTimeout(connectionTimer);deviceKey=keepKey(data.legacyKey);connectResolve();return;}
-  if(event.source!==remote||event.origin!==remoteOrigin||data.type!=='reply')return;
-  const request=requests.get(data.id);if(!request)return;requests.delete(data.id);clearTimeout(request.timer);
-  if(data.result&&data.result.ok)request.resolve(data.result.data);else{const error=Error(data.result&&data.result.message||'요청을 완료하지 못했습니다.');error.code=data.result&&data.result.code;request.reject(error);}
-});
-async function once(name,...args){await connected;return new Promise((resolve,reject)=>{
-  if(config.directEnabled){
-    const names={getPublicStatus:'status',beginPublicCapture:'capture',getPublicPhoto:'photo',
-      getPublicUploadReceipt:'receipt',deletePhoto:'remove'};
-    const action=names[name];if(!action){reject(Error('사진 요청 형식이 올바르지 않습니다.'));return;}
-    const body=action==='status'?{address:args[0],deviceKey:args[1]}:
-      action==='capture'?{deviceKey:args[0],address:args[1]}:
-      action==='photo'?{address:args[0],photoId:args[1]}:
-      action==='receipt'?{deviceKey:args[0],address:args[1],hash:args[2]}:
-      {deviceKey:args[1],address:args[2],photoId:args[3]};
-    directApi(action,body).then(resolve,reject);return;
-  }
-  const id=random(12),timer=setTimeout(()=>{requests.delete(id);const error=Error(name==='uploadPublicPhoto'?'등록 응답이 늦어 저장 여부를 확인하지 못했습니다. 사진은 그대로 두고 ‘등록 현황 확인’을 눌러주세요.':'서버 응답이 늦습니다. 잠시 후 다시 확인해 주세요.');error.code='TIMEOUT';reject(error);},name==='uploadPublicPhoto'?90000:30000);
-  requests.set(id,{resolve,reject,timer});remote.postMessage({channel,id,name,args},remoteOrigin);
-});}
+function keepKey(){let key=readKey()||random(32);try{localStorage.setItem(KEY,key);return readKey()===key?key:'';}catch(ignored){return '';}}
+deviceKey=keepKey();
+async function once(name,...args){
+  const names={getPublicStatus:'status',beginPublicCapture:'capture',getPublicPhoto:'photo',
+    getPublicUploadReceipt:'receipt',deletePhoto:'remove'};
+  const action=names[name];if(!action)throw Error('사진 요청 형식이 올바르지 않습니다.');
+  const body=action==='status'?{address:args[0],deviceKey:args[1]}:
+    action==='capture'?{deviceKey:args[0],address:args[1]}:
+    action==='photo'?{address:args[0],photoId:args[1]}:
+    action==='receipt'?{deviceKey:args[0],address:args[1],hash:args[2]}:
+    {deviceKey:args[1],address:args[2],photoId:args[3]};
+  return directApi(action,body);
+}
 async function directApi(action,fields){
   let response;
   try{response=await fetch('/api/photo-direct',{method:'POST',cache:'no-store',referrerPolicy:'no-referrer',
@@ -149,7 +134,6 @@ function savedCard(photo){const card=document.createElement('article');card.clas
   if(photo.canDelete){const remove=document.createElement('button'),confirm=document.createElement('div'),yes=document.createElement('button'),no=document.createElement('button'),notice=document.createElement('p');remove.type=yes.type=no.type='button';remove.className='danger';remove.textContent='내 사진 삭제';yes.textContent='삭제';yes.className='danger';no.textContent='취소';no.className='secondary';notice.textContent='MYBOX 휴지통으로 이동할까요?';confirm.hidden=true;confirm.append(notice,yes,no);remove.onclick=()=>{if(!busy){confirm.hidden=false;remove.hidden=true;}};no.onclick=()=>{confirm.hidden=true;remove.hidden=false;};yes.onclick=()=>withBusy(async()=>{await rpc('deletePhoto','',deviceKey,address,photo.id);await refresh();say('사진을 삭제했습니다.');});card.append(remove,confirm);}return card;
 }
 async function refresh(){const token=++epoch,data=await rpc('getPublicStatus',address,deviceKey);if(token!==epoch)return;if(!data.ready)throw Error('사진 저장 설정을 확인해야 합니다.');addressReady=true;savedCount=data.totalCount;canUpload=!!data.quota.canUpload&&!!deviceKey;$('count').textContent=savedCount+' / 2';$('gallery').hidden=false;$('saved').replaceChildren(...data.photos.map(savedCard));controls();try{localStorage.setItem('photoProgressV1',JSON.stringify({address,count:savedCount,checkedAt:Date.now()}));}catch(ignored){}return data;}
-async function encode(blob){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(',')[1]);reader.onerror=()=>reject(Error('사진을 읽지 못했습니다.'));reader.readAsDataURL(blob);});}
 async function upload(){await withBusy(async()=>{
   if(!pending.length||pending.some(photo=>!photo.confirmed))throw Error('사진마다 ‘확인’을 누른 뒤 전송해 주세요.');
   if(!$('publicConsent').checked)throw Error('공개 등록 안내에 체크해 주세요.');sending=true;stopCamera();let saved=0;
@@ -158,8 +142,7 @@ async function upload(){await withBusy(async()=>{
     let alreadySaved=false;
     if(photo.uncertain){say('앞선 등록 여부를 확인하는 중…');alreadySaved=(await rpc('getPublicUploadReceipt',deviceKey,address,photo.hash)).saved;}
     if(!alreadySaved){say('사진을 저장하는 중…');try{
-      if(config.directEnabled)await directUpload(photo);
-      else await rpc('uploadPublicPhoto',deviceKey,address,{base64:await encode(photo.blob),visitDate:photo.visitDate,confirmReadable:true,publicShare:true,captureTicket:photo.ticket,capturedAt:photo.capturedAt});
+      await directUpload(photo);
     }catch(error){if(['TIMEOUT','CONNECTION','UPLOAD','VERIFY'].includes(error.code)){
       photo.uncertain=true;say('저장 응답을 확인하는 중…');
       try{alreadySaved=(await rpc('getPublicUploadReceipt',deviceKey,address,photo.hash)).saved;}catch(ignored){}
@@ -177,13 +160,13 @@ window.addEventListener('beforeunload',event=>{if(busy||pending.length){event.pr
 window.addEventListener('storage',event=>{if(event.key===KEY||event.key===null){deviceKey=readKey();canUpload=false;stopCamera();say('브라우저 삭제키가 변경됐습니다. 이 화면을 다시 열어 주세요.',true);controls();}});
 async function init(){
   $('entryLoading').hidden=false;$('retryConnection').hidden=true;
-  $('address').textContent=address;$('admin').href=config.directEnabled?'/photo-admin':config.webAppUrl+'?page=admin&build='+encodeURIComponent(config.build||'v5');
+  $('address').textContent=address;$('admin').href='/photo-admin';
   // Show the camera immediately; the server still verifies exact source membership before capture and upload.
   if(!address||address.length>1000||/[\u0000-\u001f]/.test(address))throw Error('지도에서 방문 주소를 다시 선택해 주세요.');
   $('addressMap').href='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(address);$('addressMap').hidden=false;
   localReady=true;controls();
-  initialStatusPromise=connected.then(()=>{ $('entryDetail').textContent='주소와 등록된 사진을 확인하고 있습니다.';return refresh(); });
-  if(!config.directEnabled){const bridgeUrl=new URL(config.webAppUrl);bridgeUrl.searchParams.set('page','bridge');bridgeUrl.searchParams.set('channel',channel);bridgeUrl.searchParams.set('build',config.build||'v5');$('bridge').src=bridgeUrl.toString();}
+  $('entryDetail').textContent='주소와 등록된 사진을 확인하고 있습니다.';
+  initialStatusPromise=refresh();
   await initialStatusPromise;$('entryLoading').hidden=true;
   if(!canUpload&&stream){stopCamera();say(savedCount>=2?'이 주소에는 이미 사진 2장이 등록돼 있습니다.':'지금은 사진을 등록할 수 없습니다.',true);}
   else if(!deviceKey)say('이 브라우저에서는 보기만 가능합니다. 브라우저 저장을 허용해 주세요.',true);

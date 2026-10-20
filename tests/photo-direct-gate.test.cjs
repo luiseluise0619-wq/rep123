@@ -44,5 +44,5 @@ test('new admin page parses without inline secrets and retains public-photo cons
   assert.match(script,/adminLogin/);assert.match(script,/adminOverview/);assert.match(script,/photoDirectAdminSession/);
   assert.doesNotMatch(script,/MYBOX_TOKEN|PHOTO_ADMIN_PASSWORD/);
   const config=fs.readFileSync(path.join(__dirname,'../web/photo-config.js'),'utf8');
-  assert.match(config,/directEnabled:\s*false/);
+  assert.doesNotMatch(config,/webAppUrl|directEnabled|script\.google\.com\/macros/);
 });

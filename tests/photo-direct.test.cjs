@@ -2,7 +2,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const {createHash}=require('node:crypto');
 const {createService,source,validJpeg}=require('../web/api/_lib/photo-direct-core.cjs');
-const {fakeJpeg}=require('./helpers/photo-harness.cjs');
+const {fakeJpeg}=require('./helpers/jpeg-fixture.cjs');
 
 const digest=bytes=>createHash('sha256').update(bytes).digest('hex');
 const key='a'.repeat(64),other='b'.repeat(64),address=source().map.keys().next().value;

@@ -13,7 +13,7 @@ function harness(width=390,directEnabled=false){
  const get=id=>{if(!elements.has(id))elements.set(id,element());return elements.get(id);};
  const point=[37.5,127,'서울특별시 영등포구 당산동1가 256-119',3,1,'1123075000','서울'];
  const source={서울특별시:{영등포구:{당산1동:[point]}}};
- const window={ADDR_DATA:source,ADDR_META:{},PHOTO_CONFIG:{webAppUrl:'https://script.google.com/macros/s/test/exec',build:'test',directEnabled},innerWidth:width,innerHeight:844,addEventListener:(name,fn)=>{(events[name]??=[]).push(fn);},AddressSearch:require('../web/address-search.js')};
+ const window={ADDR_DATA:source,ADDR_META:{},PHOTO_CONFIG:{build:'test',directEnabled},innerWidth:width,innerHeight:844,addEventListener:(name,fn)=>{(events[name]??=[]).push(fn);},AddressSearch:require('../web/address-search.js')};
  const map={setView:(...args)=>calls.push(['setView',...args]),fitBounds:(...args)=>calls.push(['fitBounds',...args]),removeLayer:layer=>calls.push(['removeLayer',layer]),getBounds:()=>({contains:()=>true})};
  const marker={addTo:()=>marker,on:()=>marker,bindPopup(content,options){calls.push(['popup',content,options]);return marker;},openPopup:()=>marker};
  const L={divIcon:options=>options,point:(x,y)=>({x,y}),latLngBounds:pts=>pts,marker:()=>marker};
@@ -27,7 +27,7 @@ test('map uses the photo-page palette and keeps secondary actions inside the mor
  for(const token of ['duplicates.html','coordinate-review.html','dataInfoBtn','photoAdminLink','nApprox'])assert.ok(menu.includes(token));
  assert.match(menu,/지도에 표시된 숫자는 주소 수/);assert.match(html,/id="panelToggle"[^>]*aria-expanded="true"/);
 });
-test('direct-photo map links to local registration and administration, not Apps Script',()=>{
+test('photo map links to local registration and administration',()=>{
  const h=harness(390,true);
  assert.equal(h.get('photoAdminLink').href,'/photo-admin');
  const url=new URL(h.ui.photoUrl(h.point[2]),'https://rep123-seven.vercel.app/');

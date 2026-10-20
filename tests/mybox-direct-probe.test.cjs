@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const handler = require('../web/api/mybox-direct-probe.js');
-const {fakeJpeg} = require('./helpers/photo-harness.cjs');
+const {fakeJpeg} = require('./helpers/jpeg-fixture.cjs');
 const {createService,validJpeg} = require('../web/api/_lib/photo-direct-core.cjs');
 
 function response() {
