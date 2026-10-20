@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const {harness,fakeJpeg,ADDRESS,PASSWORD,source}=require('./helpers/photo-harness.cjs');
+const {harness,fakeJpeg,ADDRESS,OTHER_ADDRESS,PASSWORD,source}=require('./helpers/photo-harness.cjs');
 const photo=(seed=1)=>({base64:fakeJpeg(seed).toString('base64'),visitDate:'2026-01-01',confirmReadable:true,publicShare:true});
 test('unconfigured service is closed; no PAT or raw upstream error is exposed',()=>{
   const h=harness(); h.props.delete('MYBOX_TOKEN');
@@ -104,13 +104,45 @@ test('browser ICC color profile is allowed but arbitrary APP2 payload is rejecte
   const arbitrary=Buffer.concat([Buffer.from([255,216,255,226,0,4,65,66]),fakeJpeg().subarray(2)]);
   assert.equal(h.app.uploadPhoto(h.session,ADDRESS,{...photo(),base64:arbitrary.toString('base64')}).code,'METADATA');
 });
-test('script lock prevents overlapping mutations; manually-added duplicates stop operations',()=>{
+test('short lease lock prevents unsafe mutations; manually-added duplicates stop operations',()=>{
   const h=harness();h.setLocked(true);
   assert.equal(h.app.uploadPhoto(h.session,ADDRESS,photo()).code,'BUSY');
   h.setLocked(false);assert.equal(h.app.uploadPhoto(h.session,ADDRESS,photo()).ok,true);
   const first=h.resources.find(r=>r.type==='file'&&r.name.endsWith('.jpg'));
   h.resources.push({...first,name:'outside-app.jpg'});
   assert.equal(h.app.uploadPhoto(h.session,ADDRESS,photo(2)).code,'MANUAL_CHANGE');
+});
+test('a busy address does not block another address or photo reads',()=>{
+  const h=harness(),scope='address:'+h.app.digest_(ADDRESS);
+  h.app.withLease_(scope,()=>{
+    assert.equal(h.app.uploadPhoto(h.session,ADDRESS,photo(1)).code,'BUSY');
+    assert.equal(h.app.getStatus(h.session,ADDRESS).ok,true);
+    assert.equal(h.app.uploadPhoto(h.session,OTHER_ADDRESS,photo(2)).ok,true);
+  });
+  assert.equal(h.app.uploadPhoto(h.session,ADDRESS,photo(1)).ok,true);
+  assert.equal(h.app.getStatus(h.session,ADDRESS).data.totalCount,1);
+  assert.equal(h.app.getStatus(h.session,OTHER_ADDRESS).data.totalCount,1);
+});
+test('catalog contention defers only the index, not a saved photo',()=>{
+  const h=harness();
+  h.app.withLease_('catalog-index',()=>{
+    const result=h.app.uploadPhoto(h.session,ADDRESS,photo(1));
+    assert.equal(result.ok,true);
+    assert.equal(result.data.catalogPending,true);
+    assert.equal(h.app.getStatus(h.session,ADDRESS).data.totalCount,1);
+  });
+  assert.equal(h.app.repairAdminCatalog(h.session).ok,true);
+  assert.equal(h.app.getAdminOverview(h.session).data.photos,1);
+});
+test('two-digit evidence shards preserve historical one-digit capture records',()=>{
+  const h=harness(),record={source:'test-camera',capturedAt:'2026-01-01T00:00:00.000Z'};
+  assert.equal(h.app.uploadPhoto(h.session,ADDRESS,{...photo(1),captureEvidence:record}).ok,true);
+  const evidence=h.resources.find(r=>/^evidence-[0-9a-f]{2}\.json$/.test(r.name));
+  const picture=h.resources.find(r=>r.name.endsWith('.jpg'));
+  assert.ok(evidence);
+  assert.equal(h.app.evidenceFor_(ADDRESS,picture).source,'test-camera');
+  evidence.name='evidence-'+evidence.name.charAt(9)+'.json';
+  assert.equal(h.app.evidenceFor_(ADDRESS,picture).source,'test-camera');
 });
 test('doGet escapes script tags in user-controlled address; helper functions stay private',()=>{
   let template;

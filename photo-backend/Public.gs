@@ -52,7 +52,9 @@ function getPublicUploadReceipt(deviceKey,address,imageHash){
 function deletePhoto(session,deviceKey,address,photoId){
   return rpc_(function(){requirePublic_();
     var admin=null;if(session){admin=verifySession_(session);if(admin.role!=='admin')fail_('FORBIDDEN','관리자 또는 사진을 올린 브라우저만 삭제할 수 있습니다.');}
-    var actor=admin||deviceActor_(deviceKey,true),target=publicFile_(address,photoId),file=target.file;
+    var actor=admin||deviceActor_(deviceKey,true);assertAddress_(address);
+    return withLease_('address:'+digest_(address),function(){
+    var target=publicFile_(address,photoId),file=target.file;
     if(!file)return {deleted:true,alreadyDeleted:true,catalogPending:pendingCatalog_().some(function(p){return p.address===address;})};
     if(!canSeePhoto_(actor,file))fail_('FORBIDDEN','관리자 또는 사진을 올린 브라우저만 삭제할 수 있습니다.');
     markCatalogPending_(address);
@@ -61,5 +63,6 @@ function deletePhoto(session,deviceKey,address,photoId){
     var after=photoFiles_(target.folder);
     if(after.some(function(f){return f.resourceId===file.resourceId;}))fail_('VERIFY','삭제 확인이 지연됩니다. 새로고침 후 확인하세요.');
     return {deleted:true,alreadyDeleted:false,catalogPending:!tryCatalogUpdate_(address,after)};
+    });
   });
 }

@@ -7,8 +7,10 @@ function normalizeLogin_(value) {
 }
 function ensureAuthKey_() {
   var props = PropertiesService.getScriptProperties();
-  if (!props.getProperty('PHOTO_AUTH_KEY_V3')) props.setProperty('PHOTO_AUTH_KEY_V3',
-    digest_(Utilities.getUuid() + Utilities.getUuid() + Utilities.getUuid()));
+  if (!props.getProperty('PHOTO_AUTH_KEY_V3')) withScriptLock_(function(){
+    if (!props.getProperty('PHOTO_AUTH_KEY_V3')) props.setProperty('PHOTO_AUTH_KEY_V3',
+      digest_(Utilities.getUuid() + Utilities.getUuid() + Utilities.getUuid()));
+  });
 }
 function authMac_(value) {
   var key = secret_('PHOTO_AUTH_KEY_V3');
@@ -67,6 +69,7 @@ function listEmployees(session) {
 function manageEmployee(session, action, input) {
   return rpc_(function() {
     requireAdmin_(session);
+    return withLease_('employee-accounts',function(){
     input = input || {};
     var login = normalizeLogin_(input.login), props = PropertiesService.getScriptProperties();
     if (login === 'admin') fail_('ACCOUNT', '관리자 계정은 직원 계정으로 만들 수 없습니다.');
@@ -92,5 +95,6 @@ function manageEmployee(session, action, input) {
     }
     props.setProperty('PHOTO_EMP_' + login, JSON.stringify(record));
     return {employee: accountPublic_(record), employeeLink: code ? PHOTO_LIMITS_.webAppUrl + '?build=' + encodeURIComponent(PHOTO_LIMITS_.version) + '#staff=' + encodeURIComponent(login) + '&key=' + encodeURIComponent(code) : null};
+    });
   });
 }

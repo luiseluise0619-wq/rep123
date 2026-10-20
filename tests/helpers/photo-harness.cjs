@@ -6,6 +6,7 @@ const crypto = require('node:crypto');
 const source = fs.readFileSync(path.join(__dirname,'../../web/lib/visit-distance.js'),'utf8')+'\n'+['Code.gs','Access.gs','Catalog.gs','Public.gs','Capture.gs','Diagnostics.gs'].map(name=>fs.readFileSync(path.join(__dirname,'../../photo-backend',name),'utf8')).join('\n');
 const html = fs.readFileSync(path.join(__dirname, '../../photo-backend/Photo.html'), 'utf8');
 const ADDRESS = '서울특별시 영등포구 당산동 1가 1';
+const OTHER_ADDRESS = '서울특별시 영등포구 당산동 1가 2';
 const PASSWORD = 'test-only-not-a-real-password';
 const signed = b => Array.from(b, x => x > 127 ? x - 256 : x);
 const buffer = value => typeof value === 'string' ? Buffer.from(value) : Buffer.from(Array.from(value, x => x & 255));
@@ -37,8 +38,8 @@ function harness({sourceText,requireCapture=false,requireLocation=false} = {}) {
     LockService:{getScriptLock:()=>({tryLock:()=>{if(locked)return false;locked=true;return true;},releaseLock:()=>{locked=false;}})},
     HtmlService:{createTemplate:()=>({evaluate(){return {setTitle(){return this;},addMetaTag(){return this;}};}})},
     UrlFetchApp:{fetch(url,options={}) {
-      assert.equal(locked,true,'all external fetches must be serialized'); calls++;
-      if (url === 'https://rep123-seven.vercel.app/addresses.js') return response(sourceText || 'window.ADDR_DATA = '+JSON.stringify({서울:{영등포구:{당산동:[[0,0,ADDRESS,2,1,'code','서울']]}}})+';');
+      calls++;
+      if (url === 'https://rep123-seven.vercel.app/addresses.js') return response(sourceText || 'window.ADDR_DATA = '+JSON.stringify({서울:{영등포구:{당산동:[[0,0,ADDRESS,2,1,'code','서울'],[0,0,OTHER_ADDRESS,2,1,'code','서울']]}}})+';');
       if (url.startsWith('https://upload.example.net/v1/storage/upload?')) {
         const token = new URL(url).searchParams.get('id'), pending=reservations.get(token);
         assert.ok(pending); assert.equal(options.followRedirects,false);
@@ -93,4 +94,4 @@ function harness({sourceText,requireCapture=false,requireLocation=false} = {}) {
     dropNextUploadResponse:()=>{dropUploadResponse=true;},dropNextDeleteResponse:()=>{dropDeleteResponse=true;},failCatalog:value=>{failCatalog=value;},calls:()=>calls,
     staff(username,name='같은 이름') { const created=sandbox.manageEmployee(login.data.session,'create',{login:username,name});assert.equal(created.ok,true);const parts=new URLSearchParams(new URL(created.data.employeeLink).hash.slice(1));const result=sandbox.loginPhoto(parts.get('staff'),parts.get('key'));assert.equal(result.ok,true);return {session:result.data.session,employee:created.data.employee,code:parts.get('key'),link:created.data.employeeLink}; }};
 }
-module.exports={harness,fakeJpeg,ADDRESS,PASSWORD,source};
+module.exports={harness,fakeJpeg,ADDRESS,OTHER_ADDRESS,PASSWORD,source};

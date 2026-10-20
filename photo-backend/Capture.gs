@@ -37,12 +37,16 @@ function evidenceShard_(key){
   return value;
 }
 function saveEvidence_(address,imageHash,actor,evidence){
-  var key=digest_(address+'\n'+imageHash),shard=evidenceShard_(key[0]);
-  shard.rows[key]={address:address,imageHash:imageHash,ownerId:actor.id,evidence:evidence};
-  indexWrite_('evidence-'+key[0]+'.json',shard);
+  var key=digest_(address+'\n'+imageHash),prefix=key.slice(0,2);
+  return withLease_('evidence:'+prefix,function(){
+    var shard=evidenceShard_(prefix);
+    shard.rows[key]={address:address,imageHash:imageHash,ownerId:actor.id,evidence:evidence};
+    indexWrite_('evidence-'+prefix+'.json',shard);
+  });
 }
 function evidenceFor_(address,file){
-  var hash=file.name.split('__')[1],key=digest_(address+'\n'+hash),entry=evidenceShard_(key[0]).rows[key];
+  var hash=file.name.split('__')[1],key=digest_(address+'\n'+hash);
+  var entry=evidenceShard_(key.slice(0,2)).rows[key]||evidenceShard_(key[0]).rows[key];
   if(!entry||entry.address!==address||entry.imageHash!==hash||entry.ownerId!==photoOwner_(file))return null;
   return entry.evidence;
 }

@@ -6,10 +6,12 @@ function pendingCatalog_() {
     .map(function(k) { return JSON.parse(props[k]); });
 }
 function markCatalogPending_(address) {
-  var props = PropertiesService.getScriptProperties(), key = 'PHOTO_PENDING_' + digest_(address);
-  if (!props.getProperty(key) && pendingCatalog_().length >= 100)
-    fail_('CATALOG', '관리자 목록 동기화가 밀려 저장을 잠시 중단합니다. 관리자에게 알려주세요.');
-  props.setProperty(key, JSON.stringify({address:address,since:new Date().toISOString()}));
+  return withScriptLock_(function(){
+    var props = PropertiesService.getScriptProperties(), key = 'PHOTO_PENDING_' + digest_(address);
+    if (!props.getProperty(key) && pendingCatalog_().length >= 100)
+      fail_('CATALOG', '관리자 목록 동기화가 밀려 저장을 잠시 중단합니다. 관리자에게 알려주세요.');
+    props.setProperty(key, JSON.stringify({address:address,since:new Date().toISOString()}));
+  });
 }
 function indexContext_(create) {
   if (PHOTO_INDEX_CONTEXT_ && PHOTO_INDEX_CONTEXT_.folder) return PHOTO_INDEX_CONTEXT_;
@@ -30,7 +32,7 @@ function indexRead_(name, fallback) {
   catch(ignored) { fail_('CATALOG', '관리자 목록 형식이 달라 동기화가 필요합니다.'); }
 }
 function indexWrite_(name, value) {
-  if (!/^(manifest|shard-[0-9a-f]|evidence-[0-9a-f])\.json$/.test(name)) fail_('CATALOG','허용되지 않은 목록 파일입니다.');
+  if (!/^(manifest|shard-[0-9a-f]|evidence-[0-9a-f]{1,2})\.json$/.test(name)) fail_('CATALOG','허용되지 않은 목록 파일입니다.');
   var context=indexContext_(true), blob=Utilities.newBlob(JSON.stringify(value),'application/json',name), size=blob.getBytes().length;
   if (size>8000000) fail_('CATALOG','관리자 목록 크기 한도에 도달했습니다.');
   var existing=context.files.filter(function(f){return f.name===name;});
@@ -86,7 +88,7 @@ function applyCatalogBatch_(entries) {
   entries.forEach(function(entry){PropertiesService.getScriptProperties().deleteProperty('PHOTO_PENDING_'+digest_(entry.address));});
 }
 function tryCatalogUpdate_(address,files) {
-  try { markCatalogPending_(address);applyCatalogBatch_([{address:address,files:files}]);return true; }
+  try { markCatalogPending_(address);withLease_('catalog-index',function(){applyCatalogBatch_([{address:address,files:files}]);});return true; }
   catch(ignored) { return false; } // The photo already exists; never misreport a successful write as a failed upload.
 }
 function scanState_() {
@@ -152,14 +154,17 @@ function sourceAddressForFolder_(name) {
 function repairAdminCatalog(session) {
   return rpc_(function(){
     requireAdmin_(session);
+    return withLease_('catalog-index',function(){
     var pending=pendingCatalog_().slice(0,4),batch=pending.map(function(p){var f=addressFolder_(p.address,false);return {address:p.address,files:f?photoFiles_(f):[]};});
     if(batch.length)applyCatalogBatch_(batch);
     return {pending:pendingCatalog_().length,processed:batch.length};
+    });
   });
 }
 function syncAdminCatalog(session,restart) {
   return rpc_(function(){
     requireAdmin_(session);
+    return withLease_('catalog-index',function(){
     var props=PropertiesService.getScriptProperties(),state=scanState_(),m;
     if(restart===true || !state.active && !manifest_().scanComplete){
       state={active:true,id:Utilities.getUuid(),phase:'folders',prefix:'',offset:0,processed:0,issues:0,prune:0,startedAt:new Date().toISOString()};
@@ -205,5 +210,6 @@ function syncAdminCatalog(session,restart) {
     }
     props.setProperty('PHOTO_SCAN_V3',JSON.stringify(state));
     return {scan:scanPublic_(state),pending:pendingCatalog_().length};
+    });
   });
 }

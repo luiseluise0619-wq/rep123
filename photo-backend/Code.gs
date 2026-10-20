@@ -7,7 +7,7 @@ var PHOTO_LIMITS_ = Object.freeze({
   accountCeilingBytes: 24000000000, reserveBytes: 1000000000,
   sessionHours: 8,
   sourceUrl: 'https://rep123-seven.vercel.app/addresses.js',
-  rootName: '현장방문_주소사진_v1', indexRootName: '현장방문_사진목록_v3', version: '2026-10-20-mybox-v11-progress-no-daily-cap', publicEnabled: true, requireCapture: true, requireLocation: false,
+  rootName: '현장방문_주소사진_v1', indexRootName: '현장방문_사진목록_v3', version: '2026-10-20-mybox-v12-address-concurrency', publicEnabled: true, requireCapture: true, requireLocation: false,
   webAppUrl: 'https://script.google.com/macros/s/AKfycbxkluXWRelyVJ1D0XtuLHHo1GdF76Dzp4CLHQeC-hlvpW6WmctvD9_60WKqugmfN_PAQw/exec'
 });
 
@@ -46,6 +46,7 @@ function getStatus(session, address, identityOnly) {
 function loginPhoto(name, password) {
   return rpc_(function() {
     requireConfig_();
+    return withLease_('login-guard',function(){
     name = normalizeLogin_(name);
     var now = Date.now(), props = PropertiesService.getScriptProperties();
     var guard = JSON.parse(props.getProperty('LOGIN_GUARD') || '{}');
@@ -71,6 +72,7 @@ function loginPhoto(name, password) {
       exp: Date.now() + PHOTO_LIMITS_.sessionHours * 3600000,
       nonce: Utilities.getUuid()}), Utilities.Charset.UTF_8);
     return {session: payload + '.' + sign_(payload), name: actor.name, role: actor.role};
+    });
   });
 }
 
@@ -89,7 +91,8 @@ function uploadForActor_(user,address,photo) {
     if (!validDate_(visitDate)) fail_('DATE', '올바른 방문일을 입력하세요.');
     var bytes = decodePhoto_(photo.base64);
     var hash = digest_(bytes);
-    // rpc_ holds the cross-execution lock through final MYBOX verification.
+    // Only this address is exclusive. Other addresses can upload while MYBOX responds.
+    return withLease_('address:'+digest_(address),function(){
       var folder = addressFolder_(address, true);
       var files = photoFiles_(folder);
       var existing = files.filter(function(f) { return f.name.indexOf('__' + hash + '__') >= 0; })[0];
@@ -122,6 +125,7 @@ function uploadForActor_(user,address,photo) {
       if (!saved) fail_('VERIFY', '저장 응답을 받았지만 파일 확인이 지연됩니다. 새로고침 후 확인하세요.');
       return {saved: true, alreadySaved: false, photo: publicPhoto_(saved), count: after.length,
         catalogPending: !tryCatalogUpdate_(address, after)};
+    });
 }
 
 function getPhoto(session, address, slot) {
@@ -148,10 +152,7 @@ function getPhoto(session, address, slot) {
 
 var PHOTO_STAGE_ = '';
 function rpc_(fn) {
-  var lock = LockService.getScriptLock(), locked = false;
   try {
-    if (!lock.tryLock(1000)) fail_('BUSY', '다른 요청을 처리 중입니다. 잠시 후 다시 시도하세요.');
-    locked = true;
     PHOTO_STAGE_='start';
     PHOTO_INDEX_CONTEXT_ = null; PHOTO_SOURCE_ = null; PHOTO_SOURCE_INDEX_ = null;
     return {ok: true, data: fn()};
@@ -161,8 +162,31 @@ function rpc_(fn) {
     // Never forward raw network errors: they can contain PATs or signed storage URLs.
     return {ok: false, code: error.photoCode || 'SERVICE', message: error.photoCode ? error.message :
       '서비스 연결 또는 무료 사용 한도 문제가 발생했습니다. 잠시 후 다시 시도하거나 관리자에게 알려주세요.'};
-  } finally {
-    if (locked) { PHOTO_INDEX_CONTEXT_ = null; PHOTO_SOURCE_ = null; PHOTO_SOURCE_INDEX_ = null; lock.releaseLock(); }
+  } finally { PHOTO_INDEX_CONTEXT_ = null; PHOTO_SOURCE_ = null; PHOTO_SOURCE_INDEX_ = null; }
+}
+// LockService is held only for the atomic lease-property change, never for network I/O.
+function withScriptLock_(fn) {
+  var lock=LockService.getScriptLock();
+  if(!lock.tryLock(5000))fail_('BUSY','잠시 후 다시 시도하세요.');
+  try{return fn();}finally{lock.releaseLock();}
+}
+function withLease_(scope,fn) {
+  var key='PHOTO_LEASE_'+digest_(scope),token=Utilities.getUuid(),props=PropertiesService.getScriptProperties();
+  withScriptLock_(function(){
+    var current=JSON.parse(props.getProperty(key)||'null');
+    if(current&&Number(current.until)>Date.now())fail_('BUSY','이 주소의 저장 작업이 진행 중입니다. 잠시 후 다시 시도하세요.');
+    // Apps Script executions stop at six minutes; the lease then expires automatically.
+    props.setProperty(key,JSON.stringify({token:token,until:Date.now()+390000}));
+  });
+  try{return fn();}finally{
+    try{withScriptLock_(function(){
+      var current=JSON.parse(props.getProperty(key)||'null');
+      if(current&&current.token===token)props.deleteProperty(key);
+    });}catch(error){
+      // A completed MYBOX write must not be reported as failed solely because
+      // lease cleanup missed its brief lock window. The TTL remains the backstop.
+      console.warn(JSON.stringify({event:'photo_lease_cleanup_delayed',scope:digest_(scope).slice(0,8)}));
+    }
   }
 }
 function fetch_(url, options) { return UrlFetchApp.fetch(url, options); }
@@ -335,11 +359,15 @@ function folder_(parent, name, create) {
     fail_('FOLDER', '같은 이름의 항목이 있어 안전하게 저장할 수 없습니다. 관리자에게 알려주세요.');
   if (matches.length) return matches[0].resourceId;
   if (!create) return null;
-  var body = {folderName: name};
-  if (parent) body.parentId = parent;
-  var result = api_('/drive/folders', 'post', body);
-  if (!result.resourceId) fail_('FOLDER', '사진 폴더를 만들지 못했습니다.');
-  return result.resourceId;
+  return withLease_('folder:'+parent+'\n'+name,function(){
+    var again=listResources_(parent).filter(function(r){return r.name===name;});
+    if(again.length>1||again.length===1&&again[0].type!=='folder')fail_('FOLDER','같은 이름의 항목이 있어 안전하게 저장할 수 없습니다.');
+    if(again.length)return again[0].resourceId;
+    var body={folderName:name};if(parent)body.parentId=parent;
+    var result=api_('/drive/folders','post',body);
+    if(!result.resourceId)fail_('FOLDER','사진 폴더를 만들지 못했습니다.');
+    return result.resourceId;
+  });
 }
 function addressFolder_(address, create) {
   var root = folder_('', PHOTO_LIMITS_.rootName, create);
