@@ -18,6 +18,7 @@ button:disabled{opacity:.55}#cleanup,#cleanupBatch{background:#4b5563}#result{wh
 <p>현장 사진이 아닌 작은 테스트 이미지를 MYBOX 별도 점검 폴더에 올립니다. 주소별 사진 수에는 포함되지 않습니다. 점검 후 MYBOX 휴지통으로 이동합니다.</p>
 <label for="key">점검 접근키</label><input id="key" type="password" autocomplete="off" spellcheck="false">
 <button id="run" type="button">직접 업로드 시험</button><button id="cleanup" type="button" hidden>점검 파일 정리 재시도</button>
+<button id="runPipeline" type="button">저장·목록 갱신까지 시험</button>
 <p>5건, 30건, 100건 순서로 시험합니다. 100건에는 약 180KB의 시험 이미지를 사용하며, 방문 실적으로 등록되지 않습니다.</p>
 <button id="runFive" type="button">5건 동시 시험</button> <button id="runThirty" type="button" disabled>30건 동시 시험</button> <button id="runHundred" type="button" disabled>100건 동시 시험</button>
 <button id="runLock" type="button">동시 저장 잠금 시험</button>
@@ -27,6 +28,7 @@ button:disabled{opacity:.55}#cleanup,#cleanupBatch{background:#4b5563}#result{wh
 const run=document.getElementById('run'),clean=document.getElementById('cleanup'),result=document.getElementById('result'),key=document.getElementById('key');
 const runFive=document.getElementById('runFive'),runThirty=document.getElementById('runThirty'),runHundred=document.getElementById('runHundred'),cleanBatch=document.getElementById('cleanupBatch');
 const runLock=document.getElementById('runLock');
+const runPipeline=document.getElementById('runPipeline');
 let pendingName=sessionStorage.getItem('myboxDirectProbePending')||'';
 let pendingBatch=[];try{const saved=JSON.parse(sessionStorage.getItem('myboxDirectProbeBatchPending')||'[]');if(Array.isArray(saved))pendingBatch=saved;}catch(ignored){}
 clean.hidden=!pendingName;
@@ -69,9 +71,9 @@ async function clearBatch(names){let trashed=0,missing=0,failed=0;
   return {trashed,missing,failed};
 }
 cleanBatch.onclick=async()=>{if(!pendingBatch.length)return;cleanBatch.disabled=true;try{const value=await clearBatch(pendingBatch);say('휴지통 이동 '+value.trashed+'건 · 아직 확인되지 않은 파일 '+value.missing+'건 · 정리 실패 '+value.failed+'건');}catch(error){say('정리 실패: '+error.message);}finally{cleanBatch.disabled=false;}};
-run.onclick=async()=>{
+async function single(pipeline){
   if(!key.value){say('점검 접근키를 입력해 주세요.');return;}
-  run.disabled=true;let name='',direct='',fallback='',found=false,start=performance.now(),reserveMs=0,uploadMs=0;
+  run.disabled=runPipeline.disabled=true;let name='',direct='',fallback='',found=false,start=performance.now(),reserveMs=0,uploadMs=0;
   try{
     say('MYBOX 업로드 URL을 발급받는 중…');const blob=await photo(),reserved=await api('reserve',{size:blob.size});
     reserveMs=Math.round(performance.now()-start);name=reserved.name;pendingName=name;
@@ -89,13 +91,19 @@ run.onclick=async()=>{
       catch(error){fallback='응답을 읽지 않는 전송도 브라우저가 거절함';}
       found=(await inspect(name)).found;
     }
-    const cleanup=await finish(name);
+    const cleanup=pipeline&&found?await api('pipelineCheck',{name}):await finish(name);
+    if(pipeline&&found&&!cleanup.cleanupNeeded){sessionStorage.removeItem('myboxDirectProbePending');pendingName='';clean.hidden=true;}
     say('URL 발급: '+reserveMs+'ms\n직접 전송 시도: '+uploadMs+'ms\n'+direct+
       (fallback?'\n'+fallback:'')+'\nMYBOX 파일 확인: '+(found?'저장됨':'저장 안 됨')+
-      '\n점검 파일: '+(cleanup.movedToTrash?'휴지통으로 이동':'저장된 파일 없음'));
+      (pipeline&&found?'\n사진 이동·재확인: '+(cleanup.movedAndVerified?'정상':'실패')+
+        '\n목록 파일 저장·재확인: '+(cleanup.indexVerified?'정상':'실패')+
+        '\n점검 항목 휴지통 이동: '+cleanup.trashed+'개':
+        '\n점검 파일: '+(cleanup.movedToTrash?'휴지통으로 이동':'저장된 파일 없음')));
   }catch(error){say('점검 중단: '+error.message+'\n'+(name?'점검 파일이 남았을 수 있습니다. 정리 재시도 버튼을 눌러주세요.':''));}
-  finally{run.disabled=false;}
-};
+  finally{run.disabled=runPipeline.disabled=false;}
+}
+run.onclick=()=>single(false);
+runPipeline.onclick=()=>single(true);
 async function batch(count){
   if(!key.value){say('점검 접근키를 입력해 주세요.');return;}
   run.disabled=runFive.disabled=runThirty.disabled=runHundred.disabled=true;

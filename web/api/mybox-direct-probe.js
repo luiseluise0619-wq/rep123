@@ -1,9 +1,11 @@
 // Isolated browser-to-MYBOX feasibility test. Never used for field visits.
 // MYBOX_TOKEN and MYBOX_DIRECT_PROBE_KEY are Vercel server environment variables.
-const {randomUUID, timingSafeEqual} = require('node:crypto');
+const {randomUUID, timingSafeEqual, createHash} = require('node:crypto');
+const {createService, validJpeg} = require('./_lib/photo-direct-core.cjs');
 
 const ROOT = '연결점검_현장방문아님';
 const LOCK_ROOT = '직접전송_잠금점검';
+const PIPE_ROOT = '직접전송_저장단계점검';
 const PREFIX = 'DIRECT_BROWSER_TEST_NOT_A_FIELD_VISIT__';
 const API = 'https://open-api.mybox.naver.com/v1';
 
@@ -92,6 +94,50 @@ async function checkFolderLock() {
     attempts.filter(item => item.status === 409).length === 1 && created.length === 1 && trashed === ids.size,
     statuses: attempts.map(item => item.status), sameNameFolders: created.length, trashed, cleanupNeeded: trashed !== ids.size};
 }
+async function checkSavePipeline(name) {
+  const parent = await probeFolder(false);
+  const matches = parent ? (await items(parent)).filter(item => item.name === name) : [];
+  if (matches.length !== 1 || matches[0].type !== 'file')
+    throw failure('FILE', 409, '업로드된 점검 사진 1장을 확인해 주세요.');
+  const file = matches[0], service = createService({token:process.env.MYBOX_TOKEN});
+  const digest = bytes => createHash('sha256').update(bytes).digest('hex');
+  const renamed = PREFIX + randomUUID() + '.jpg';
+  const indexName = 'CATALOG_TEST_NOT_A_FIELD_VISIT__' + randomUUID() + '.json';
+  let indexId = '', movedAndVerified = false, indexVerified = false, trashed = 0, cleanupNeeded = false;
+  try {
+    const original = await service.readBytes(file);validJpeg(original);
+    const destination = await service.folder(parent,PIPE_ROOT,true);
+    await mybox('/drive/resources/' + encodeURIComponent(file.resourceId) + '/rename','POST',{name:renamed});
+    await mybox('/drive/resources/' + encodeURIComponent(file.resourceId) + '/move','POST',
+      {parentId:destination,isOverwrite:false});
+    const moved = (await items(destination)).filter(item => item.resourceId === file.resourceId &&
+      item.name === renamed && Number(item.size) === original.length);
+    if (moved.length !== 1) throw failure('MOVE', 502, '점검 사진의 이동 결과를 확인하지 못했습니다.');
+    const reread = await service.readBytes(moved[0]);
+    movedAndVerified = digest(reread) === digest(original);
+    if (!movedAndVerified) throw failure('MOVE', 502, '이동 후 점검 사진이 달라졌습니다.');
+    const indexBytes = Buffer.from(JSON.stringify({testOnly:true,photoHash:digest(original)}));
+    await service.uploadBytes(destination,indexName,indexBytes,false);
+    const indexes = (await items(destination)).filter(item => item.name === indexName && item.type === 'file');
+    if (indexes.length !== 1) throw failure('CATALOG', 502, '점검 목록 파일을 확인하지 못했습니다.');
+    indexId = indexes[0].resourceId;
+    const index = JSON.parse((await service.readBytes(indexes[0])).toString('utf8'));
+    indexVerified = index.testOnly === true && index.photoHash === digest(original);
+    if (!indexVerified) throw failure('CATALOG', 502, '점검 목록 내용이 다릅니다.');
+  } finally {
+    if (!indexId) {
+      try { const destination = await service.folder(parent,PIPE_ROOT,false);
+        const found = destination ? (await items(destination)).filter(item => item.name === indexName) : [];
+        if (found.length === 1) indexId = found[0].resourceId;
+      } catch { cleanupNeeded = true; }
+    }
+    for (const id of [indexId,file.resourceId].filter(Boolean)) {
+      try { await mybox('/drive/resources/' + encodeURIComponent(id),'DELETE');trashed++; }
+      catch { cleanupNeeded = true; }
+    }
+  }
+  return {passed:movedAndVerified&&indexVerified&&!cleanupNeeded,movedAndVerified,indexVerified,trashed,cleanupNeeded};
+}
 function uploadUrl(target) {
   if (typeof target.uploadUrl !== 'string' ||
       !/^https:\/\/[a-z0-9.-]+(?::443)?\/v1\/storage\/upload\?/i.test(target.uploadUrl))
@@ -135,6 +181,8 @@ module.exports = async function handler(req, res) {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body || {};
     if (body.action === 'lockCheck')
       return res.status(200).json({ok:true,...await checkFolderLock()});
+    if (body.action === 'pipelineCheck' && validName(body.name))
+      return res.status(200).json({ok:true,...await checkSavePipeline(body.name)});
     if (body.action === 'reserve' || body.action === 'reserveBatch') {
       const size = Number(body.size);
       if (!Number.isInteger(size) || size < 32 || size > 200000)
