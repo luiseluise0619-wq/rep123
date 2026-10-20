@@ -117,11 +117,13 @@ async function batch(count){
     const throughput=uploadMs>0?(blob.size*items.length/uploadMs/1000).toFixed(2):'—';
     lines.push('동시 전송 HTTP 성공 '+uploadOk+'/'+items.length+'건 · '+uploadMs+'ms');
     lines.push('시험 데이터 '+totalMB+'MB · 전송 구간 평균 '+throughput+'MB/s');
-    let checked={present:[],missing:names};
+    let checked={present:[],mismatch:[],missing:names};
     for(let attempt=0;attempt<3;attempt++){
-      checked=await api('statusBatch',{names});if(!checked.missing.length)break;await pause(1200);
+      checked=await api('statusBatch',{names,size:blob.size});
+      if(!checked.missing.length&&!checked.mismatch.length)break;await pause(1200);
     }
     lines.push('MYBOX 저장 확인 '+checked.present.length+'/'+items.length+'건');
+    if(checked.mismatch.length)lines.push('파일 크기 불일치 '+checked.mismatch.length+'건');
     allGood=items.length===count&&uploadOk===count&&checked.present.length===count;
     if(!allGood)lines.push('일부 실패 또는 지연이 있습니다. 이 결과만으로 독립 사용자들의 동시 업로드를 보장할 수 없습니다.');
   }catch(error){lines.push('점검 중단: '+error.message);}

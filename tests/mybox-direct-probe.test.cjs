@@ -121,8 +121,12 @@ test('batch probe reserves distinct URLs and cleans only named diagnostic files'
     assert.equal(reserve.statusCode,200);assert.equal(reserve.body.results.length,100);
     const names=reserve.body.results.map(item=>item.name);
     assert.equal(new Set(names).size,100);assert.ok(!JSON.stringify(reserve.body).includes('fake-private-test-token'));
-    const status=response();await handler(request('statusBatch',ACCESS,{names}),status);
+    const status=response();await handler(request('statusBatch',ACCESS,{names,size:123}),status);
     assert.deepEqual(status.body.present,names);
+    assert.deepEqual(status.body.mismatch,[]);
+    const wrongSize=response();await handler(request('statusBatch',ACCESS,{names,size:124}),wrongSize);
+    assert.deepEqual(wrongSize.body.mismatch,names);
+    assert.deepEqual(wrongSize.body.present,[]);
     const finish=response();await handler(request('finishBatch',ACCESS,{names}),finish);
     assert.equal(finish.body.results.filter(item=>item.trashed).length,100);
     assert.equal(files.size,0);

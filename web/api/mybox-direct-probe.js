@@ -124,8 +124,15 @@ module.exports = async function handler(req, res) {
           throw failure('FILE', 409, '점검 파일 이름이 중복됩니다.');
         found.set(file.name,file);
       }
-      if (body.action === 'statusBatch')
-        return res.status(200).json({ok:true,present:names.filter(name=>found.has(name)),missing:names.filter(name=>!found.has(name))});
+      if (body.action === 'statusBatch') {
+        const size = Number(body.size);
+        if (!Number.isInteger(size) || size < 32 || size > 200000)
+          throw failure('SIZE', 400, '저장 확인에 필요한 사진 크기가 올바르지 않습니다.');
+        return res.status(200).json({ok:true,
+          present:names.filter(name=>found.has(name) && Number(found.get(name).size) === size),
+          mismatch:names.filter(name=>found.has(name) && Number(found.get(name).size) !== size),
+          missing:names.filter(name=>!found.has(name))});
+      }
       const results = await limited(names.filter(name=>found.has(name)), 4, async name => {
         try { await mybox('/drive/resources/' + encodeURIComponent(found.get(name).resourceId), 'DELETE');
           return {name,trashed:true}; }
