@@ -111,10 +111,11 @@ test('server verifies bytes and rejects wrong hash without consuming a slot',asy
   assert.equal((await ctx.service.status(address,key)).totalCount,0);
 });
 
-test('different addresses accept concurrent photos and repair a pending catalog update',async()=>{
+test('different addresses accept concurrent photos without leaving a catalog update pending',async()=>{
   const ctx=fixture(),[first,second]=await Promise.all([
     uploadOne(ctx,key,1,address),uploadOne(ctx,other,2,anotherAddress)]);
   assert.equal(first.saved,true);assert.equal(second.saved,true);
+  assert.equal(first.catalogPending,false);assert.equal(second.catalogPending,false);
   assert.equal((await ctx.service.status(address,key)).totalCount,1);
   assert.equal((await ctx.service.status(anotherAddress,other)).totalCount,1);
   let overview=await ctx.service.overview();

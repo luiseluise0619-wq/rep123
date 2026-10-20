@@ -295,7 +295,7 @@ function createService({token,adminPassword='',fetcher=fetch,now=()=>Date.now(),
   async function updateCatalog(address,files,evidence={}){
     const hash=sha(address),key=hash[0];
     // Protect the shard and manifest as one transaction across all addresses.
-    return lock('catalog:index',async()=>{
+    const work=async()=>{
       const data=await shard(key),old=data.rows[hash],prior=new Map((old?.photos||[]).map(p=>[p.id,p]));
       if(files.length){
         const where=checkAddress(address);
@@ -311,7 +311,14 @@ function createService({token,adminPassword='',fetcher=fetch,now=()=>Date.now(),
         legacy:rows.reduce((n,r)=>n+r.photos.filter(p=>p.legacy).length,0)};
       m.updatedAt=new Date(now()).toISOString();await writeIndex('manifest.json',m);
       return m;
-    });
+    };
+    // A different address may be committing at this instant. Wait briefly for
+    // the shared index instead of leaving an avoidable repair marker.
+    for(let attempt=0;attempt<4;attempt++){
+      try{return await lock('catalog:index',work);}
+      catch(e){if(e.code!=='BUSY'||attempt===3)throw e;
+        await new Promise(resolve=>setTimeout(resolve,300*(attempt+1)));}
+    }
   }
   async function pendingAddresses(){
     const root=await folder('',PENDING,false);if(!root)return [];
