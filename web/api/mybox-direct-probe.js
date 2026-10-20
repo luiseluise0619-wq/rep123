@@ -21,12 +21,15 @@ function validName(name) {
   return typeof name === 'string' && /^DIRECT_BROWSER_TEST_NOT_A_FIELD_VISIT__[0-9a-f-]{36}\.jpg$/.test(name);
 }
 async function mybox(path, method = 'GET', body) {
+  const token = String(process.env.MYBOX_TOKEN || '').trim().replace(/^Bearer\s+/i, '').trim();
   const response = await fetch(API + path, {
     method, redirect: 'manual', signal: AbortSignal.timeout(30000),
-    headers: {Authorization: 'Bearer ' + process.env.MYBOX_TOKEN,
+    headers: {Authorization: 'Bearer ' + token,
       ...(body ? {'Content-Type': 'application/json'} : {})},
     ...(body ? {body: JSON.stringify(body)} : {})
   });
+  if (response.status === 401)
+    throw failure('MYBOX_AUTH', 502, 'MYBOX 토큰 인증 실패(401). Vercel의 MYBOX_TOKEN 값과 유효기간을 확인하고 재배포해 주세요.');
   if (!response.ok) throw failure('MYBOX', 502, 'MYBOX 요청이 실패했습니다. HTTP ' + response.status);
   if (response.status === 204) return {};
   try { return await response.json(); }

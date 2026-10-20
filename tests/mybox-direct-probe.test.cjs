@@ -37,9 +37,24 @@ test('direct probe is closed without both server secrets and never returns the P
     global.fetch=oldFetch;
   }
 });
-test('authenticated probe reserves a one-use URL and cleans only its diagnostic photo', async()=>{
+test('MYBOX 401 is reported as a token problem without exposing the token',async()=>{
   const oldToken=process.env.MYBOX_TOKEN,oldKey=process.env.MYBOX_DIRECT_PROBE_KEY,oldFetch=global.fetch;
   process.env.MYBOX_TOKEN='fake-private-test-token';process.env.MYBOX_DIRECT_PROBE_KEY=ACCESS;
+  global.fetch=async()=>({ok:false,status:401});
+  try{
+    const res=response();await handler(request('reserve',ACCESS,{size:123}),res);
+    assert.equal(res.statusCode,502);assert.equal(res.body.code,'MYBOX_AUTH');
+    assert.match(res.body.message,/MYBOX_TOKEN/);
+    assert.ok(!JSON.stringify(res.body).includes('fake-private-test-token'));
+  }finally{
+    if(oldToken===undefined)delete process.env.MYBOX_TOKEN;else process.env.MYBOX_TOKEN=oldToken;
+    if(oldKey===undefined)delete process.env.MYBOX_DIRECT_PROBE_KEY;else process.env.MYBOX_DIRECT_PROBE_KEY=oldKey;
+    global.fetch=oldFetch;
+  }
+});
+test('authenticated probe reserves a one-use URL and cleans only its diagnostic photo', async()=>{
+  const oldToken=process.env.MYBOX_TOKEN,oldKey=process.env.MYBOX_DIRECT_PROBE_KEY,oldFetch=global.fetch;
+  process.env.MYBOX_TOKEN=' Bearer fake-private-test-token ';process.env.MYBOX_DIRECT_PROBE_KEY=ACCESS;
   let name='',deleted=false;
   global.fetch=async(url,options)=>{
     assert.equal(options.headers.Authorization,'Bearer fake-private-test-token');
