@@ -10,7 +10,7 @@ function harness(){const elements=new Map(),events={},stored=new Map(),timers=ne
  crypto:crypto.webcrypto,URL,URLSearchParams,Uint8Array,Date,Intl,JSON,Number,Math,Array,Error,Promise,Set,Map,
  FileReader:class {readAsDataURL(blob){blob.arrayBuffer().then(value=>{this.result='data:image/jpeg;base64,'+Buffer.from(value).toString('base64');this.onload();});}},
  localStorage:{getItem:k=>stored.get(k)||null,setItem:(k,v)=>stored.set(k,v)},setTimeout:(fn,ms)=>{const id=++seq;timers.set(id,{fn,ms});return id;},clearTimeout:id=>timers.delete(id)};
- vm.createContext(sandbox);vm.runInContext(source.replace('init().catch(entryError);','window.test={init,entryError,once,controls,bridgeOrigin,connected,channel,requests,keepKey,renderPending,capture,openCamera,upload,stopCamera,setPending:value=>{pending=value;},setReady:()=>{addressReady=true;canUpload=true;deviceKey="a".repeat(64);},photoState:()=>({deviceKey,busy,stream,pending})};'),sandbox);
+ vm.createContext(sandbox);vm.runInContext(source.replace('init().catch(entryError);','window.test={init,entryError,once,controls,bridgeOrigin,connected,channel,requests,keepKey,renderPending,capture,openCamera,upload,stopCamera,setPending:value=>{pending=value;},setReady:()=>{localReady=true;addressReady=true;canUpload=true;deviceKey="a".repeat(64);},photoState:()=>({deviceKey,busy,stream,pending})};'),sandbox);
  return {sandbox,get,events,timers,run:s=>vm.runInContext(s,sandbox),api:window.test};
 }
 test('only live camera capture exists; album/file selection and GPS in public stamp are absent',()=>{
@@ -165,12 +165,14 @@ test('photo preview is keyboard-accessible and the condensed page preserves cons
  assert.match(html,/role="status" aria-live="polite"/);assert.match(html,/누구나 볼 수 있도록 등록/);assert.match(html,/삭제는 올린 브라우저 또는 관리자만/);
 });
 
-test('photo entry shows a static loader and needs no map dataset before authoritative server validation',async()=>{
- assert.doesNotMatch(html,/<script[^>]*addresses\.js/);assert.doesNotMatch(source,/ADDR_DATA/);assert.match(html,/사진 화면을 여는 중…/);
+test('photo entry opens the camera before the server status, but still waits for authoritative validation to capture',async()=>{
+ assert.doesNotMatch(html,/<script[^>]*addresses\.js/);assert.doesNotMatch(source,/ADDR_DATA/);assert.match(html,/등록 현황 확인 중…/);
  const h=harness();h.get('captureCard').hidden=true;const sent=[],remote={postMessage:message=>{sent.push(message.name);queueMicrotask(()=>h.events.message({origin:'https://safe-script.googleusercontent.com',source:remote,data:{channel:h.api.channel,type:'reply',id:message.id,result:{ok:true,data:{ready:true,totalCount:0,photos:[],quota:{canUpload:true}}}}}));}};
- const pending=h.api.init();assert.equal(h.get('entryLoading').hidden,false);assert.equal(h.get('captureCard').hidden,true);
+ h.sandbox.navigator.mediaDevices={getUserMedia:async()=>({getTracks:()=>[{stop(){}}]})};
+ const pending=h.api.init();assert.equal(h.get('entryLoading').hidden,false);assert.equal(h.get('captureCard').hidden,false);assert.equal(h.get('startCamera').disabled,false);
+ await h.api.openCamera();assert.equal(h.get('cameraPanel').hidden,false);assert.deepEqual(sent,[],'opening the camera must not wait for the photo service');
  h.events.message({origin:'https://safe-script.googleusercontent.com',source:remote,data:{channel:h.api.channel,type:'ready'}});await pending;
- assert.deepEqual(sent,['getPublicStatus']);assert.equal(h.get('entryLoading').hidden,true);assert.equal(h.get('captureCard').hidden,false);assert.equal(h.get('startCamera').disabled,false);
+ assert.deepEqual(sent,['getPublicStatus']);assert.equal(h.get('entryLoading').hidden,true);assert.equal(h.get('captureCard').hidden,false);assert.equal(h.get('take').disabled,false);
 });
 
 test('a rejected source address never enables capture and shows retry instead of a permanent loading message',async()=>{

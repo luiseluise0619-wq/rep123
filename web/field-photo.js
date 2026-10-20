@@ -3,7 +3,7 @@
 const $=id=>document.getElementById(id),config=window.PHOTO_CONFIG||{},address=new URLSearchParams(location.search).get('address')||'';
 const random=bytes=>Array.from(crypto.getRandomValues(new Uint8Array(bytes)),b=>b.toString(16).padStart(2,'0')).join('');
 const channel=random(32),requests=new Map(),KEY='photoDeviceKeyV4';
-let remote=null,remoteOrigin='',deviceKey='',busy=false,sending=false,singlePhotoMode=false,addressReady=false,savedCount=0,canUpload=false,stream=null,pending=[],epoch=0;
+let remote=null,remoteOrigin='',deviceKey='',busy=false,sending=false,singlePhotoMode=false,localReady=false,addressReady=false,savedCount=0,canUpload=false,stream=null,pending=[],epoch=0,initialStatusPromise=null;
 let connectResolve,connectReject;
 const connected=new Promise((resolve,reject)=>{connectResolve=resolve;connectReject=reject;});
 const connectionTimer=setTimeout(()=>connectReject(Error('저장 서버에 연결되지 않았습니다. 잠시 후 이 화면을 다시 열어 주세요.')),30000);
@@ -29,10 +29,10 @@ function controls(){
   $('captureHint').hidden=!!stream||!!pending.length;
   $('startCamera').hidden=!!stream||needsReview||full||singlePhotoMode;
   $('startCamera').textContent=pending.length||savedCount?'한 장 더 찍기':'사진 찍기';
-  $('startCamera').disabled=busy||!!stream||needsReview||!canUpload||!deviceKey||full;
+  $('startCamera').disabled=busy||!!stream||needsReview||!localReady||(addressReady&&!canUpload)||full;
   $('confirmNext').hidden=!!stream||!needsReview||full||singlePhotoMode;
   $('confirmNext').disabled=busy||!needsReview||full||!canUpload||!deviceKey;
-  $('take').disabled=busy||!stream||savedCount+pending.length>=2;$('stopCamera').disabled=busy;
+  $('take').disabled=busy||!stream||(addressReady&&!canUpload)||savedCount+pending.length>=2;$('stopCamera').disabled=busy;
   $('publicConsent').disabled=busy||!!stream;
   $('upload').disabled=busy||!!stream||!pending.length||!$('publicConsent').checked||!canUpload||pending.length+savedCount>2;
   $('upload').textContent=sending?'전송 중…':full?'확인하고 전송':'확인하고 1장만 전송';
@@ -43,21 +43,22 @@ function controls(){
   $('refresh').disabled=busy;$('remaining').textContent=(savedCount+pending.length)+' / 2장';
   $('reviewPanel').hidden=!pending.length||!!stream;
   $('reviewHint').textContent=needsReview?(full?'사진을 확인하고 아래에서 전송해 주세요.':'사진을 확인한 뒤 한 장 더 찍거나 전송해 주세요.'):'확인한 사진입니다. 한 장 더 찍거나 전송해 주세요.';
-  $('saveControls').hidden=!pending.length||!!stream||(!full&&!singlePhotoMode&&!sending);$('captureCard').hidden=!addressReady||(savedCount>=2&&!pending.length);
+  $('saveControls').hidden=!pending.length||!!stream||(!full&&!singlePhotoMode&&!sending);$('captureCard').hidden=!localReady||(addressReady&&savedCount>=2&&!pending.length);
   document.querySelectorAll('#pending button').forEach(button=>{button.disabled=busy;});
 }
 function stopCamera(){if(stream)stream.getTracks().forEach(track=>track.stop());stream=null;$('cameraVideo').srcObject=null;$('cameraPanel').hidden=true;controls();}
 async function withBusy(fn){if(busy)return;busy=true;controls();try{await fn();}catch(error){say(error.message,true);}finally{busy=false;controls();}}
 async function openCamera(){await withBusy(async()=>{
-  if(!addressReady||!canUpload||!deviceKey)throw Error('주소와 저장 연결을 먼저 확인해 주세요.');
+  if(!localReady||(addressReady&&!canUpload))throw Error('이 주소에는 지금 사진을 등록할 수 없습니다.');
   if(stream)return;
   if(pending.some(photo=>!photo.confirmed))throw Error('찍은 사진을 먼저 확인해 주세요.');
   if(savedCount+pending.length>=2)throw Error('주소당 사진은 2장까지 등록할 수 있습니다.');
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw Error('카메라를 지원하는 최신 휴대폰 브라우저로 열어 주세요.');
   say('카메라를 켜는 중…');
   try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1600},height:{ideal:1200}},audio:false});
+    if(addressReady&&(!canUpload||savedCount+pending.length>=2))throw Error('이 주소에는 지금 사진을 등록할 수 없습니다.');
     $('cameraVideo').srcObject=stream;$('cameraPanel').hidden=false;controls();await $('cameraVideo').play();
-    say('');$('cameraPanel').scrollIntoView({block:'start'});
+    say(addressReady?'':'등록 현황을 확인하는 중입니다. 확인이 끝나면 촬영할 수 있습니다.');$('cameraPanel').scrollIntoView({block:'start'});
   }catch(error){stopCamera();throw error.name==='NotAllowedError'?Error('카메라 권한을 허용해 주세요.'):error;}
 });}
 function jpeg(canvas,quality){return new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(Error('사진 변환에 실패했습니다.')),'image/jpeg',quality));}
@@ -78,6 +79,8 @@ async function compress(canvas){
 }
 async function capture(){await withBusy(async()=>{
   if(!stream)throw Error('카메라를 먼저 켜 주세요.');
+  if(!addressReady){say('등록 가능한 주소인지 확인하는 중…');await initialStatusPromise;}
+  if(!stream||!canUpload||!deviceKey)throw Error('이 주소에는 지금 사진을 등록할 수 없습니다.');
   if(savedCount+pending.length>=2||pending.some(photo=>!photo.confirmed))throw Error('찍은 사진을 먼저 확인해 주세요.');say('촬영을 준비하는 중…');
   const permit=await rpc('beginPublicCapture',deviceKey,address),when=new Date();
   const canvas=stamp($('cameraVideo'),address,when);stopCamera();
@@ -136,14 +139,19 @@ window.addEventListener('storage',event=>{if(event.key===KEY||event.key===null){
 async function init(){
   $('entryLoading').hidden=false;$('retryConnection').hidden=true;
   $('address').textContent=address;$('admin').href=config.webAppUrl+'?page=admin&build='+encodeURIComponent(config.build||'v5');
-  // The server verifies exact source membership before enabling capture. Do not download the 4.8MB map dataset here.
+  // Show the camera immediately; the server still verifies exact source membership before capture and upload.
   if(!address||address.length>1000||/[\u0000-\u001f]/.test(address))throw Error('지도에서 방문 주소를 다시 선택해 주세요.');
   $('addressMap').href='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(address);$('addressMap').hidden=false;
+  localReady=true;controls();
+  initialStatusPromise=connected.then(()=>{ $('entryDetail').textContent='주소와 등록된 사진을 확인하고 있습니다.';return refresh(); });
   const bridgeUrl=new URL(config.webAppUrl);bridgeUrl.searchParams.set('page','bridge');bridgeUrl.searchParams.set('channel',channel);bridgeUrl.searchParams.set('build',config.build||'v5');$('bridge').src=bridgeUrl.toString();
-  await connected;$('entryDetail').textContent='주소와 등록된 사진을 확인하고 있습니다.';await refresh();$('captureCard').hidden=savedCount>=2;$('entryLoading').hidden=true;
-  if(!deviceKey)say('이 브라우저에서는 보기만 가능합니다. 브라우저 저장을 허용해 주세요.',true);else say('');controls();
+  await initialStatusPromise;$('entryLoading').hidden=true;
+  if(!canUpload&&stream){stopCamera();say(savedCount>=2?'이 주소에는 이미 사진 2장이 등록돼 있습니다.':'지금은 사진을 등록할 수 없습니다.',true);}
+  else if(!deviceKey)say('이 브라우저에서는 보기만 가능합니다. 브라우저 저장을 허용해 주세요.',true);
+  else if(!stream)say('');
+  controls();
 }
 $('retryConnection').onclick=()=>location.reload();
-function entryError(error){addressReady=false;canUpload=false;$('entryLoading').hidden=true;$('retryConnection').hidden=false;controls();say(error.message,true);}
+function entryError(error){localReady=false;addressReady=false;canUpload=false;stopCamera();$('entryLoading').hidden=true;$('retryConnection').hidden=false;controls();say(error.message,true);}
 init().catch(entryError);
 })();
