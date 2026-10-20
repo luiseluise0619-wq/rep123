@@ -1,6 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
+  "functions": {"api/mybox-direct-probe.js": {"maxDuration": 60}},
   "headers": [
     {
       "source": "/photo",

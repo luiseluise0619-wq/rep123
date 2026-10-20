@@ -58,6 +58,35 @@ async function probeFolder(create) {
   if (!result.resourceId) throw failure('FOLDER', 502, '점검 폴더를 만들지 못했습니다.');
   return result.resourceId;
 }
+function uploadUrl(target) {
+  if (typeof target.uploadUrl !== 'string' ||
+      !/^https:\/\/[a-z0-9.-]+(?::443)?\/v1\/storage\/upload\?/i.test(target.uploadUrl))
+    throw failure('UPLOAD_URL', 502, 'MYBOX 업로드 URL 형식을 확인할 수 없습니다.');
+  return target.uploadUrl;
+}
+async function reserveFile(folder, size) {
+  const name = PREFIX + randomUUID() + '.jpg';
+  const target = await mybox('/drive/files', 'POST',
+    {parentId: folder, fileName: name, fileSize: size, isOverwrite: false});
+  return {name, uploadUrl: uploadUrl(target)};
+}
+async function limited(values, limit, work) {
+  const results = Array(values.length);
+  let next = 0;
+  await Promise.all(Array.from({length: Math.min(limit, values.length)}, async () => {
+    while (next < values.length) {
+      const index = next++;
+      results[index] = await work(values[index], index);
+    }
+  }));
+  return results;
+}
+function batchNames(value) {
+  if (!Array.isArray(value) || value.length < 1 || value.length > 30 ||
+      new Set(value).size !== value.length || !value.every(validName))
+    throw failure('INPUT', 400, '점검 파일 목록 형식이 올바르지 않습니다.');
+  return value;
+}
 
 module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
@@ -70,18 +99,39 @@ module.exports = async function handler(req, res) {
     return res.status(403).json({ok:false,code:'INVALID_PROBE_KEY',message:'점검 접근키가 Vercel에 저장된 값과 다릅니다.'});
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body || {};
-    if (body.action === 'reserve') {
+    if (body.action === 'reserve' || body.action === 'reserveBatch') {
       const size = Number(body.size);
       if (!Number.isInteger(size) || size < 32 || size > 200000)
         throw failure('SIZE', 400, '점검 사진은 200KB 이하여야 합니다.');
+      const count = body.action === 'reserveBatch' ? Number(body.count) : 1;
+      if (!Number.isInteger(count) || count < 1 || count > 30)
+        throw failure('COUNT', 400, '한 번에 30건까지만 점검할 수 있습니다.');
       const folder = await probeFolder(true);
-      const name = PREFIX + randomUUID() + '.jpg';
-      const target = await mybox('/drive/files', 'POST',
-        {parentId: folder, fileName: name, fileSize: size, isOverwrite: false});
-      if (typeof target.uploadUrl !== 'string' ||
-          !/^https:\/\/[a-z0-9.-]+(?::443)?\/v1\/storage\/upload\?/i.test(target.uploadUrl))
-        throw failure('UPLOAD_URL', 502, 'MYBOX 업로드 URL 형식을 확인할 수 없습니다.');
-      return res.status(200).json({ok:true,name,uploadUrl:target.uploadUrl});
+      if (body.action === 'reserve') return res.status(200).json({ok:true,...await reserveFile(folder,size)});
+      const results = await limited(Array.from({length:count}), 4, async () => {
+        try { return {ok:true,...await reserveFile(folder,size)}; }
+        catch (error) { return {ok:false,code:error.code||'SERVICE',message:error.code?error.message:'URL 발급 실패'}; }
+      });
+      return res.status(200).json({ok:true,results});
+    }
+    if (body.action === 'statusBatch' || body.action === 'finishBatch') {
+      const names = batchNames(body.names);
+      const folder = await probeFolder(false);
+      const files = folder ? await items(folder) : [];
+      const found = new Map();
+      for (const file of files) if (names.includes(file.name)) {
+        if (file.type !== 'file' || found.has(file.name))
+          throw failure('FILE', 409, '점검 파일 이름이 중복됩니다.');
+        found.set(file.name,file);
+      }
+      if (body.action === 'statusBatch')
+        return res.status(200).json({ok:true,present:names.filter(name=>found.has(name)),missing:names.filter(name=>!found.has(name))});
+      const results = await limited(names.filter(name=>found.has(name)), 4, async name => {
+        try { await mybox('/drive/resources/' + encodeURIComponent(found.get(name).resourceId), 'DELETE');
+          return {name,trashed:true}; }
+        catch (error) { return {name,trashed:false,code:error.code||'SERVICE'}; }
+      });
+      return res.status(200).json({ok:true,results,missing:names.filter(name=>!found.has(name))});
     }
     if ((body.action === 'inspect' || body.action === 'finish') && validName(body.name)) {
       const folder = await probeFolder(false);
