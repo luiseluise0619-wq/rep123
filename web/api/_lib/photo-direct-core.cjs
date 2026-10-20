@@ -38,12 +38,12 @@ function sign(token,kind,value){
   const body=Buffer.from(JSON.stringify(value)).toString('base64url');
   return body+'.'+createHmac('sha256',token).update('photo-direct-v1\n'+kind+'\n'+body).digest('hex');
 }
-function verify(token,kind,signed){
+function verify(token,kind,signed,clock=Date.now){
   const parts=String(signed||'').split('.');
   if(parts.length!==2||parts[0].length>5000||!same(parts[1],createHmac('sha256',token).update('photo-direct-v1\n'+kind+'\n'+parts[0]).digest('hex')))
     throw error('TICKET',403,'촬영·전송 정보가 올바르지 않습니다. 다시 촬영해 주세요.');
   let data;try{data=JSON.parse(Buffer.from(parts[0],'base64url').toString('utf8'));}catch{throw error('TICKET',403,'촬영·전송 정보를 확인할 수 없습니다.');}
-  if(!Number.isFinite(data.exp)||data.exp<Date.now())throw error('EXPIRED',409,'전송 시간이 지나 다시 촬영해야 합니다.');
+  if(!Number.isFinite(data.exp)||data.exp<clock())throw error('EXPIRED',409,'전송 시간이 지나 다시 촬영해야 합니다.');
   return data;
 }
 function safeUrl(value,kind){
@@ -161,7 +161,7 @@ function createService({token,adminPassword='',fetcher=fetch,now=()=>Date.now(),
     return {ticket:sign(token,'capture',{address,owner,issued,exp:issued+600000,nonce:randomUUID()}),expiresAt:issued+600000};
   }
   function checkCapture(address,owner,ticket,capturedAt){
-    const data=verify(token,'capture',ticket),at=Number(capturedAt);
+    const data=verify(token,'capture',ticket,now),at=Number(capturedAt);
     if(data.address!==address||data.owner!==owner||!Number.isFinite(at)||at<data.issued-30000||at>now()+30000||now()-at>600000)
       throw error('CAPTURE',403,'촬영 정보가 만료됐습니다. 다시 촬영해 주세요.');
     return {source:'live-camera-no-location',locationCollected:false,capturedAt:new Date(at).toISOString(),receivedAt:new Date(now()).toISOString(),proofOfVisit:false};
@@ -231,7 +231,7 @@ function createService({token,adminPassword='',fetcher=fetch,now=()=>Date.now(),
     });
   }
   async function finish({reservation,deviceKey}){
-    const data=verify(token,'reservation',reservation),owner=actor(deviceKey),address=data.address;
+    const data=verify(token,'reservation',reservation,now),owner=actor(deviceKey),address=data.address;
     checkAddress(address);if(owner!==data.owner||!/^[a-f0-9]{64}$/.test(data.hash)||!Number.isInteger(data.size)||data.size>MAX_BYTES)
       throw error('TICKET',403,'전송 정보가 올바르지 않습니다.');
     return lock('address:'+sha(address),async()=>{
@@ -392,7 +392,7 @@ function createService({token,adminPassword='',fetcher=fetch,now=()=>Date.now(),
     if(typeof password!=='string'||!same(password,adminPassword))throw error('LOGIN',403,'관리자 암호를 확인해 주세요.');
     return {session:sign(token,'admin',{role:'admin',exp:now()+8*3600000,nonce:randomUUID()}),expiresAt:now()+8*3600000};
   }
-  function requireAdmin(session){const value=verify(token,'admin',session);if(value.role!=='admin')throw error('FORBIDDEN',403,'관리자만 이용할 수 있습니다.');}
+  function requireAdmin(session){const value=verify(token,'admin',session,now);if(value.role!=='admin')throw error('FORBIDDEN',403,'관리자만 이용할 수 있습니다.');}
   return {api,list,folder,addressFolder,photoFiles,quota,lock,entry,owned,status,capture,checkCapture,
     readBytes,uploadBytes,reserve,finish,receipt,publicPhoto,remove,overview,chunk,completionMeta,completionChunk,
     repairPending,adminLogin,requireAdmin,token,lookup};
