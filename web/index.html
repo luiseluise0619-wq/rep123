@@ -36,7 +36,7 @@
           <button class="hbtn" type="button" id="dataInfoBtn">집계 기준</button>
           <a class="hbtn" id="photoAdminLink" hidden target="_blank" rel="noopener noreferrer">사진 관리</a>
         </nav>
-        <div class="map-legend"><span><i class="lg teal" aria-hidden="true"></i>주소 위치</span><span><i class="lg green" aria-hidden="true"></i>사진 2장 등록</span><span><i class="lg amber" aria-hidden="true"></i>좌표 확인 필요</span><p>완료 색은 저장된 사진 2장을 확인한 주소에만 표시됩니다. 지도에 표시된 숫자는 주소 수입니다.</p></div>
+        <div class="map-legend"><span><i class="lg teal" aria-hidden="true"></i>주소 위치</span><span><i class="lg green" aria-hidden="true"></i>사진 2장 등록</span><span><i class="lg amber" aria-hidden="true"></i>좌표 확인 필요</span><p>사진 완료 색은 주소를 확인하거나 이 브라우저에서 등록한 뒤 표시됩니다. 지도에 표시된 숫자는 주소 수입니다.</p></div>
       </div>
     </details>
   </div>
@@ -224,7 +224,7 @@ function initMap(){
   renderSido();                                     // ★ 목록 먼저 → 버튼 즉시 작동
   var _ld=document.getElementById('loading'); if(_ld) _ld.remove();   // 로딩 표시 제거
   setTimeout(function(){ showMarkers(null, 'ALL'); }, 0);  // 전체 마커는 뒤에서 천천히
-  setTimeout(function(){startPhotoProgress();if(photoProgress)photoProgress.refresh().catch(function(){});},1200); // 지도 표시 후 사진 현황 확인
+  startPhotoProgress(); // 같은 브라우저의 사진 등록 알림만 수신; 첫 화면에서 MYBOX 조회는 하지 않음
 
   // 확대(줌 15↑)하면 화면에 보이는 주소를 자동으로 목록에 띄움 (디바운스로 과도한 갱신 방지)
   var _visTimer=null;
@@ -314,7 +314,6 @@ function startPhotoProgress(){
   if(photoProgress||!window.PhotoMapProgress)return;
   photoProgress=window.PhotoMapProgress.create(window.PHOTO_CONFIG||{},applyPhotoSnapshot,applyPhotoCount);
   if(!photoProgress)return;
-  window.addEventListener('focus',function(){photoProgress.refresh().catch(function(){});});
   window.addEventListener('storage',function(event){
     if(event.key!=='photoProgressV1'||!event.newValue)return;
     try{var item=JSON.parse(event.newValue);if(typeof item.address==='string'&&Number.isInteger(item.count)&&item.count>=0&&item.count<=2)applyPhotoCount(item.address,item.count);}catch(ignored){}

@@ -33,6 +33,15 @@ test('photo map links to local registration and administration',()=>{
  const url=new URL(h.ui.photoUrl(h.point[2]),'https://rep123-seven.vercel.app/');
  assert.equal(url.pathname,'/photo');assert.equal(url.searchParams.get('address'),h.point[2]);
 });
+test('map skips the automatic photo lookup but updates a completed marker after a same-browser upload',()=>{
+ const h=harness(),rec=h.ui.recordByPoint.get(h.point);let refreshes=0;
+ h.ui.window.PhotoMapProgress={create:()=>({refresh(){refreshes++;},check:async()=>2})};
+ h.ui.startPhotoProgress();
+ assert.equal(refreshes,0);assert.equal(h.events.focus,undefined);
+ assert.doesNotMatch(html,/photoProgress\.refresh\(\)/);
+ h.events.storage[0]({key:'photoProgressV1',newValue:JSON.stringify({address:h.point[2],count:2})});
+ assert.match(h.ui.markerIcon(rec).html,/addr-dot completed/);
+});
 test('panel can be collapsed and reopened with a native button without losing region or search state',()=>{
  const h=harness();h.ui.sel.sido='서울특별시';h.get('mapSearch').value='당산동';h.ui.setPanel(h.ui.defaultH());
  assert.equal(h.get('panelContent').hidden,false);h.get('panelToggle').onclick({stopPropagation(){}});
