@@ -14,7 +14,7 @@ function response() {
 function request(action,key,extra={}) {
   return {method:'POST',headers:{'x-probe-key':key},body:{action,...extra}};
 }
-const ACCESS='test-only-key-16';
+const ACCESS='probe-key-12';
 test('diagnostic page script parses and does not embed account credentials',()=>{
   const html=fs.readFileSync(path.join(__dirname,'../web/direct-upload-probe.html'),'utf8');
   const script=html.match(/<script>([\s\S]*?)<\/script>/);
