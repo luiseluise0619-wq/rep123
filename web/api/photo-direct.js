@@ -9,6 +9,8 @@ module.exports=async function handler(req,res){
   if(req.method!=='POST')return res.status(405).json({ok:false,code:'METHOD'});
   if(process.env.PHOTO_DIRECT_ENABLED!=='true')
     return res.status(503).json({ok:false,code:'NOT_READY',message:'직접 전송은 아직 점검 중입니다. 기존 사진 화면을 이용해 주세요.'});
+  if(typeof process.env.PHOTO_ADMIN_PASSWORD!=='string'||process.env.PHOTO_ADMIN_PASSWORD.length<8)
+    return res.status(503).json({ok:false,code:'SETUP',message:'사진 관리 설정을 확인해야 합니다.'});
   if(Number(req.headers['content-length']||0)>25000)
     return res.status(413).json({ok:false,code:'SIZE',message:'요청 내용이 너무 큽니다.'});
   try{

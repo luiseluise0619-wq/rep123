@@ -381,7 +381,7 @@ function createService({token,adminPassword='',fetcher=fetch,now=()=>Date.now(),
     });
   }
   function adminLogin(password){
-    if(typeof adminPassword!=='string'||adminPassword.length<12)throw error('SETUP',503,'관리자 암호를 설정해야 합니다.');
+    if(typeof adminPassword!=='string'||adminPassword.length<8)throw error('SETUP',503,'관리자 암호를 설정해야 합니다.');
     if(typeof password!=='string'||!same(password,adminPassword))throw error('LOGIN',403,'관리자 암호를 확인해 주세요.');
     return {session:sign(token,'admin',{role:'admin',exp:now()+8*3600000,nonce:randomUUID()}),expiresAt:now()+8*3600000};
   }

@@ -4,6 +4,7 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 const path=require('node:path');
 const handler=require('../web/api/photo-direct.js');
+const {createService}=require('../web/api/_lib/photo-direct-core.cjs');
 
 function response(){let code=200,payload,headers={};return {
   setHeader:(key,value)=>{headers[key]=value;},
@@ -17,6 +18,23 @@ test('direct API stays closed until separately enabled on Vercel',async()=>{
     assert.equal(res.result().code,503);assert.equal(res.result().payload.code,'NOT_READY');
     assert.equal(res.result().headers['Cache-Control'],'no-store');}
   finally{if(previous===undefined)delete process.env.PHOTO_DIRECT_ENABLED;else process.env.PHOTO_DIRECT_ENABLED=previous;}
+});
+
+test('direct API rejects all actions when the administrator credential is not ready',async()=>{
+  const enabled=process.env.PHOTO_DIRECT_ENABLED,password=process.env.PHOTO_ADMIN_PASSWORD;
+  process.env.PHOTO_DIRECT_ENABLED='true';process.env.PHOTO_ADMIN_PASSWORD='short7!';
+  try{const res=response();await handler({method:'POST',body:{action:'status',address:'anything'}},res);
+    assert.equal(res.result().code,503);assert.equal(res.result().payload.code,'SETUP');}
+  finally{
+    if(enabled===undefined)delete process.env.PHOTO_DIRECT_ENABLED;else process.env.PHOTO_DIRECT_ENABLED=enabled;
+    if(password===undefined)delete process.env.PHOTO_ADMIN_PASSWORD;else process.env.PHOTO_ADMIN_PASSWORD=password;
+  }
+});
+
+test('eight-character administrator password is accepted',()=>{
+  const service=createService({token:'test-token',adminPassword:'eight123'});
+  assert.ok(service.adminLogin('eight123').session);
+  assert.throws(()=>service.adminLogin('wrong-one'),{code:'LOGIN'});
 });
 
 test('new admin page parses without inline secrets and retains public-photo consent path',()=>{
