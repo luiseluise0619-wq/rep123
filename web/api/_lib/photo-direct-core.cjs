@@ -6,7 +6,7 @@ const fs=require('node:fs');
 const API='https://open-api.mybox.naver.com/v1';
 const ROOT='현장방문_주소사진_v1',INDEX='현장방문_사진목록_v3';
 const STAGE='현장방문_직접전송대기_v1',LOCKS='현장방문_직접전송잠금_v1',PENDING='현장방문_목록반영대기_v1';
-const MAX_BYTES=200000,MAX_SLOTS=2,CEILING=24000000000,RESERVE=1000000000;
+const MAX_BYTES=200000,MAX_SLOTS=2,RESERVE=1000000000;
 const sha=value=>createHash('sha256').update(value).digest('hex');
 const error=(code,status,message)=>Object.assign(new Error(message),{code,status});
 const same=(a,b)=>{const x=Buffer.from(String(a)),y=Buffer.from(String(b));return x.length===y.length&&timingSafeEqual(x,y);};
@@ -123,7 +123,7 @@ function createService({token,adminPassword='',fetcher=fetch,now=()=>Date.now(),
   async function quota(){
     const q=await api('/drive/storage');const total=Number(q.quotaBytes),used=Number(q.usedBytes);
     if(!Number.isFinite(total)||!Number.isFinite(used)||total<1||used<0)throw error('QUOTA',502,'저장 공간을 확인하지 못했습니다.');
-    const stopAt=Math.max(0,Math.min(CEILING,total-RESERVE));
+    const stopAt=Math.max(0,total-RESERVE);
     return {canUpload:used+MAX_BYTES<=stopAt,usedBytes:used,remainingSafeBytes:Math.max(0,stopAt-used)};
   }
   async function lock(scope,work){

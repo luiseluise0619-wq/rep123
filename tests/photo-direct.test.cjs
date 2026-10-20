@@ -71,6 +71,16 @@ function fakeMybox(){
 }
 function fixture(){const box=fakeMybox(),service=createService({token:'test-secret',adminPassword:'secure-admin-passphrase',fetcher:box.fetcher,now:()=>now});
   return {box,service};}
+test('storage safety margin follows the actual MYBOX quota without a 24 GB ceiling',async()=>{
+  const quotaAt=async(quotaBytes,usedBytes)=>createService({token:'test-secret',
+    fetcher:async()=>Response.json({quotaBytes,usedBytes})}).quota();
+  assert.deepEqual(await quotaAt(30000000000,28999800000),
+    {canUpload:true,usedBytes:28999800000,remainingSafeBytes:200000});
+  assert.deepEqual(await quotaAt(30000000000,29000000000),
+    {canUpload:false,usedBytes:29000000000,remainingSafeBytes:0});
+  assert.deepEqual(await quotaAt(15000000000,13999800000),
+    {canUpload:true,usedBytes:13999800000,remainingSafeBytes:200000});
+});
 async function uploadOne(ctx,deviceKey,seed=1,where=address){
   const bytes=fakeJpeg(seed),hash=digest(bytes),capture=await ctx.service.capture(where,deviceKey);
   const reservation=await ctx.service.reserve({address:where,deviceKey,hash,size:bytes.length,visitDate:'2026-10-20',

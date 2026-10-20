@@ -4,6 +4,8 @@
 
 Vercel Production 환경변수: `MYBOX_TOKEN`, `PHOTO_ADMIN_PASSWORD`(8자 이상), `PHOTO_DIRECT_ENABLED=true`. 값을 바꾸면 Production 재배포가 필요합니다. 실험용 `MYBOX_DIRECT_PROBE_KEY`는 점검 페이지에만 사용됩니다.
 
+저장 가능량은 MYBOX 계정의 실제 `quotaBytes`에서 1GB를 남긴 값으로 계산합니다. 별도의 24GB 상한은 없습니다. 계정의 다른 파일과 사진 목록도 `usedBytes`에 포함되며, 잔여 공간이 부족하면 새 사진 등록을 막습니다.
+
 1. 사진 촬영 후 브라우저가 원주소·사진 해시·크기·촬영 허가를 서버에 보냅니다.
 2. 서버가 MYBOX의 격리된 임시 폴더와 일회용 업로드 URL을 준비합니다.
 3. 브라우저가 JPEG를 MYBOX로 직접 보내고, 서버가 파일을 다시 읽어 크기·JPEG 구조·해시를 검증합니다.
