@@ -41,6 +41,8 @@ module.exports=async function handler(req,res){
       case 'visitSave':data=await visits.save(body);break;
       case 'visitMeta':service.requireAdmin(body.adminSession);data=await visits.meta();break;
       case 'visitChunk':service.requireAdmin(body.adminSession);data=await visits.chunk(body.key);break;
+      case 'visitArchive':service.requireAdmin(body.adminSession);data=await visits.archive();break;
+      case 'visitRollup':service.requireAdmin(body.adminSession);data=await visits.rollup();break;
       default:throw error('INPUT',400,'요청 종류가 올바르지 않습니다.');
     }
     return res.status(200).json({ok:true,data});

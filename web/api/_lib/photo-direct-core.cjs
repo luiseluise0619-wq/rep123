@@ -176,9 +176,9 @@ function createService({token,adminPassword='',fetcher=fetch,now=()=>Date.now(),
     if(bytes.length!==Number(file.size)||bytes.length>8000000)throw error('VERIFY',502,'저장된 파일의 크기가 다릅니다.');
     return bytes;
   }
-  async function uploadBytes(parent,name,bytes,overwrite){
+  async function uploadBytes(parent,name,bytes,overwrite,mime='application/json'){
     const target=await api('/drive/files','POST',{parentId:parent,fileName:name,fileSize:bytes.length,isOverwrite:overwrite});
-    const form=new FormData();form.append('Filedata',new Blob([bytes],{type:'application/json'}),name);
+    const form=new FormData();form.append('Filedata',new Blob([bytes],{type:mime}),name);
     const response=await fetcher(safeUrl(target.uploadUrl,'upload'),{method:'POST',body:form,redirect:'manual',signal:AbortSignal.timeout(30000)});
     if(!response.ok)throw error('CATALOG',502,'사진 목록을 저장하지 못했습니다.');
     const found=(await list(parent)).filter(file=>file.name===name&&Number(file.size)===bytes.length);

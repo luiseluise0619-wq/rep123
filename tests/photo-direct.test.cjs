@@ -3,6 +3,7 @@ const assert=require('node:assert/strict');
 const {createHash}=require('node:crypto');
 const {createService,source,validJpeg}=require('../web/api/_lib/photo-direct-core.cjs');
 const {createVisitService,dayInSeoul}=require('../web/api/_lib/visit-result-core.cjs');
+const dailyRollupHandler=require('../web/api/visit-daily-rollup.js');
 const {fakeJpeg}=require('./helpers/jpeg-fixture.cjs');
 
 const digest=bytes=>createHash('sha256').update(bytes).digest('hex');
@@ -167,4 +168,50 @@ test('visit outcomes count separate businesses, prevent duplicate taps and retai
   const admin=ctx.service.adminLogin('secure-admin-passphrase');
   await visits.save({address:where,businessIndex:1,result:'clear',adminSession:admin.session});
   assert.equal((await visits.status(where,key)).slots[0].result,null);
+});
+
+test('midnight rollup keeps past daily counts, adds zero days and saves a workbook',async()=>{
+  const ctx=fixture(),where=[...source().map].find(([,place])=>place.businessCount>=2)[0];
+  let clock=Date.parse('2026-10-20T14:00:00Z');
+  const visits=createVisitService(ctx.service,{now:()=>clock});
+  await visits.save({address:where,businessIndex:1,result:'refused',deviceKey:key});
+  clock=Date.parse('2026-10-20T15:10:00Z');
+  await visits.save({address:where,businessIndex:1,result:'completed',deviceKey:key});
+  await visits.save({address:where,businessIndex:2,result:'refused',deviceKey:other});
+  clock=Date.parse('2026-10-21T15:10:00Z');
+  const first=await visits.rollup();
+  assert.equal(first.added,2);
+  assert.deepEqual((await visits.archive()).days,{
+    '2026-10-20':{refused:1,completed:0},
+    '2026-10-21':{refused:1,completed:1}
+  });
+  clock=Date.parse('2026-10-22T01:00:00Z');
+  await visits.save({address:where,businessIndex:1,result:'clear',deviceKey:key});
+  clock=Date.parse('2026-10-22T15:10:00Z');
+  const second=await visits.rollup();
+  assert.equal(second.added,1);
+  assert.deepEqual((await visits.archive()).days['2026-10-22'],{refused:0,completed:0});
+  assert.equal((await visits.rollup()).added,0);
+  const workbook=[...ctx.box.entries.values()].find(entry=>entry.name==='방문결과_일별집계.xlsx');
+  assert.equal(workbook.bytes.subarray(0,2).toString(),'PK');
+  assert.ok(workbook.bytes.includes(Buffer.from('numFmtId="164"')));
+  assert.ok(workbook.bytes.includes(Buffer.from('s="2"')));
+});
+
+test('scheduled rollup refuses missing or incorrect cron credentials',async()=>{
+  const previous=process.env.CRON_SECRET;
+  const invoke=async authorization=>{
+    const res={setHeader(){return this;},status(code){this.statusCode=code;return this;},json(value){this.body=value;return this;}};
+    await dailyRollupHandler({method:'GET',headers:{authorization}},res);
+    return res;
+  };
+  try{
+    delete process.env.CRON_SECRET;
+    assert.equal((await invoke('')).statusCode,503);
+    process.env.CRON_SECRET='test-cron-secret-1234';
+    assert.equal((await invoke('Bearer wrong')).statusCode,401);
+  }finally{
+    if(previous===undefined)delete process.env.CRON_SECRET;
+    else process.env.CRON_SECRET=previous;
+  }
 });

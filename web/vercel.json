@@ -1,7 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
-  "functions": {"api/mybox-direct-probe.js": {"maxDuration": 60}, "api/photo-direct.js": {"maxDuration": 60}},
+  "functions": {"api/mybox-direct-probe.js": {"maxDuration": 60}, "api/photo-direct.js": {"maxDuration": 60}, "api/visit-daily-rollup.js": {"maxDuration": 60}},
+  "crons": [{"path": "/api/visit-daily-rollup", "schedule": "0 15 * * *"}],
   "headers": [
     {
       "source": "/photo",

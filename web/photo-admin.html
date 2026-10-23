@@ -25,8 +25,8 @@ input,select{min-height:44px;border:1px solid #d1d5db;border-radius:9px;padding:
 <div class="search"><div><label for="query">주소 검색</label><input id="query" type="search" placeholder="주소나 동 이름 입력"></div><div><label for="status">사진 수</label><select id="status"><option value="">전체</option><option value="1">1장</option><option value="2">2장</option></select></div></div>
 <p id="progress" class="small" role="status"></p><div id="results" class="scroll"></div>
 <div class="actions pager"><button id="prev" class="secondary" type="button">이전</button><span id="page" class="small"></span><button id="next" class="secondary" type="button">다음</button></div>
-<section class="card" aria-labelledby="visitAdminTitle"><div class="top"><div><h2 id="visitAdminTitle">방문 결과</h2><p class="small">사업자별 거절·완료를 한국 날짜 기준으로 집계합니다.</p></div><div class="actions"><button id="loadVisits" type="button" class="secondary">결과 확인</button><button id="exportVisits" type="button" disabled>엑셀 내려받기</button></div></div>
-  <div id="visitWorkspace" hidden><p id="visitProgress" class="small" role="status"></p><div class="metrics"><div class="metric">거절<b id="refusedCount">0</b></div><div class="metric">완료<b id="completedCount">0</b></div></div><div id="dailyVisits" class="scroll"></div><details><summary>사업자별 내역 보기</summary><label for="visitQuery">내역 검색</label><input id="visitQuery" type="search" placeholder="날짜·주소·동 검색"><div id="visitDetails" class="scroll"></div></details><p class="small">현재 기록된 최종 결과를 마지막 변경일로 집계합니다. 결과를 정정하면 이전 날짜 건수에서 빠지고 정정한 날짜에 반영됩니다. 사진 등록 건수와는 별도입니다.</p></div>
+<section class="card" aria-labelledby="visitAdminTitle"><div class="top"><div><h2 id="visitAdminTitle">방문 결과</h2><p class="small">사업자별 거절·완료를 한국 날짜 기준으로 집계합니다.</p></div><div class="actions"><button id="loadVisits" type="button" class="secondary">결과 확인</button><button id="retryVisits" type="button" class="secondary">지난 날짜 집계 저장</button><button id="exportVisits" type="button" disabled>엑셀 내려받기</button></div></div>
+  <div id="visitWorkspace" hidden><p id="visitProgress" class="small" role="status"></p><div class="metrics"><div class="metric">현재 거절<b id="refusedCount">0</b></div><div class="metric">현재 완료<b id="completedCount">0</b></div></div><div id="dailyVisits" class="scroll"></div><details><summary>사업자별 내역 보기</summary><label for="visitQuery">내역 검색</label><input id="visitQuery" type="search" placeholder="날짜·주소·동 검색"><div id="visitDetails" class="scroll"></div></details><p class="small">지난 날짜의 일별 수치는 자정 집계 후 고정됩니다. 오늘 수치는 현재 결과이며, 사업자별 내역은 가장 최근 결과입니다. 사진 등록 건수와는 별도입니다.</p></div>
 </section>
 <details><summary>집계 안내</summary><p class="small">관리자 새로고침은 등록·삭제 후 목록 반영이 밀린 주소를 먼저 확인합니다. 저장 공간과 MYBOX 서비스 한도는 별도로 적용됩니다. 사진 삭제는 MYBOX 휴지통으로 이동합니다.</p></details>
 </section></main>
@@ -35,12 +35,12 @@ input,select{min-height:44px;border:1px solid #d1d5db;border-radius:9px;padding:
 <script src="/visit-xlsx.js?v=20261023-visits"></script>
 <script>
 (function(){'use strict';
-const $=id=>document.getElementById(id);let session=sessionStorage.getItem('photoDirectAdminSession')||'',rows=[],overview=null,page=0,busy=false,selected=null,visitRows=[],visitLoaded=false,visitEditTarget=null;
+const $=id=>document.getElementById(id);let session=sessionStorage.getItem('photoDirectAdminSession')||'',rows=[],overview=null,page=0,busy=false,selected=null,visitRows=[],visitLoaded=false,visitEditTarget=null,archiveDays={};
 function say(message,isError=false){$('message').textContent=message;$('message').hidden=!message;$('message').classList.toggle('error',isError);}
 async function api(action,fields={}){let response;try{response=await fetch('/api/photo-direct',{method:'POST',cache:'no-store',referrerPolicy:'no-referrer',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,...fields}),signal:AbortSignal.timeout(90000)});}catch{throw Error('연결이 늦습니다. 잠시 후 다시 시도해 주세요.');}
   const value=await response.json();if(!response.ok||!value.ok){const e=Error(value.message||'요청에 실패했습니다.');e.code=value.code;throw e;}return value.data;}
-function setBusy(value){busy=value;['refresh','export','logout','prev','next','loadVisits','saveVisitEdit'].forEach(id=>{$(id).disabled=value;});$('exportVisits').disabled=value||!visitLoaded;}
-function logout(){session='';sessionStorage.removeItem('photoDirectAdminSession');rows=[];overview=null;selected=null;visitRows=[];visitLoaded=false;visitEditTarget=null;if($('visitEditDialog').open)$('visitEditDialog').close();$('visitWorkspace').hidden=true;$('exportVisits').disabled=true;$('workspace').hidden=true;$('loginCard').hidden=false;$('results').replaceChildren();$('fullPhoto').removeAttribute('src');}
+function setBusy(value){busy=value;['refresh','export','logout','prev','next','loadVisits','retryVisits','saveVisitEdit'].forEach(id=>{$(id).disabled=value;});$('exportVisits').disabled=value||!visitLoaded;}
+function logout(){session='';sessionStorage.removeItem('photoDirectAdminSession');rows=[];overview=null;selected=null;visitRows=[];visitLoaded=false;visitEditTarget=null;archiveDays={};if($('visitEditDialog').open)$('visitEditDialog').close();$('visitWorkspace').hidden=true;$('exportVisits').disabled=true;$('workspace').hidden=true;$('loginCard').hidden=false;$('results').replaceChildren();$('fullPhoto').removeAttribute('src');}
 function filtered(){const q=$('query').value.trim().toLowerCase(),status=$('status').value;return rows.filter(row=>(!q||(row.address+' '+row.province+' '+row.district+' '+row.dong).toLowerCase().includes(q))&&(!status||row.photos.length===Number(status))).sort((a,b)=>a.address.localeCompare(b.address,'ko'));}
 function fmt(value){return value&&Number.isFinite(Date.parse(value))?new Date(value).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'}):'기록 없음';}
 async function openPhoto(row,photo){if(busy)return;setBusy(true);say('사진을 불러오는 중…');try{const data=await api('photo',{address:row.address,photoId:photo.id});selected={address:row.address,id:photo.id};$('caption').textContent='방문 주소: '+row.address+'\n등록 시각: '+fmt(photo.uploadedAt)+'\n촬영 시각(기기): '+fmt(photo.evidence?.capturedAt);$('fullPhoto').src='data:image/jpeg;base64,'+data.base64;$('confirm').hidden=true;$('photoDialog').showModal();say('');}catch(e){say(e.message,true);}finally{setBusy(false);}}
@@ -71,6 +71,15 @@ function dailyCounts(entries){const dates=new Map();for(const entry of entries){
   if(!dates.has(entry.day))dates.set(entry.day,{day:entry.day,refused:0,completed:0});
   dates.get(entry.day)[entry.result]++;
 }return [...dates.values()].sort((a,b)=>b.day.localeCompare(a.day));}
+function combinedDaily(entries){
+  const dates=new Map(dailyCounts(entries).map(row=>[row.day,row]));
+  for(const [day,counts] of Object.entries(archiveDays))dates.set(day,{day,refused:counts.refused,completed:counts.completed});
+  let totalRefused=0,totalCompleted=0;
+  return [...dates.values()].sort((a,b)=>a.day.localeCompare(b.day)).map(row=>{
+    totalRefused+=row.refused;totalCompleted+=row.completed;
+    return {...row,totalRefused,totalCompleted};
+  }).reverse();
+}
 function tableInto(target,headers,values){
   const table=document.createElement('table'),head=document.createElement('thead'),top=document.createElement('tr'),body=document.createElement('tbody');
   for(const label of headers){const cell=document.createElement('th');cell.textContent=label;top.append(cell);}head.append(top);
@@ -97,21 +106,26 @@ function renderVisitDetails(entries){
   $('visitProgress').textContent='현재 기록 '+entries.length.toLocaleString()+'건 · 상세 '+matching.length.toLocaleString()+'건 중 최대 100건 표시 (엑셀에는 전체 포함)';
 }
 function renderVisits(){
-  const entries=visitEntries(),daily=dailyCounts(entries);
+  const entries=visitEntries(),daily=combinedDaily(entries);
   $('refusedCount').textContent=entries.filter(row=>row.result==='refused').length.toLocaleString();
   $('completedCount').textContent=entries.filter(row=>row.result==='completed').length.toLocaleString();
-  tableInto($('dailyVisits'),['날짜','거절','완료','합계'],daily.map(row=>[row.day,row.refused,row.completed,row.refused+row.completed]));
+  tableInto($('dailyVisits'),['날짜','거절','완료','합계','누적 합계'],daily.map(row=>[row.day,row.refused,row.completed,row.refused+row.completed,row.totalRefused+row.totalCompleted]));
   renderVisitDetails(entries);
   $('visitWorkspace').hidden=false;$('exportVisits').disabled=false;
 }
 async function loadVisits(){if(busy||!session)return;setBusy(true);say('방문 결과를 확인하는 중…');$('visitProgress').textContent='결과 목록을 불러오는 중…';
-  try{const meta=await api('visitMeta',{adminSession:session}),keys=meta.keys||[],results=Array(keys.length);let next=0,done=0;
+  try{const [meta,archive]=await Promise.all([api('visitMeta',{adminSession:session}),api('visitArchive',{adminSession:session})]);archiveDays=archive.days||{};
+    const keys=meta.keys||[],results=Array(keys.length);let next=0,done=0;
     await Promise.all(Array.from({length:Math.min(4,keys.length)},async()=>{while(next<keys.length){const i=next++,chunk=await api('visitChunk',{adminSession:session,key:keys[i]});results[i]=chunk.rows;done++;$('visitProgress').textContent=done+' / '+keys.length+' 묶음 확인 중…';}}));
     visitRows=results.flat();visitLoaded=true;renderVisits();say('');
   }catch(e){if(e.code==='TICKET'||e.code==='EXPIRED'||e.code==='FORBIDDEN')logout();say(e.message,true);}
   finally{setBusy(false);}
 }
 $('loadVisits').onclick=loadVisits;
+$('retryVisits').onclick=async()=>{if(busy||!session)return;setBusy(true);say('지난 날짜 집계를 저장하는 중…');
+  try{const result=await api('visitRollup',{adminSession:session});say(result.through+'까지 집계했습니다. 새로 반영된 날짜 '+result.added+'일.');}
+  catch(e){say(e.message,true);setBusy(false);return;}
+  setBusy(false);await loadVisits();};
 $('visitQuery').oninput=()=>{if(visitLoaded)renderVisitDetails(visitEntries());};
 $('cancelVisitEdit').onclick=()=>{$('visitEditDialog').close();visitEditTarget=null;};
 $('saveVisitEdit').onclick=async()=>{
@@ -124,10 +138,11 @@ $('saveVisitEdit').onclick=async()=>{
 };
 $('exportVisits').onclick=()=>{
   if(!visitLoaded)return;
-  const entries=visitEntries(),daily=dailyCounts(entries);
-  const sheets=[{name:'일별집계',rows:[['날짜','거절 사업자','완료 사업자','합계'],...daily.map(row=>[row.day,row.refused,row.completed,row.refused+row.completed])]},
-    {name:'사업자별내역',rows:[['날짜','시도','시군구','읍면동','원주소','사업자 순번','결과','기록 시각'],...entries.map(row=>[
-      row.day,row.province,row.district,row.dong,row.address,row.businessIndex,row.result==='refused'?'거절':'완료',fmt(row.recordedAt)])]}];
+  const entries=visitEntries(),daily=combinedDaily(entries);
+  const sheets=[{name:'일별집계',rows:[['날짜','거절 사업자','완료 사업자','일일 합계','누적 거절','누적 완료','누적 합계'],...daily.reverse().map(row=>[
+      new Date(row.day+'T00:00:00Z'),row.refused,row.completed,row.refused+row.completed,row.totalRefused,row.totalCompleted,row.totalRefused+row.totalCompleted])]},
+    {name:'사업자별현재결과',rows:[['날짜','시도','시군구','읍면동','원주소','사업자 순번','결과','기록 시각'],...entries.map(row=>[
+      new Date(row.day+'T00:00:00Z'),row.province,row.district,row.dong,row.address,row.businessIndex,row.result==='refused'?'거절':'완료',fmt(row.recordedAt)])]}];
   window.VisitXlsx.download(sheets,'방문결과_일별집계_'+new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'})+'.xlsx');
 };
 if(session){$('loginCard').hidden=true;$('workspace').hidden=false;refresh();}
