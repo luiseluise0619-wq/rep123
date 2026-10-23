@@ -1,6 +1,7 @@
 // Production direct-upload control plane. Disabled until the Vercel environment
 // is configured and the staging/locking workflow passes live MYBOX validation.
 const {createService,error}=require('./_lib/photo-direct-core.cjs');
+const {createVisitService}=require('./_lib/visit-result-core.cjs');
 
 module.exports=async function handler(req,res){
   res.setHeader('Cache-Control','no-store');
@@ -17,6 +18,7 @@ module.exports=async function handler(req,res){
     const body=typeof req.body==='string'?JSON.parse(req.body):req.body||{};
     if(!body||typeof body!=='object'||Array.isArray(body))throw error('INPUT',400,'요청 형식이 올바르지 않습니다.');
     const service=createService({token:process.env.MYBOX_TOKEN,adminPassword:process.env.PHOTO_ADMIN_PASSWORD});
+    const visits=createVisitService(service);
     let data;
     switch(body.action){
       case 'status':data=await service.status(body.address,body.deviceKey);break;
@@ -35,6 +37,10 @@ module.exports=async function handler(req,res){
       case 'adminOverview':service.requireAdmin(body.adminSession);data=await service.overview();break;
       case 'adminChunk':service.requireAdmin(body.adminSession);data=await service.chunk(body.key);break;
       case 'repairPending':service.requireAdmin(body.adminSession);data=await service.repairPending(10);break;
+      case 'visitStatus':data=await visits.status(body.address,body.deviceKey);break;
+      case 'visitSave':data=await visits.save(body);break;
+      case 'visitMeta':service.requireAdmin(body.adminSession);data=await visits.meta();break;
+      case 'visitChunk':service.requireAdmin(body.adminSession);data=await visits.chunk(body.key);break;
       default:throw error('INPUT',400,'요청 종류가 올바르지 않습니다.');
     }
     return res.status(200).json({ok:true,data});

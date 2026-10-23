@@ -20,7 +20,9 @@ function source(){
   for(const [province,groups] of Object.entries(data))for(const [district,dongs] of Object.entries(groups))
     for(const [dong,places] of Object.entries(dongs))for(const place of places){
       const address=place[2];if(map.has(address))throw error('SOURCE',503,'원주소에 중복이 있습니다.');
-      map.set(address,{province,district,dong});hashes.set(sha(address),address);
+      const businessCount=Number(place[3]);
+      if(!Number.isSafeInteger(businessCount)||businessCount<1)throw error('SOURCE',503,'원주소 사업자수를 확인해야 합니다.');
+      map.set(address,{province,district,dong,businessCount});hashes.set(sha(address),address);
     }
   cachedSource={map,hashes};return cachedSource;
 }

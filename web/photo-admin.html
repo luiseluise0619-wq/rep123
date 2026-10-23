@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="referrer" content="no-referrer"><meta name="robots" content="noindex,nofollow"><title>방문 사진 관리</title>
+<meta name="referrer" content="no-referrer"><meta name="robots" content="noindex,nofollow"><title>현장 방문 관리</title>
 <style>
 :root{color-scheme:light;--ink:#111827;--mut:#606975;--line:#e5e7eb;--soft:#f5f6f8;--accent:#2563eb}
 *{box-sizing:border-box}body{margin:0;background:#fff;color:var(--ink);font:15px/1.5 system-ui,'Malgun Gothic',sans-serif}
@@ -15,7 +15,7 @@ input,select{min-height:44px;border:1px solid #d1d5db;border-radius:9px;padding:
 [hidden]{display:none!important}:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
 @media(max-width:650px){main{padding:18px 14px 40px}.search{grid-template-columns:1fr}table,tbody,tr,td{display:block}thead{position:absolute;clip-path:inset(50%)}tr{border:1px solid var(--line);border-radius:10px;margin:10px 0;padding:8px}td{border:0;padding:5px 8px}.address{min-width:0;max-width:none}.metrics b{font-size:25px}}
 </style></head><body><main>
-<header><h1>방문 사진 관리</h1><nav class="actions"><a href="/">지도</a><a href="https://mybox.naver.com/" target="_blank" rel="noopener noreferrer">MYBOX ↗</a></nav></header>
+<header><h1>현장 방문 관리</h1><nav class="actions"><a href="/">지도</a><a href="https://mybox.naver.com/" target="_blank" rel="noopener noreferrer">MYBOX ↗</a></nav></header>
 <div id="message" class="message" role="status" aria-live="polite" hidden></div>
 <section id="loginCard" class="card"><h2>관리자 로그인</h2><p class="small">사진과 주소별 등록 수를 확인합니다.</p><form id="loginForm"><label for="password">관리자 비밀번호</label><input id="password" type="password" autocomplete="current-password" required><button id="login" type="submit">로그인</button></form></section>
 <section id="workspace" hidden>
@@ -25,17 +25,22 @@ input,select{min-height:44px;border:1px solid #d1d5db;border-radius:9px;padding:
 <div class="search"><div><label for="query">주소 검색</label><input id="query" type="search" placeholder="주소나 동 이름 입력"></div><div><label for="status">사진 수</label><select id="status"><option value="">전체</option><option value="1">1장</option><option value="2">2장</option></select></div></div>
 <p id="progress" class="small" role="status"></p><div id="results" class="scroll"></div>
 <div class="actions pager"><button id="prev" class="secondary" type="button">이전</button><span id="page" class="small"></span><button id="next" class="secondary" type="button">다음</button></div>
+<section class="card" aria-labelledby="visitAdminTitle"><div class="top"><div><h2 id="visitAdminTitle">방문 결과</h2><p class="small">사업자별 거절·완료를 한국 날짜 기준으로 집계합니다.</p></div><div class="actions"><button id="loadVisits" type="button" class="secondary">결과 확인</button><button id="exportVisits" type="button" disabled>엑셀 내려받기</button></div></div>
+  <div id="visitWorkspace" hidden><p id="visitProgress" class="small" role="status"></p><div class="metrics"><div class="metric">거절<b id="refusedCount">0</b></div><div class="metric">완료<b id="completedCount">0</b></div></div><div id="dailyVisits" class="scroll"></div><details><summary>사업자별 내역 보기</summary><label for="visitQuery">내역 검색</label><input id="visitQuery" type="search" placeholder="날짜·주소·동 검색"><div id="visitDetails" class="scroll"></div></details><p class="small">현재 기록된 최종 결과를 마지막 변경일로 집계합니다. 결과를 정정하면 이전 날짜 건수에서 빠지고 정정한 날짜에 반영됩니다. 사진 등록 건수와는 별도입니다.</p></div>
+</section>
 <details><summary>집계 안내</summary><p class="small">관리자 새로고침은 등록·삭제 후 목록 반영이 밀린 주소를 먼저 확인합니다. 저장 공간과 MYBOX 서비스 한도는 별도로 적용됩니다. 사진 삭제는 MYBOX 휴지통으로 이동합니다.</p></details>
 </section></main>
 <dialog id="photoDialog" aria-label="방문 사진"><div class="actions"><button id="closePhoto" class="secondary" type="button">닫기</button><button id="deletePhoto" class="danger" type="button">사진 삭제</button></div><div id="confirm" class="notice" hidden><p>이 사진을 MYBOX 휴지통으로 이동할까요?</p><div class="actions"><button id="cancelDelete" class="secondary" type="button">취소</button><button id="confirmDelete" class="danger" type="button">삭제</button></div></div><p id="caption"></p><img id="fullPhoto" alt="선택한 방문 사진"></dialog>
+<dialog id="visitEditDialog" aria-label="방문 결과 수정"><h2>방문 결과 수정</h2><p id="visitEditAddress" class="small"></p><label for="visitEditResult">결과</label><select id="visitEditResult"><option value="refused">거절</option><option value="completed">완료</option><option value="clear">기록 취소</option></select><div class="actions"><button id="cancelVisitEdit" class="secondary" type="button">닫기</button><button id="saveVisitEdit" type="button">저장</button></div></dialog>
+<script src="/visit-xlsx.js?v=20261023-visits"></script>
 <script>
 (function(){'use strict';
-const $=id=>document.getElementById(id);let session=sessionStorage.getItem('photoDirectAdminSession')||'',rows=[],overview=null,page=0,busy=false,selected=null;
+const $=id=>document.getElementById(id);let session=sessionStorage.getItem('photoDirectAdminSession')||'',rows=[],overview=null,page=0,busy=false,selected=null,visitRows=[],visitLoaded=false,visitEditTarget=null;
 function say(message,isError=false){$('message').textContent=message;$('message').hidden=!message;$('message').classList.toggle('error',isError);}
 async function api(action,fields={}){let response;try{response=await fetch('/api/photo-direct',{method:'POST',cache:'no-store',referrerPolicy:'no-referrer',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,...fields}),signal:AbortSignal.timeout(90000)});}catch{throw Error('연결이 늦습니다. 잠시 후 다시 시도해 주세요.');}
   const value=await response.json();if(!response.ok||!value.ok){const e=Error(value.message||'요청에 실패했습니다.');e.code=value.code;throw e;}return value.data;}
-function setBusy(value){busy=value;['refresh','export','logout','prev','next'].forEach(id=>{$(id).disabled=value;});}
-function logout(){session='';sessionStorage.removeItem('photoDirectAdminSession');rows=[];overview=null;selected=null;$('workspace').hidden=true;$('loginCard').hidden=false;$('results').replaceChildren();$('fullPhoto').removeAttribute('src');}
+function setBusy(value){busy=value;['refresh','export','logout','prev','next','loadVisits','saveVisitEdit'].forEach(id=>{$(id).disabled=value;});$('exportVisits').disabled=value||!visitLoaded;}
+function logout(){session='';sessionStorage.removeItem('photoDirectAdminSession');rows=[];overview=null;selected=null;visitRows=[];visitLoaded=false;visitEditTarget=null;if($('visitEditDialog').open)$('visitEditDialog').close();$('visitWorkspace').hidden=true;$('exportVisits').disabled=true;$('workspace').hidden=true;$('loginCard').hidden=false;$('results').replaceChildren();$('fullPhoto').removeAttribute('src');}
 function filtered(){const q=$('query').value.trim().toLowerCase(),status=$('status').value;return rows.filter(row=>(!q||(row.address+' '+row.province+' '+row.district+' '+row.dong).toLowerCase().includes(q))&&(!status||row.photos.length===Number(status))).sort((a,b)=>a.address.localeCompare(b.address,'ko'));}
 function fmt(value){return value&&Number.isFinite(Date.parse(value))?new Date(value).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'}):'기록 없음';}
 async function openPhoto(row,photo){if(busy)return;setBusy(true);say('사진을 불러오는 중…');try{const data=await api('photo',{address:row.address,photoId:photo.id});selected={address:row.address,id:photo.id};$('caption').textContent='방문 주소: '+row.address+'\n등록 시각: '+fmt(photo.uploadedAt)+'\n촬영 시각(기기): '+fmt(photo.evidence?.capturedAt);$('fullPhoto').src='data:image/jpeg;base64,'+data.base64;$('confirm').hidden=true;$('photoDialog').showModal();say('');}catch(e){say(e.message,true);}finally{setBusy(false);}}
@@ -58,6 +63,73 @@ $('closePhoto').onclick=()=>{$('photoDialog').close();$('fullPhoto').removeAttri
 $('confirmDelete').onclick=async()=>{if(!selected||busy)return;setBusy(true);try{await api('remove',{adminSession:session,address:selected.address,photoId:selected.id});$('photoDialog').close();$('fullPhoto').removeAttribute('src');selected=null;say('사진을 MYBOX 휴지통으로 이동했습니다.');}catch(e){say(e.message,true);}finally{setBusy(false);}await refresh();};
 function csvCell(value){let text=String(value==null?'':value);if(/^[=+@\-\t\r]/.test(text))text="'"+text;return '"'+text.replace(/"/g,'""')+'"';}
 $('export').onclick=()=>{const values=[['시도','구군','읍면동','원주소','사진 수','등록 시각','촬영 시각']];filtered().forEach(row=>row.photos.forEach(photo=>values.push([row.province,row.district,row.dong,row.address,row.photos.length,photo.uploadedAt||'',photo.evidence?.capturedAt||''])));const blob=new Blob(['\uFEFF'+values.map(row=>row.map(csvCell).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='방문사진_목록.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
+function visitEntries(){return visitRows.flatMap(row=>row.slots.filter(slot=>slot.result==='refused'||slot.result==='completed').map(slot=>({
+  day:slot.day,address:row.address,province:row.province,district:row.district,dong:row.dong,
+  businessIndex:slot.businessIndex,result:slot.result,recordedAt:slot.recordedAt
+})));}
+function dailyCounts(entries){const dates=new Map();for(const entry of entries){
+  if(!dates.has(entry.day))dates.set(entry.day,{day:entry.day,refused:0,completed:0});
+  dates.get(entry.day)[entry.result]++;
+}return [...dates.values()].sort((a,b)=>b.day.localeCompare(a.day));}
+function tableInto(target,headers,values){
+  const table=document.createElement('table'),head=document.createElement('thead'),top=document.createElement('tr'),body=document.createElement('tbody');
+  for(const label of headers){const cell=document.createElement('th');cell.textContent=label;top.append(cell);}head.append(top);
+  for(const row of values){const tr=document.createElement('tr');for(const value of row){const cell=document.createElement('td');cell.textContent=String(value??'');tr.append(cell);}body.append(tr);}
+  table.append(head,body);target.replaceChildren(table);
+}
+function renderVisitDetails(entries){
+  const query=$('visitQuery').value.trim().toLowerCase(),matching=entries.filter(row=>!query||
+    (row.day+' '+row.province+' '+row.district+' '+row.dong+' '+row.address).toLowerCase().includes(query));
+  matching.sort((a,b)=>b.recordedAt.localeCompare(a.recordedAt));
+  const table=document.createElement('table'),head=document.createElement('thead'),tr=document.createElement('tr'),body=document.createElement('tbody');
+  for(const label of ['날짜','지역·주소','사업자','결과','수정']){const th=document.createElement('th');th.textContent=label;tr.append(th);}head.append(tr);
+  for(const row of matching.slice(0,100)){
+    const line=document.createElement('tr');
+    for(const value of [row.day,[row.province,row.district,row.dong].filter(Boolean).join(' / ')+' · '+row.address,row.businessIndex,row.result==='refused'?'거절':'완료']){
+      const td=document.createElement('td');td.textContent=String(value);line.append(td);
+    }
+    const action=document.createElement('td'),button=document.createElement('button');button.type='button';button.className='secondary';button.textContent='수정';
+    button.onclick=()=>{visitEditTarget=row;$('visitEditAddress').textContent=row.address+' · 사업자 '+row.businessIndex;
+      $('visitEditResult').value=row.result;$('visitEditDialog').showModal();};
+    action.append(button);line.append(action);body.append(line);
+  }
+  table.append(head,body);$('visitDetails').replaceChildren(table);
+  $('visitProgress').textContent='현재 기록 '+entries.length.toLocaleString()+'건 · 상세 '+matching.length.toLocaleString()+'건 중 최대 100건 표시 (엑셀에는 전체 포함)';
+}
+function renderVisits(){
+  const entries=visitEntries(),daily=dailyCounts(entries);
+  $('refusedCount').textContent=entries.filter(row=>row.result==='refused').length.toLocaleString();
+  $('completedCount').textContent=entries.filter(row=>row.result==='completed').length.toLocaleString();
+  tableInto($('dailyVisits'),['날짜','거절','완료','합계'],daily.map(row=>[row.day,row.refused,row.completed,row.refused+row.completed]));
+  renderVisitDetails(entries);
+  $('visitWorkspace').hidden=false;$('exportVisits').disabled=false;
+}
+async function loadVisits(){if(busy||!session)return;setBusy(true);say('방문 결과를 확인하는 중…');$('visitProgress').textContent='결과 목록을 불러오는 중…';
+  try{const meta=await api('visitMeta',{adminSession:session}),keys=meta.keys||[],results=Array(keys.length);let next=0,done=0;
+    await Promise.all(Array.from({length:Math.min(4,keys.length)},async()=>{while(next<keys.length){const i=next++,chunk=await api('visitChunk',{adminSession:session,key:keys[i]});results[i]=chunk.rows;done++;$('visitProgress').textContent=done+' / '+keys.length+' 묶음 확인 중…';}}));
+    visitRows=results.flat();visitLoaded=true;renderVisits();say('');
+  }catch(e){if(e.code==='TICKET'||e.code==='EXPIRED'||e.code==='FORBIDDEN')logout();say(e.message,true);}
+  finally{setBusy(false);}
+}
+$('loadVisits').onclick=loadVisits;
+$('visitQuery').oninput=()=>{if(visitLoaded)renderVisitDetails(visitEntries());};
+$('cancelVisitEdit').onclick=()=>{$('visitEditDialog').close();visitEditTarget=null;};
+$('saveVisitEdit').onclick=async()=>{
+  if(busy||!visitEditTarget)return;
+  const target=visitEditTarget,result=$('visitEditResult').value;setBusy(true);say('방문 결과를 수정하는 중…');
+  try{await api('visitSave',{adminSession:session,address:target.address,businessIndex:target.businessIndex,result});
+    $('visitEditDialog').close();visitEditTarget=null;say('방문 결과를 수정했습니다.');
+  }catch(e){say(e.message,true);setBusy(false);return;}
+  setBusy(false);await loadVisits();
+};
+$('exportVisits').onclick=()=>{
+  if(!visitLoaded)return;
+  const entries=visitEntries(),daily=dailyCounts(entries);
+  const sheets=[{name:'일별집계',rows:[['날짜','거절 사업자','완료 사업자','합계'],...daily.map(row=>[row.day,row.refused,row.completed,row.refused+row.completed])]},
+    {name:'사업자별내역',rows:[['날짜','시도','시군구','읍면동','원주소','사업자 순번','결과','기록 시각'],...entries.map(row=>[
+      row.day,row.province,row.district,row.dong,row.address,row.businessIndex,row.result==='refused'?'거절':'완료',fmt(row.recordedAt)])]}];
+  window.VisitXlsx.download(sheets,'방문결과_일별집계_'+new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'})+'.xlsx');
+};
 if(session){$('loginCard').hidden=true;$('workspace').hidden=false;refresh();}
 })();
 </script></body></html>

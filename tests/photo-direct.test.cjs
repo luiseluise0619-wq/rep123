@@ -2,6 +2,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const {createHash}=require('node:crypto');
 const {createService,source,validJpeg}=require('../web/api/_lib/photo-direct-core.cjs');
+const {createVisitService,dayInSeoul}=require('../web/api/_lib/visit-result-core.cjs');
 const {fakeJpeg}=require('./helpers/jpeg-fixture.cjs');
 
 const digest=bytes=>createHash('sha256').update(bytes).digest('hex');
@@ -142,4 +143,28 @@ test('JPEG validator rejects zero dimensions and metadata',()=>{
   assert.throws(()=>validJpeg(broken),e=>e.code==='JPEG');
   const metadata=Buffer.concat([Buffer.from([255,216,255,225,0,4,0,0]),bytes.subarray(2)]);
   assert.throws(()=>validJpeg(metadata),e=>e.code==='METADATA');
+});
+
+test('visit outcomes count separate businesses, prevent duplicate taps and retain Seoul dates',async()=>{
+  const ctx=fixture(),where=[...source().map].find(([,place])=>place.businessCount>=2)[0];
+  let clock=Date.parse('2026-10-20T14:59:59Z');
+  const visits=createVisitService(ctx.service,{now:()=>clock});
+  assert.equal(dayInSeoul(clock),'2026-10-20');
+  const first=await visits.save({address:where,businessIndex:1,result:'refused',deviceKey:key});
+  assert.equal(first.saved,true);assert.equal(first.slots[0].result,'refused');
+  assert.equal((await visits.save({address:where,businessIndex:1,result:'refused',deviceKey:key})).unchanged,true);
+  clock=Date.parse('2026-10-20T15:00:00Z');
+  await visits.save({address:where,businessIndex:2,result:'completed',deviceKey:other});
+  const saved=await visits.status(where,key);
+  assert.equal(saved.slots[0].result,'refused');assert.equal(saved.slots[1].result,'completed');
+  assert.equal(dayInSeoul(clock),'2026-10-21');
+  assert.equal((await visits.chunk(digest(where)[0])).rows[0].slots[0].day,'2026-10-20');
+  assert.equal((await visits.chunk(digest(where)[0])).rows[0].slots[1].day,'2026-10-21');
+  assert.deepEqual((await visits.meta()).keys,[digest(where)[0]]);
+  await assert.rejects(visits.save({address:where,businessIndex:1,result:'completed',deviceKey:other}),e=>e.code==='FORBIDDEN');
+  await assert.rejects(visits.save({address:where,businessIndex:source().map.get(where).businessCount+1,result:'completed',deviceKey:key}),e=>e.code==='BUSINESS');
+  await assert.rejects(visits.save({address:'not a source address',businessIndex:1,result:'completed',deviceKey:key}),e=>e.code==='ADDRESS');
+  const admin=ctx.service.adminLogin('secure-admin-passphrase');
+  await visits.save({address:where,businessIndex:1,result:'clear',adminSession:admin.session});
+  assert.equal((await visits.status(where,key)).slots[0].result,null);
 });

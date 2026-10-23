@@ -144,7 +144,7 @@ var _showToken = 0;              // 표시 작업 토큰(새 선택이 오면 �
 var completedAddresses=new Set(),exactPhotoCounts=new Map(),photoProgress=null;
 function photoCount(address){return exactPhotoCounts.has(address)?exactPhotoCounts.get(address):(completedAddresses.has(address)?2:null);}
 function photoStatusLabel(address){var count=photoCount(address);return count===2?'사진 2장 등록 완료':count===1?'사진 1장 등록 · 1장 남음':count===0?'등록 사진 없음':'사진 현황 확인 중…';}
-function photoActionLabel(address,popup){var count=photoCount(address);return count===2?'등록 완료 · 사진 보기':count===1?'사진 1장 등록 · 한 장 더':popup?'현장 사진 등록·보기':'사진 등록·보기';}
+function photoActionLabel(address,popup){var count=photoCount(address);return count===2?'사진 2장 · 방문 결과':count===1?'사진 1장 · 방문 결과':popup?'사진·방문 결과 기록':'사진·결과 기록';}
 function selectedPhotoIcon(address){var count=photoCount(address);return count===2?selDoneIcon:count===1?selPartialIcon:selIcon;}
 function markerIcon(rec){
   var label=coordinateLabel(rec.p),review=coordinateReview(rec.p),count=photoCount(rec.p[2]);

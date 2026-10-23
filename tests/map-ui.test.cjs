@@ -80,7 +80,7 @@ test('two stored photos turn a verified address green while coordinate warnings 
  h.ui.applyPhotoCount(h.point[2],2);
  assert.match(h.ui.markerIcon(rec).html,/addr-dot completed/);
  h.ui.appendAddrRow(h.point);
- assert.equal(h.get('list').children[0].children[2].textContent,'등록 완료 · 사진 보기');
+ assert.equal(h.get('list').children[0].children[2].textContent,'사진 2장 · 방문 결과');
  const warning=[37,127,'좌표 경고 주소',1,0,'','서울'];
  h.ui.applyPhotoCount(warning[2],2);
  assert.match(h.ui.markerIcon({p:warning,real:false}).html,/addr-dot approx completed/);
@@ -93,9 +93,9 @@ test('one stored photo gets a purple 1-photo marker, selected icon, and another-
  assert.match(h.ui.markerIcon(rec).html,/>1장</);
  assert.match(h.ui.selectedPhotoIcon(address).html,/sel-dot partial/);
  assert.match(h.ui.photoLinkHtml(address),/popup-photo-action partial/);
- assert.match(h.ui.photoLinkHtml(address),/사진 1장 등록 · 한 장 더/);
+ assert.match(h.ui.photoLinkHtml(address),/사진 1장 · 방문 결과/);
  h.ui.appendAddrRow(h.point);
- assert.equal(h.get('list').children[0].children[2].textContent,'사진 1장 등록 · 한 장 더');
+ assert.equal(h.get('list').children[0].children[2].textContent,'사진 1장 · 방문 결과');
  assert.match(css,/\.addr-dot\.partial/);
  assert.match(css,/\.photo-count-label/);
  h.ui.applyPhotoCount(address,2);
@@ -107,7 +107,7 @@ test('mismatched addresses show a permanent marker label and escaped source-resu
  const h=harness(),p=h.point;h.ui.window.COORD_REVIEW={records:{[p[2]]:{status:'address-mismatch',matchedAddress:'다른 번지 <안전>',note:'원주소 보존'}}};
  assert.equal(h.ui.coordinateNeedsReview(p),true);assert.equal(h.ui.coordinateLabel(p),'주소 불일치');
  h.ui.appendAddrRow(p);assert.match(h.get('list').children[0].children[1].innerHTML,/주소 불일치/);assert.ok(h.get('list').children[0].children[2].href);
- h.ui.openPopup({bindPopup(content){assert.match(content,/원주소와 지도 검색 결과 불일치/);assert.match(content,/다른 번지 &lt;안전&gt;/);assert.match(content,/현장 사진 등록/);return {openPopup(){}};}},p);
+ h.ui.openPopup({bindPopup(content){assert.match(content,/원주소와 지도 검색 결과 불일치/);assert.match(content,/다른 번지 &lt;안전&gt;/);assert.match(content,/사진·방문 결과 기록/);return {openPopup(){}};}},p);
  assert.match(html,/map-pin-label/);assert.match(css,/\.addr-dot\.mismatch/);
 });
 test('complex representative points remain warned on the marker and in its popup',()=>{
