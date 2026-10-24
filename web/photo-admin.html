@@ -11,13 +11,14 @@ button{min-height:44px;border:1px solid transparent;border-radius:9px;padding:9p
 input,select{min-height:44px;border:1px solid #d1d5db;border-radius:9px;padding:9px 12px;font:inherit;width:100%}label{font-size:13px;display:block;margin-bottom:6px}.search{display:grid;grid-template-columns:minmax(0,2fr) minmax(130px,1fr);gap:10px;margin:18px 0}
 #loginCard{max-width:420px;margin:44px auto}#loginCard input{margin-bottom:12px}#loginCard button{width:100%}.message{padding:12px;background:var(--soft);border-radius:9px;white-space:pre-line;margin:12px 0}.message.error{background:#fff1f0;color:#9f241b;border:1px solid #f2c9c5}
 .notice{padding:12px;background:#fff7ed;color:#854b0d;border:1px solid #f1ddbf;border-radius:9px}.scroll{overflow:auto}table{border-collapse:collapse;width:100%;margin-top:14px;text-align:left}th,td{border-bottom:1px solid var(--line);padding:12px;vertical-align:top}th{background:var(--soft);color:var(--mut);font-weight:500;font-size:13px}td{font-size:14px}.address{font-weight:600;min-width:240px;max-width:520px;overflow-wrap:anywhere}.region{font-size:12px;color:var(--mut);font-weight:400}.photo-actions{display:flex;gap:6px;flex-wrap:wrap}.photo-actions button{background:#fff;border-color:#d1d5db;color:var(--accent);font-size:13px}
+.visit-metrics{grid-template-columns:repeat(4,minmax(0,1fr));margin-top:16px}.visit-timing{margin:8px 0 0}.visit-tools{margin-top:16px}.visit-tools summary{cursor:pointer;min-height:44px;padding:10px 0;color:var(--mut)}.visit-tools button{margin:8px 0}.visit-state{white-space:nowrap;color:var(--mut)}.visit-state.today{color:#9a5b16;font-weight:600}#visitAdminTitle{scroll-margin-top:20px}
 .pager{margin-top:16px}.empty{padding:32px;text-align:center;color:var(--mut)}dialog{width:min(900px,95vw);max-height:95dvh;overflow:auto;border:1px solid var(--line);border-radius:12px;padding:16px;color:var(--ink)}dialog::backdrop{background:#111827a6}dialog img{display:block;max-width:100%;max-height:66dvh;object-fit:contain;margin:12px auto}#caption{white-space:pre-line;font-size:13px;color:var(--mut)}
 [hidden]{display:none!important}:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
-@media(max-width:650px){main{padding:18px 14px 40px}.search{grid-template-columns:1fr}table,tbody,tr,td{display:block}thead{position:absolute;clip-path:inset(50%)}tr{border:1px solid var(--line);border-radius:10px;margin:10px 0;padding:8px}td{border:0;padding:5px 8px}.address{min-width:0;max-width:none}.metrics b{font-size:25px}}
+@media(max-width:650px){main{padding:18px 14px 40px}.search{grid-template-columns:1fr}.visit-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}table,tbody,tr,td{display:block}thead{position:absolute;clip-path:inset(50%)}tr{border:1px solid var(--line);border-radius:10px;margin:10px 0;padding:8px}td{border:0;padding:5px 8px}td[data-label]::before{content:attr(data-label);display:block;color:var(--mut);font-size:12px;margin-bottom:2px}#dailyVisits tr{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}#dailyVisits td{min-width:0;overflow-wrap:anywhere}.address{min-width:0;max-width:none}.metrics b{font-size:25px}}
 </style></head><body><main>
-<header><h1>현장 방문 관리</h1><nav class="actions"><a href="/">지도</a><a href="https://mybox.naver.com/" target="_blank" rel="noopener noreferrer">MYBOX ↗</a></nav></header>
+<header><h1>현장 방문 관리</h1><nav class="actions"><a href="#visitAdminTitle">방문 결과</a><a href="/">지도</a><a href="https://mybox.naver.com/" target="_blank" rel="noopener noreferrer">MYBOX ↗</a></nav></header>
 <div id="message" class="message" role="status" aria-live="polite" hidden></div>
-<section id="loginCard" class="card"><h2>관리자 로그인</h2><p class="small">사진과 주소별 등록 수를 확인합니다.</p><form id="loginForm"><label for="password">관리자 비밀번호</label><input id="password" type="password" autocomplete="current-password" required><button id="login" type="submit">로그인</button></form></section>
+<section id="loginCard" class="card"><h2>관리자 로그인</h2><p class="small">사진과 사업자 방문 결과를 확인합니다.</p><form id="loginForm"><label for="password">관리자 비밀번호</label><input id="password" type="password" autocomplete="current-password" required><button id="login" type="submit">로그인</button></form></section>
 <section id="workspace" hidden>
 <div class="top"><p id="updated" class="small">등록 현황을 불러오는 중…</p><div class="actions"><button id="refresh" type="button">새로고침</button><button id="export" type="button" class="secondary">CSV 내려받기</button><button id="logout" type="button" class="secondary">로그아웃</button></div></div>
 <div class="metrics"><div class="metric">사진 등록 주소<b id="addressCount">—</b></div><div class="metric">등록 사진<b id="photoCount">—</b></div></div>
@@ -25,8 +26,9 @@ input,select{min-height:44px;border:1px solid #d1d5db;border-radius:9px;padding:
 <div class="search"><div><label for="query">주소 검색</label><input id="query" type="search" placeholder="주소나 동 이름 입력"></div><div><label for="status">사진 수</label><select id="status"><option value="">전체</option><option value="1">1장</option><option value="2">2장</option></select></div></div>
 <p id="progress" class="small" role="status"></p><div id="results" class="scroll"></div>
 <div class="actions pager"><button id="prev" class="secondary" type="button">이전</button><span id="page" class="small"></span><button id="next" class="secondary" type="button">다음</button></div>
-<section class="card" aria-labelledby="visitAdminTitle"><div class="top"><div><h2 id="visitAdminTitle">방문 결과</h2><p class="small">사업자별 거절·완료를 한국 날짜 기준으로 집계합니다.</p></div><div class="actions"><button id="loadVisits" type="button" class="secondary">결과 확인</button><button id="retryVisits" type="button" class="secondary">지난 날짜 집계 저장</button><button id="exportVisits" type="button" disabled>엑셀 내려받기</button></div></div>
-  <div id="visitWorkspace" hidden><p id="visitProgress" class="small" role="status"></p><div class="metrics"><div class="metric">현재 거절<b id="refusedCount">0</b></div><div class="metric">현재 완료<b id="completedCount">0</b></div></div><div id="dailyVisits" class="scroll"></div><details><summary>사업자별 내역 보기</summary><label for="visitQuery">내역 검색</label><input id="visitQuery" type="search" placeholder="날짜·주소·동 검색"><div id="visitDetails" class="scroll"></div></details><p class="small">지난 날짜의 일별 수치는 자정 집계 후 고정됩니다. 오늘 수치는 현재 결과이며, 사업자별 내역은 가장 최근 결과입니다. 사진 등록 건수와는 별도입니다.</p></div>
+<section class="card" aria-labelledby="visitAdminTitle"><div class="top"><div><h2 id="visitAdminTitle">방문 결과</h2><p class="small visit-timing">오늘 기록은 바로 확인할 수 있습니다. MYBOX의 일별 엑셀에는 다음 날 자정 집계 후 들어갑니다.</p></div><div class="actions"><button id="loadVisits" type="button" class="secondary">결과 보기</button><button id="exportVisits" type="button" disabled>현재까지 엑셀</button></div></div>
+  <div id="visitWorkspace" hidden><p id="visitProgress" class="small" role="status"></p><div class="metrics visit-metrics"><div class="metric">오늘 거절<b id="todayRefusedCount">0</b></div><div class="metric">오늘 완료<b id="todayCompletedCount">0</b></div><div class="metric">현재 거절<b id="refusedCount">0</b></div><div class="metric">현재 완료<b id="completedCount">0</b></div></div><div id="dailyVisits" class="scroll"></div><details><summary>사업자별 내역 보기</summary><label for="visitQuery">내역 검색</label><input id="visitQuery" type="search" placeholder="날짜·주소·동 검색"><div id="visitDetails" class="scroll"></div></details><p class="small">현재 결과는 사업자별 가장 최근 상태입니다. 사진 등록 건수와는 별도입니다.</p></div>
+  <details class="visit-tools"><summary>집계 관리</summary><p class="small">자정 자동 집계가 누락된 날짜를 저장할 때 사용합니다. 오늘 기록은 이 버튼으로 확정되지 않습니다.</p><button id="retryVisits" type="button" class="secondary">지난 날짜 집계 저장</button></details>
 </section>
 <details><summary>집계 안내</summary><p class="small">관리자 새로고침은 등록·삭제 후 목록 반영이 밀린 주소를 먼저 확인합니다. 저장 공간과 MYBOX 서비스 한도는 별도로 적용됩니다. 사진 삭제는 MYBOX 휴지통으로 이동합니다.</p></details>
 </section></main>
@@ -40,14 +42,14 @@ function say(message,isError=false){$('message').textContent=message;$('message'
 async function api(action,fields={}){let response;try{response=await fetch('/api/photo-direct',{method:'POST',cache:'no-store',referrerPolicy:'no-referrer',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,...fields}),signal:AbortSignal.timeout(90000)});}catch{throw Error('연결이 늦습니다. 잠시 후 다시 시도해 주세요.');}
   const value=await response.json();if(!response.ok||!value.ok){const e=Error(value.message||'요청에 실패했습니다.');e.code=value.code;throw e;}return value.data;}
 function setBusy(value){busy=value;['refresh','export','logout','prev','next','loadVisits','retryVisits','saveVisitEdit'].forEach(id=>{$(id).disabled=value;});$('exportVisits').disabled=value||!visitLoaded;}
-function logout(){session='';sessionStorage.removeItem('photoDirectAdminSession');rows=[];overview=null;selected=null;visitRows=[];visitLoaded=false;visitEditTarget=null;archiveDays={};if($('visitEditDialog').open)$('visitEditDialog').close();$('visitWorkspace').hidden=true;$('exportVisits').disabled=true;$('workspace').hidden=true;$('loginCard').hidden=false;$('results').replaceChildren();$('fullPhoto').removeAttribute('src');}
+function logout(){session='';sessionStorage.removeItem('photoDirectAdminSession');rows=[];overview=null;selected=null;visitRows=[];visitLoaded=false;visitEditTarget=null;archiveDays={};if($('visitEditDialog').open)$('visitEditDialog').close();$('visitWorkspace').hidden=true;$('exportVisits').disabled=true;$('loadVisits').textContent='결과 보기';$('workspace').hidden=true;$('loginCard').hidden=false;$('results').replaceChildren();$('fullPhoto').removeAttribute('src');}
 function filtered(){const q=$('query').value.trim().toLowerCase(),status=$('status').value;return rows.filter(row=>(!q||(row.address+' '+row.province+' '+row.district+' '+row.dong).toLowerCase().includes(q))&&(!status||row.photos.length===Number(status))).sort((a,b)=>a.address.localeCompare(b.address,'ko'));}
 function fmt(value){return value&&Number.isFinite(Date.parse(value))?new Date(value).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'}):'기록 없음';}
 async function openPhoto(row,photo){if(busy)return;setBusy(true);say('사진을 불러오는 중…');try{const data=await api('photo',{address:row.address,photoId:photo.id});selected={address:row.address,id:photo.id};$('caption').textContent='방문 주소: '+row.address+'\n등록 시각: '+fmt(photo.uploadedAt)+'\n촬영 시각(기기): '+fmt(photo.evidence?.capturedAt);$('fullPhoto').src='data:image/jpeg;base64,'+data.base64;$('confirm').hidden=true;$('photoDialog').showModal();say('');}catch(e){say(e.message,true);}finally{setBusy(false);}}
 function render(){const matches=filtered(),pages=Math.max(1,Math.ceil(matches.length/50));page=Math.min(page,pages-1);$('results').replaceChildren();
   if(!matches.length){const empty=document.createElement('p');empty.className='empty';empty.textContent=rows.length?'검색 결과가 없습니다.':'등록된 사진이 없습니다.';$('results').append(empty);}
   else{const table=document.createElement('table'),head=document.createElement('thead'),tr=document.createElement('tr');['지역·방문 주소','사진 수','최근 등록','사진'].forEach(label=>{const th=document.createElement('th');th.textContent=label;tr.append(th);});head.append(tr);table.append(head);const body=document.createElement('tbody');
-    matches.slice(page*50,(page+1)*50).forEach(row=>{const tr=document.createElement('tr'),address=document.createElement('td'),count=document.createElement('td'),time=document.createElement('td'),photos=document.createElement('td'),region=document.createElement('div');address.className='address';region.className='region';region.textContent=[row.province,row.district,row.dong].filter(Boolean).join(' / ');address.append(region,document.createTextNode(row.address));count.textContent=row.photos.length+' / 2장';time.textContent=fmt(row.photos.map(p=>p.uploadedAt).filter(Boolean).sort().at(-1));photos.className='photo-actions';row.photos.forEach(photo=>{const button=document.createElement('button');button.type='button';button.textContent='사진 '+photo.slot+' 보기';button.onclick=()=>openPhoto(row,photo);photos.append(button);});tr.append(address,count,time,photos);body.append(tr);});table.append(body);$('results').append(table);}
+    matches.slice(page*50,(page+1)*50).forEach(row=>{const tr=document.createElement('tr'),address=document.createElement('td'),count=document.createElement('td'),time=document.createElement('td'),photos=document.createElement('td'),region=document.createElement('div');address.className='address';region.className='region';region.textContent=[row.province,row.district,row.dong].filter(Boolean).join(' / ');address.append(region,document.createTextNode(row.address));count.textContent=row.photos.length+' / 2장';time.textContent=fmt(row.photos.map(p=>p.uploadedAt).filter(Boolean).sort().at(-1));photos.className='photo-actions';row.photos.forEach(photo=>{const button=document.createElement('button');button.type='button';button.textContent='사진 '+photo.slot+' 보기';button.onclick=()=>openPhoto(row,photo);photos.append(button);});[address,count,time,photos].forEach((cell,index)=>{cell.dataset.label=['지역·방문 주소','사진 수','최근 등록','사진'][index];});tr.append(address,count,time,photos);body.append(tr);});table.append(body);$('results').append(table);}
   $('page').textContent=(page+1)+' / '+pages+' 페이지 · '+matches.length+'곳';$('prev').disabled=busy||page===0;$('next').disabled=busy||page>=pages-1;}
 async function refresh(){if(busy||!session)return;setBusy(true);say('사진 목록을 확인하는 중…');try{
   let data=await api('adminOverview',{adminSession:session});
@@ -71,9 +73,11 @@ function dailyCounts(entries){const dates=new Map();for(const entry of entries){
   if(!dates.has(entry.day))dates.set(entry.day,{day:entry.day,refused:0,completed:0});
   dates.get(entry.day)[entry.result]++;
 }return [...dates.values()].sort((a,b)=>b.day.localeCompare(a.day));}
+function todayInSeoul(){return new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'});}
 function combinedDaily(entries){
   const dates=new Map(dailyCounts(entries).map(row=>[row.day,row]));
   for(const [day,counts] of Object.entries(archiveDays))dates.set(day,{day,refused:counts.refused,completed:counts.completed});
+  const today=todayInSeoul();if(!dates.has(today))dates.set(today,{day:today,refused:0,completed:0});
   let totalRefused=0,totalCompleted=0;
   return [...dates.values()].sort((a,b)=>a.day.localeCompare(b.day)).map(row=>{
     totalRefused+=row.refused;totalCompleted+=row.completed;
@@ -83,7 +87,7 @@ function combinedDaily(entries){
 function tableInto(target,headers,values){
   const table=document.createElement('table'),head=document.createElement('thead'),top=document.createElement('tr'),body=document.createElement('tbody');
   for(const label of headers){const cell=document.createElement('th');cell.textContent=label;top.append(cell);}head.append(top);
-  for(const row of values){const tr=document.createElement('tr');for(const value of row){const cell=document.createElement('td');cell.textContent=String(value??'');tr.append(cell);}body.append(tr);}
+  for(const row of values){const tr=document.createElement('tr');row.forEach((value,index)=>{const cell=document.createElement('td');cell.textContent=String(value??'');cell.dataset.label=headers[index];if(index===headers.length-1&&value==='오늘 진행 중')cell.className='visit-state today';tr.append(cell);});body.append(tr);}
   table.append(head,body);target.replaceChildren(table);
 }
 function renderVisitDetails(entries){
@@ -94,24 +98,26 @@ function renderVisitDetails(entries){
   for(const label of ['날짜','지역·주소','사업자','결과','수정']){const th=document.createElement('th');th.textContent=label;tr.append(th);}head.append(tr);
   for(const row of matching.slice(0,100)){
     const line=document.createElement('tr');
-    for(const value of [row.day,[row.province,row.district,row.dong].filter(Boolean).join(' / ')+' · '+row.address,row.businessIndex,row.result==='refused'?'거절':'완료']){
-      const td=document.createElement('td');td.textContent=String(value);line.append(td);
+    for(const [index,value] of [row.day,[row.province,row.district,row.dong].filter(Boolean).join(' / ')+' · '+row.address,row.businessIndex,row.result==='refused'?'거절':'완료'].entries()){
+      const td=document.createElement('td');td.textContent=String(value);td.dataset.label=['날짜','지역·주소','사업자','결과'][index];line.append(td);
     }
     const action=document.createElement('td'),button=document.createElement('button');button.type='button';button.className='secondary';button.textContent='수정';
     button.onclick=()=>{visitEditTarget=row;$('visitEditAddress').textContent=row.address+' · 사업자 '+row.businessIndex;
       $('visitEditResult').value=row.result;$('visitEditDialog').showModal();};
-    action.append(button);line.append(action);body.append(line);
+    action.dataset.label='수정';action.append(button);line.append(action);body.append(line);
   }
   table.append(head,body);$('visitDetails').replaceChildren(table);
   $('visitProgress').textContent='현재 기록 '+entries.length.toLocaleString()+'건 · 상세 '+matching.length.toLocaleString()+'건 중 최대 100건 표시 (엑셀에는 전체 포함)';
 }
 function renderVisits(){
-  const entries=visitEntries(),daily=combinedDaily(entries);
+  const entries=visitEntries(),daily=combinedDaily(entries),today=todayInSeoul(),todayRow=daily.find(row=>row.day===today);
+  $('todayRefusedCount').textContent=(todayRow?.refused||0).toLocaleString();
+  $('todayCompletedCount').textContent=(todayRow?.completed||0).toLocaleString();
   $('refusedCount').textContent=entries.filter(row=>row.result==='refused').length.toLocaleString();
   $('completedCount').textContent=entries.filter(row=>row.result==='completed').length.toLocaleString();
-  tableInto($('dailyVisits'),['날짜','거절','완료','합계','누적 합계'],daily.map(row=>[row.day,row.refused,row.completed,row.refused+row.completed,row.totalRefused+row.totalCompleted]));
+  tableInto($('dailyVisits'),['날짜','거절','완료','합계','누적 합계','상태'],daily.map(row=>[row.day,row.refused,row.completed,row.refused+row.completed,row.totalRefused+row.totalCompleted,row.day===today?'오늘 진행 중':Object.hasOwn(archiveDays,row.day)?'확정':'집계 대기']));
   renderVisitDetails(entries);
-  $('visitWorkspace').hidden=false;$('exportVisits').disabled=false;
+  $('visitWorkspace').hidden=false;$('exportVisits').disabled=false;$('loadVisits').textContent='결과 새로고침';
 }
 async function loadVisits(){if(busy||!session)return;setBusy(true);say('방문 결과를 확인하는 중…');$('visitProgress').textContent='결과 목록을 불러오는 중…';
   try{const [meta,archive]=await Promise.all([api('visitMeta',{adminSession:session}),api('visitArchive',{adminSession:session})]);archiveDays=archive.days||{};
@@ -138,12 +144,12 @@ $('saveVisitEdit').onclick=async()=>{
 };
 $('exportVisits').onclick=()=>{
   if(!visitLoaded)return;
-  const entries=visitEntries(),daily=combinedDaily(entries);
-  const sheets=[{name:'일별집계',rows:[['날짜','거절 사업자','완료 사업자','일일 합계','누적 거절','누적 완료','누적 합계'],...daily.reverse().map(row=>[
-      new Date(row.day+'T00:00:00Z'),row.refused,row.completed,row.refused+row.completed,row.totalRefused,row.totalCompleted,row.totalRefused+row.totalCompleted])]},
+  const entries=visitEntries(),daily=combinedDaily(entries),today=todayInSeoul();
+  const sheets=[{name:'일별집계',rows:[['날짜','거절 사업자','완료 사업자','일일 합계','누적 거절','누적 완료','누적 합계','집계 상태'],...daily.reverse().map(row=>[
+      new Date(row.day+'T00:00:00Z'),row.refused,row.completed,row.refused+row.completed,row.totalRefused,row.totalCompleted,row.totalRefused+row.totalCompleted,row.day===today?'오늘 진행 중':Object.hasOwn(archiveDays,row.day)?'확정':'집계 대기'])]},
     {name:'사업자별현재결과',rows:[['날짜','시도','시군구','읍면동','원주소','사업자 순번','결과','기록 시각'],...entries.map(row=>[
       new Date(row.day+'T00:00:00Z'),row.province,row.district,row.dong,row.address,row.businessIndex,row.result==='refused'?'거절':'완료',fmt(row.recordedAt)])]}];
-  window.VisitXlsx.download(sheets,'방문결과_일별집계_'+new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'})+'.xlsx');
+  window.VisitXlsx.download(sheets,'방문결과_현재까지_'+today+'.xlsx');
 };
 if(session){$('loginCard').hidden=true;$('workspace').hidden=false;refresh();}
 })();

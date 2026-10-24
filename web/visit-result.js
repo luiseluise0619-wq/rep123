@@ -24,16 +24,16 @@ async function api(action,fields){
 function render(){
   if(!data)return;
   $('visitResultHint').textContent=data.businessCount===1?'이 주소의 사업자 1곳에 대한 결과입니다.':
-    '원자료에 사업자명이 없어 '+data.businessCount+'곳을 순번으로 구분합니다. 같은 사업자는 항상 같은 번호를 사용해 주세요.';
+    '이 주소의 사업자 '+data.businessCount+'곳을 번호로 구분합니다. 같은 사업자는 항상 같은 번호를 사용해 주세요.';
   const list=$('visitResultList');list.replaceChildren();
   for(const slot of data.slots){
     const item=document.createElement('div'),head=document.createElement('div'),name=document.createElement('strong'),state=document.createElement('span'),actions=document.createElement('div');
-    item.className='visit-item';head.className='head';actions.className='actions';
+    item.className='visit-item';item.dataset.result=slot.result||'';head.className='head';actions.className='actions';
     name.textContent=data.businessCount===1?'사업자':'사업자 '+slot.businessIndex;
-    state.className='small';state.textContent=slot.result?labels[slot.result]+' · '+new Date(slot.recordedAt).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'}):'미기록';
+    state.className='small visit-state';state.textContent=slot.result?labels[slot.result]+' · '+new Date(slot.recordedAt).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'}):'미기록';
     head.append(name,state);
     for(const result of ['refused','completed']){
-      const button=document.createElement('button');button.type='button';button.textContent=labels[result];
+      const button=document.createElement('button');button.type='button';button.textContent=labels[result];button.dataset.result=result;
       button.setAttribute('aria-pressed',String(slot.result===result));
       button.disabled=busy||!slot.canEdit||slot.result===result;
       button.onclick=()=>save(slot.businessIndex,result);
@@ -61,7 +61,7 @@ async function save(businessIndex,result){
 $('openVisitResults').onclick=async()=>{
   const panel=$('visitResultPanel'),opening=panel.hidden;
   panel.hidden=!opening;$('openVisitResults').setAttribute('aria-expanded',String(opening));
-  $('openVisitResults').textContent=opening?'접기':'결과 입력';
+  $('openVisitResults').textContent=opening?'접기':'결과 기록';
   if(!opening||data)return;
   if(!address){note('지도에서 방문 주소를 선택해 주세요.',true);return;}
   note('방문 결과 확인 중…');
