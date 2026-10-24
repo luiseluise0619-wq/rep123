@@ -198,7 +198,7 @@ test('midnight rollup keeps past daily counts, adds zero days and saves a workbo
   assert.ok(workbook.bytes.includes(Buffer.from('s="2"')));
 });
 
-test('scheduled rollup refuses missing or incorrect cron credentials',async()=>{
+test('scheduled rollup accepts a short configured secret but refuses missing or incorrect credentials',async()=>{
   const previous=process.env.CRON_SECRET;
   const invoke=async authorization=>{
     const res={setHeader(){return this;},status(code){this.statusCode=code;return this;},json(value){this.body=value;return this;}};
@@ -208,7 +208,7 @@ test('scheduled rollup refuses missing or incorrect cron credentials',async()=>{
   try{
     delete process.env.CRON_SECRET;
     assert.equal((await invoke('')).statusCode,503);
-    process.env.CRON_SECRET='test-cron-secret-1234';
+    process.env.CRON_SECRET='x';
     assert.equal((await invoke('Bearer wrong')).statusCode,401);
   }finally{
     if(previous===undefined)delete process.env.CRON_SECRET;

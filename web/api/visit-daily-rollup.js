@@ -7,7 +7,7 @@ module.exports=async function handler(req,res){
   res.setHeader('Cache-Control','no-store');
   if(req.method!=='GET')return res.status(405).json({ok:false,code:'METHOD'});
   const secret=process.env.CRON_SECRET||'';
-  if(secret.length<16)return res.status(503).json({ok:false,code:'SETUP'});
+  if(!secret)return res.status(503).json({ok:false,code:'SETUP'});
   const supplied=String(req.headers.authorization||'');
   const expected='Bearer '+secret;
   const a=Buffer.from(supplied),b=Buffer.from(expected);
