@@ -27,7 +27,8 @@ input,select{min-height:44px;border:1px solid #d1d5db;border-radius:9px;padding:
 <p id="progress" class="small" role="status"></p><div id="results" class="scroll"></div>
 <div class="actions pager"><button id="prev" class="secondary" type="button">이전</button><span id="page" class="small"></span><button id="next" class="secondary" type="button">다음</button></div>
 <section class="card" aria-labelledby="visitAdminTitle"><div class="top"><div><h2 id="visitAdminTitle">방문 결과</h2><p class="small visit-timing">오늘 기록은 바로 확인할 수 있습니다. MYBOX의 일별 엑셀에는 다음 날 자정 집계 후 들어갑니다.</p></div><div class="actions"><button id="loadVisits" type="button" class="secondary">결과 보기</button><button id="exportVisits" type="button" disabled>현재까지 엑셀</button></div></div>
-  <div id="visitWorkspace" hidden><p id="visitProgress" class="small" role="status"></p><div class="metrics visit-metrics"><div class="metric">오늘 거절<b id="todayRefusedCount">0</b></div><div class="metric">오늘 완료<b id="todayCompletedCount">0</b></div><div class="metric">현재 거절<b id="refusedCount">0</b></div><div class="metric">현재 완료<b id="completedCount">0</b></div></div><div id="dailyVisits" class="scroll"></div><details><summary>사업자별 내역 보기</summary><label for="visitQuery">내역 검색</label><input id="visitQuery" type="search" placeholder="날짜·주소·동 검색"><div id="visitDetails" class="scroll"></div></details><p class="small">현재 결과는 사업자별 가장 최근 상태입니다. 사진 등록 건수와는 별도입니다.</p></div>
+  <p id="visitLoadState" class="small" role="status">로그인하면 일별 집계를 자동으로 불러옵니다.</p>
+  <div id="visitWorkspace" hidden><p id="visitProgress" class="small" role="status"></p><div id="visitMetrics" class="metrics visit-metrics"><div class="metric">오늘 거절<b id="todayRefusedCount">0</b></div><div class="metric">오늘 완료<b id="todayCompletedCount">0</b></div><div class="metric">현재 거절<b id="refusedCount">0</b></div><div class="metric">현재 완료<b id="completedCount">0</b></div></div><div id="dailyVisits" class="scroll"></div><details><summary>사업자별 내역 보기</summary><label for="visitQuery">내역 검색</label><input id="visitQuery" type="search" placeholder="날짜·주소·동 검색"><div id="visitDetails" class="scroll"></div></details><p class="small">현재 결과는 사업자별 가장 최근 상태입니다. 사진 등록 건수와는 별도입니다.</p></div>
   <details class="visit-tools"><summary>집계 관리</summary><p class="small">자정 자동 집계가 누락된 날짜를 저장할 때 사용합니다. 오늘 기록은 이 버튼으로 확정되지 않습니다.</p><button id="retryVisits" type="button" class="secondary">지난 날짜 집계 저장</button></details>
 </section>
 <details><summary>집계 안내</summary><p class="small">관리자 새로고침은 등록·삭제 후 목록 반영이 밀린 주소를 먼저 확인합니다. 저장 공간과 MYBOX 서비스 한도는 별도로 적용됩니다. 사진 삭제는 MYBOX 휴지통으로 이동합니다.</p></details>
@@ -42,7 +43,7 @@ function say(message,isError=false){$('message').textContent=message;$('message'
 async function api(action,fields={}){let response;try{response=await fetch('/api/photo-direct',{method:'POST',cache:'no-store',referrerPolicy:'no-referrer',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,...fields}),signal:AbortSignal.timeout(90000)});}catch{throw Error('연결이 늦습니다. 잠시 후 다시 시도해 주세요.');}
   const value=await response.json();if(!response.ok||!value.ok){const e=Error(value.message||'요청에 실패했습니다.');e.code=value.code;throw e;}return value.data;}
 function setBusy(value){busy=value;['refresh','export','logout','prev','next','loadVisits','retryVisits','saveVisitEdit'].forEach(id=>{$(id).disabled=value;});$('exportVisits').disabled=value||!visitLoaded;}
-function logout(){session='';sessionStorage.removeItem('photoDirectAdminSession');rows=[];overview=null;selected=null;visitRows=[];visitLoaded=false;visitEditTarget=null;archiveDays={};if($('visitEditDialog').open)$('visitEditDialog').close();$('visitWorkspace').hidden=true;$('exportVisits').disabled=true;$('loadVisits').textContent='결과 보기';$('workspace').hidden=true;$('loginCard').hidden=false;$('results').replaceChildren();$('fullPhoto').removeAttribute('src');}
+function logout(){session='';sessionStorage.removeItem('photoDirectAdminSession');rows=[];overview=null;selected=null;visitRows=[];visitLoaded=false;visitEditTarget=null;archiveDays={};if($('visitEditDialog').open)$('visitEditDialog').close();$('visitWorkspace').hidden=true;$('visitMetrics').hidden=false;$('visitLoadState').hidden=false;$('visitLoadState').textContent='로그인하면 일별 집계를 자동으로 불러옵니다.';$('exportVisits').disabled=true;$('loadVisits').textContent='결과 보기';$('workspace').hidden=true;$('loginCard').hidden=false;$('results').replaceChildren();$('fullPhoto').removeAttribute('src');}
 function filtered(){const q=$('query').value.trim().toLowerCase(),status=$('status').value;return rows.filter(row=>(!q||(row.address+' '+row.province+' '+row.district+' '+row.dong).toLowerCase().includes(q))&&(!status||row.photos.length===Number(status))).sort((a,b)=>a.address.localeCompare(b.address,'ko'));}
 function fmt(value){return value&&Number.isFinite(Date.parse(value))?new Date(value).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'}):'기록 없음';}
 async function openPhoto(row,photo){if(busy)return;setBusy(true);say('사진을 불러오는 중…');try{const data=await api('photo',{address:row.address,photoId:photo.id});selected={address:row.address,id:photo.id};$('caption').textContent='방문 주소: '+row.address+'\n등록 시각: '+fmt(photo.uploadedAt)+'\n촬영 시각(기기): '+fmt(photo.evidence?.capturedAt);$('fullPhoto').src='data:image/jpeg;base64,'+data.base64;$('confirm').hidden=true;$('photoDialog').showModal();say('');}catch(e){say(e.message,true);}finally{setBusy(false);}}
@@ -59,8 +60,9 @@ async function refresh(){if(busy||!session)return;setBusy(true);say('사진 목�
   await Promise.all(Array.from({length:Math.min(4,keys.length)},async()=>{while(next<keys.length){const i=next++;const chunk=await api('adminChunk',{adminSession:session,key:keys[i]});results[i]=chunk.rows;$('progress').textContent=(i+1)+' / '+keys.length+' 묶음 확인 중…';}}));
   rows=results.flat();page=0;render();$('progress').textContent='사진 등록 주소 '+rows.length+'곳 · '+fmt(data.updatedAt)+' 기준';say('');
  }catch(e){if(e.code==='TICKET'||e.code==='EXPIRED'||e.code==='FORBIDDEN')logout();say(e.message,true);}finally{setBusy(false);render();}}
-$('loginForm').onsubmit=async event=>{event.preventDefault();if(busy)return;setBusy(true);say('로그인 중…');try{const data=await api('adminLogin',{password:$('password').value});$('password').value='';session=data.session;sessionStorage.setItem('photoDirectAdminSession',session);$('loginCard').hidden=true;$('workspace').hidden=false;say('');}catch(e){say(e.message,true);}finally{setBusy(false);}if(session)await refresh();};
-$('refresh').onclick=refresh;$('logout').onclick=logout;$('query').oninput=()=>{page=0;render();};$('status').onchange=()=>{page=0;render();};$('prev').onclick=()=>{page--;render();};$('next').onclick=()=>{page++;render();};
+async function refreshAll(){if(!session)return;$('visitLoadState').hidden=false;$('visitLoadState').textContent='일별 집계를 불러오는 중…';await loadVisits();if(session)await refresh();}
+$('loginForm').onsubmit=async event=>{event.preventDefault();if(busy)return;setBusy(true);say('로그인 중…');try{const data=await api('adminLogin',{password:$('password').value});$('password').value='';session=data.session;sessionStorage.setItem('photoDirectAdminSession',session);$('loginCard').hidden=true;$('workspace').hidden=false;say('');}catch(e){say(e.message,true);}finally{setBusy(false);}if(session)await refreshAll();};
+$('refresh').onclick=refreshAll;$('logout').onclick=logout;$('query').oninput=()=>{page=0;render();};$('status').onchange=()=>{page=0;render();};$('prev').onclick=()=>{page--;render();};$('next').onclick=()=>{page++;render();};
 $('closePhoto').onclick=()=>{$('photoDialog').close();$('fullPhoto').removeAttribute('src');selected=null;};$('deletePhoto').onclick=()=>{if(selected)$('confirm').hidden=false;};$('cancelDelete').onclick=()=>{$('confirm').hidden=true;};
 $('confirmDelete').onclick=async()=>{if(!selected||busy)return;setBusy(true);try{await api('remove',{adminSession:session,address:selected.address,photoId:selected.id});$('photoDialog').close();$('fullPhoto').removeAttribute('src');selected=null;say('사진을 MYBOX 휴지통으로 이동했습니다.');}catch(e){say(e.message,true);}finally{setBusy(false);}await refresh();};
 function csvCell(value){let text=String(value==null?'':value);if(/^[=+@\-\t\r]/.test(text))text="'"+text;return '"'+text.replace(/"/g,'""')+'"';}
@@ -117,14 +119,21 @@ function renderVisits(){
   $('completedCount').textContent=entries.filter(row=>row.result==='completed').length.toLocaleString();
   tableInto($('dailyVisits'),['날짜','거절','완료','합계','누적 합계','상태'],daily.map(row=>[row.day,row.refused,row.completed,row.refused+row.completed,row.totalRefused+row.totalCompleted,row.day===today?'오늘 진행 중':Object.hasOwn(archiveDays,row.day)?'확정':'집계 대기']));
   renderVisitDetails(entries);
-  $('visitWorkspace').hidden=false;$('exportVisits').disabled=false;$('loadVisits').textContent='결과 새로고침';
+  $('visitWorkspace').hidden=false;$('visitMetrics').hidden=false;$('exportVisits').disabled=false;$('loadVisits').textContent='결과 새로고침';
 }
-async function loadVisits(){if(busy||!session)return;setBusy(true);say('방문 결과를 확인하는 중…');$('visitProgress').textContent='결과 목록을 불러오는 중…';
-  try{const [meta,archive]=await Promise.all([api('visitMeta',{adminSession:session}),api('visitArchive',{adminSession:session})]);archiveDays=archive.days||{};
+function renderArchivedVisits(){
+  let cumulative=0;const daily=Object.keys(archiveDays).sort().map(day=>{const item=archiveDays[day],total=item.refused+item.completed;cumulative+=total;return [day,item.refused,item.completed,total,cumulative,'확정'];});
+  tableInto($('dailyVisits'),['날짜','거절','완료','합계','누적 합계','상태'],daily.reverse());
+  $('visitWorkspace').hidden=false;$('visitMetrics').hidden=true;
+  $('visitProgress').textContent=daily.length?'확정된 일별 집계를 표시했습니다. 오늘 기록을 확인하는 중…':'확정된 일별 집계가 없습니다. 오늘 기록을 확인하는 중…';
+}
+async function loadVisits(){if(busy||!session)return;setBusy(true);visitLoaded=false;visitRows=[];archiveDays={};$('visitWorkspace').hidden=true;$('exportVisits').disabled=true;say('방문 결과를 확인하는 중…');$('visitLoadState').hidden=false;$('visitLoadState').textContent='일별 집계를 불러오는 중…';$('visitProgress').textContent='결과 목록을 불러오는 중…';
+  try{const archive=await api('visitArchive',{adminSession:session});archiveDays=archive.days||{};renderArchivedVisits();
+    const meta=await api('visitMeta',{adminSession:session});
     const keys=meta.keys||[],results=Array(keys.length);let next=0,done=0;
     await Promise.all(Array.from({length:Math.min(4,keys.length)},async()=>{while(next<keys.length){const i=next++,chunk=await api('visitChunk',{adminSession:session,key:keys[i]});results[i]=chunk.rows;done++;$('visitProgress').textContent=done+' / '+keys.length+' 묶음 확인 중…';}}));
-    visitRows=results.flat();visitLoaded=true;renderVisits();say('');
-  }catch(e){if(e.code==='TICKET'||e.code==='EXPIRED'||e.code==='FORBIDDEN')logout();say(e.message,true);}
+    visitRows=results.flat();visitLoaded=true;renderVisits();$('visitLoadState').hidden=true;say('');
+  }catch(e){if(e.code==='TICKET'||e.code==='EXPIRED'||e.code==='FORBIDDEN')logout();else{$('visitLoadState').hidden=false;$('visitLoadState').textContent='일별 집계 확인이 끝나지 않았습니다. 결과 새로고침을 눌러 다시 확인하세요.';$('visitProgress').textContent='오늘 결과를 불러오지 못했습니다. 확정된 날짜만 표시되어 있을 수 있습니다.';}say(e.message,true);}
   finally{setBusy(false);}
 }
 $('loadVisits').onclick=loadVisits;
@@ -151,6 +160,6 @@ $('exportVisits').onclick=()=>{
       new Date(row.day+'T00:00:00Z'),row.province,row.district,row.dong,row.address,row.businessIndex,row.result==='refused'?'거절':'완료',fmt(row.recordedAt)])]}];
   window.VisitXlsx.download(sheets,'방문결과_현재까지_'+today+'.xlsx');
 };
-if(session){$('loginCard').hidden=true;$('workspace').hidden=false;refresh();}
+if(session){$('loginCard').hidden=true;$('workspace').hidden=false;refreshAll();}
 })();
 </script></body></html>
