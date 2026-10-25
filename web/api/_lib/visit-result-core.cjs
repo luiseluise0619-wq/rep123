@@ -7,7 +7,7 @@ const ARCHIVE_ROOT='현장방문_일별집계_v1';
 const ARCHIVE_JSON='일별집계.json';
 const ARCHIVE_XLSX='방문결과_일별집계.xlsx';
 const KEYS='0123456789abcdef';
-const RESULTS=['approved','refused','unreachable','followup','completed'];
+const RESULTS=['approved','refused','unreachable','absent','followup','alreadyApplied','completed'];
 const emptyCounts=()=>Object.fromEntries(RESULTS.map(result=>[result,0]));
 const dayInSeoul=milliseconds=>new Intl.DateTimeFormat('en-CA',{
   timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'
@@ -148,9 +148,10 @@ function createVisitService(core,{now=()=>Date.now()}={}){
   function archiveWorkbook(days){
     const {makeWorkbook}=require('../../visit-xlsx.js');
     const totals=emptyCounts();
-    const rows=[['날짜','승인 사업자','거절 사업자','연락두절 사업자','재연락 필요 사업자',
-      '기존 방문 완료 사업자','일일 합계','누적 승인','누적 거절','누적 연락두절',
-      '누적 재연락 필요','누적 기존 방문 완료','누적 합계']];
+    const rows=[['날짜','승인 사업자','거절 사업자','연락두절 사업자','부재 사업자',
+      '재연락 필요 사업자','이미 신청 사업자','기존 방문 완료 사업자','일일 합계',
+      '누적 승인','누적 거절','누적 연락두절','누적 부재','누적 재연락 필요',
+      '누적 이미 신청','누적 기존 방문 완료','누적 합계']];
     for(const day of Object.keys(days).sort()){
       const item=days[day];for(const result of RESULTS)totals[result]+=item[result]||0;
       rows.push([new Date(day+'T00:00:00Z'),...RESULTS.map(result=>item[result]||0),
