@@ -24,7 +24,7 @@ async function api(action,fields){
 function render(){
   if(!data)return;
   $('visitResultHint').textContent=data.businessCount===1?'이 주소의 사업자 1곳에 대한 결과입니다.':
-    '이 주소의 사업자 '+data.businessCount+'곳을 번호로 구분합니다. 같은 사업자는 항상 같은 번호를 사용해 주세요.';
+    '사업자 '+data.businessCount+'곳입니다. 번호는 임시 구분용이니 같은 사업자는 계속 같은 번호를 선택해 주세요.';
   const list=$('visitResultList');list.replaceChildren();
   for(const slot of data.slots){
     const item=document.createElement('div'),head=document.createElement('div'),name=document.createElement('strong'),state=document.createElement('span'),actions=document.createElement('div');
