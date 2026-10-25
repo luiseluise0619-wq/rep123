@@ -198,6 +198,20 @@ test('midnight rollup keeps past daily counts, adds zero days and saves a workbo
   assert.ok(workbook.bytes.includes(Buffer.from('s="2"')));
 });
 
+test('a same-day trial result cancelled before midnight is absent from the next archive',async()=>{
+  const ctx=fixture(),where=[...source().map.keys()][0];
+  let clock=Date.parse('2026-10-24T04:00:00Z');
+  const visits=createVisitService(ctx.service,{now:()=>clock});
+  await visits.save({address:where,businessIndex:1,result:'refused',deviceKey:key});
+  clock+=60000;
+  await visits.save({address:where,businessIndex:1,result:'clear',deviceKey:key});
+  assert.equal((await visits.status(where,key)).slots[0].result,null);
+  clock=Date.parse('2026-10-24T15:10:00Z');
+  const result=await visits.rollup();
+  assert.equal(result.through,'2026-10-24');
+  assert.deepEqual((await visits.archive()).days['2026-10-24'],{refused:0,completed:0});
+});
+
 test('scheduled rollup accepts a short configured secret but refuses missing or incorrect credentials',async()=>{
   const previous=process.env.CRON_SECRET;
   const invoke=async authorization=>{

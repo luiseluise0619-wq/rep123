@@ -54,7 +54,7 @@ async function save(businessIndex,result){
   busy=true;render();note('방문 결과 저장 중…');
   try{
     const response=await api('visitSave',{address,businessIndex,result,deviceKey:deviceKey()});
-    data=response;note(result==='clear'?'기록을 취소했습니다.':'사업자 '+businessIndex+' · '+labels[result]+'로 저장했습니다.');
+    data=response;note(result==='clear'?'기록을 취소했습니다. 일별 집계에도 포함되지 않습니다.':'사업자 '+businessIndex+' · '+labels[result]+'로 저장했습니다.');
   }catch(error){note(error.message,true);try{data=await api('visitStatus',{address,deviceKey:deviceKey()});}catch{}}
   finally{busy=false;render();}
 }
