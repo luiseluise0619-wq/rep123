@@ -2,7 +2,7 @@
 'use strict';
 const $=id=>document.getElementById(id);
 const address=new URLSearchParams(location.search).get('address')||'';
-const labels={refused:'거절',completed:'완료'};
+const labels={approved:'승인',refused:'거절',unreachable:'연락두절',followup:'재연락 필요',completed:'기존 방문 완료'};
 let data=null,busy=false;
 function note(text,error=false){
   const target=$('visitResultMessage');target.textContent=text;target.hidden=!text;
@@ -30,9 +30,9 @@ function render(){
     const item=document.createElement('div'),head=document.createElement('div'),name=document.createElement('strong'),state=document.createElement('span'),actions=document.createElement('div');
     item.className='visit-item';item.dataset.result=slot.result||'';head.className='head';actions.className='actions';
     name.textContent=data.businessCount===1?'사업자':'사업자 '+slot.businessIndex;
-    state.className='small visit-state';state.textContent=slot.result?labels[slot.result]+' · '+new Date(slot.recordedAt).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'}):'미기록';
+    state.className='small visit-state';state.textContent=slot.result?(labels[slot.result]||'기존 기록')+' · '+new Date(slot.recordedAt).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'}):'미기록';
     head.append(name,state);
-    for(const result of ['refused','completed']){
+    for(const result of ['approved','refused','unreachable','followup']){
       const button=document.createElement('button');button.type='button';button.textContent=labels[result];button.dataset.result=result;
       button.setAttribute('aria-pressed',String(slot.result===result));
       button.disabled=busy||!slot.canEdit||slot.result===result;

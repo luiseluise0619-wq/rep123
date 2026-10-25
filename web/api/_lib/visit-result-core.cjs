@@ -7,6 +7,8 @@ const ARCHIVE_ROOT='현장방문_일별집계_v1';
 const ARCHIVE_JSON='일별집계.json';
 const ARCHIVE_XLSX='방문결과_일별집계.xlsx';
 const KEYS='0123456789abcdef';
+const RESULTS=['approved','refused','unreachable','followup','completed'];
+const emptyCounts=()=>Object.fromEntries(RESULTS.map(result=>[result,0]));
 const dayInSeoul=milliseconds=>new Intl.DateTimeFormat('en-CA',{
   timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'
 }).format(milliseconds);
@@ -49,8 +51,8 @@ function createVisitService(core,{now=()=>Date.now()}={}){
     const location=checkAddress(address);
     if(!Number.isSafeInteger(businessIndex)||businessIndex<1||businessIndex>location.businessCount)
       throw error('BUSINESS',400,'이 주소의 사업자 번호를 다시 선택해 주세요.');
-    if(!['refused','completed','clear'].includes(result))
-      throw error('RESULT',400,'거절 또는 완료를 선택해 주세요.');
+    if(![...RESULTS,'clear'].includes(result))
+      throw error('RESULT',400,'사업자 결과를 다시 선택해 주세요.');
     const admin=!!adminSession;
     if(admin)core.requireAdmin(adminSession);
     const owner=admin?'admin':actor(deviceKey),hash=sha(address),key=hash[0];
@@ -112,8 +114,10 @@ function createVisitService(core,{now=()=>Date.now()}={}){
     if(data?.v!==1||!data.days||typeof data.days!=='object'||Array.isArray(data.days))
       throw error('VISIT_DATA',409,'일별 집계 형식을 확인해야 합니다.');
     for(const [day,counts] of Object.entries(data.days)){
-      if(!/^\d{4}-\d{2}-\d{2}$/.test(day)||!Number.isSafeInteger(counts?.refused)||counts.refused<0||
-         !Number.isSafeInteger(counts?.completed)||counts.completed<0)
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(day)||!RESULTS.every(result=>{
+        const value=counts?.[result];return value===undefined&&result!=='refused'&&result!=='completed'||
+          Number.isSafeInteger(value)&&value>=0;
+      }))
         throw error('VISIT_DATA',409,'일별 집계 값을 확인해야 합니다.');
     }
     return data;
@@ -126,7 +130,7 @@ function createVisitService(core,{now=()=>Date.now()}={}){
           slot.recordedAt?[{at:slot.recordedAt,result:slot.result}]:[];
       for(const event of history){
         const milliseconds=Date.parse(event.at);
-        if(!Number.isFinite(milliseconds)||!['refused','completed',null].includes(event.result))continue;
+        if(!Number.isFinite(milliseconds)||![...RESULTS,null].includes(event.result))continue;
         const day=dayInSeoul(milliseconds);if(day>through)continue;
         if(!earliest||day<earliest)earliest=day;
         if(!byDay.has(day))byDay.set(day,new Map());
@@ -143,12 +147,15 @@ function createVisitService(core,{now=()=>Date.now()}={}){
   }
   function archiveWorkbook(days){
     const {makeWorkbook}=require('../../visit-xlsx.js');
-    let totalRefused=0,totalCompleted=0;
-    const rows=[['날짜','거절 사업자','완료 사업자','일일 합계','누적 거절','누적 완료','누적 합계']];
+    const totals=emptyCounts();
+    const rows=[['날짜','승인 사업자','거절 사업자','연락두절 사업자','재연락 필요 사업자',
+      '기존 방문 완료 사업자','일일 합계','누적 승인','누적 거절','누적 연락두절',
+      '누적 재연락 필요','누적 기존 방문 완료','누적 합계']];
     for(const day of Object.keys(days).sort()){
-      const item=days[day];totalRefused+=item.refused;totalCompleted+=item.completed;
-      rows.push([new Date(day+'T00:00:00Z'),item.refused,item.completed,item.refused+item.completed,
-        totalRefused,totalCompleted,totalRefused+totalCompleted]);
+      const item=days[day];for(const result of RESULTS)totals[result]+=item[result]||0;
+      rows.push([new Date(day+'T00:00:00Z'),...RESULTS.map(result=>item[result]||0),
+        RESULTS.reduce((sum,result)=>sum+(item[result]||0),0),...RESULTS.map(result=>totals[result]),
+        RESULTS.reduce((sum,result)=>sum+totals[result],0)]);
     }
     return Buffer.from(makeWorkbook([{name:'일별집계',rows}]));
   }
@@ -165,8 +172,8 @@ function createVisitService(core,{now=()=>Date.now()}={}){
       for(const day of daysBetween(start,yesterday)){
         if(Object.hasOwn(data.days,day))continue;
         const values=[...(events.byDay.get(day)?.values()||[])];
-        data.days[day]={refused:values.filter(value=>value.result==='refused').length,
-          completed:values.filter(value=>value.result==='completed').length};
+        data.days[day]=emptyCounts();
+        for(const value of values)if(RESULTS.includes(value.result))data.days[day][value.result]++;
         added++;
       }
       const root=await core.folder('',ARCHIVE_ROOT,true);

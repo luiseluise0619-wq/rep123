@@ -182,15 +182,15 @@ test('midnight rollup keeps past daily counts, adds zero days and saves a workbo
   const first=await visits.rollup();
   assert.equal(first.added,2);
   assert.deepEqual((await visits.archive()).days,{
-    '2026-10-20':{refused:1,completed:0},
-    '2026-10-21':{refused:1,completed:1}
+    '2026-10-20':{approved:0,refused:1,unreachable:0,followup:0,completed:0},
+    '2026-10-21':{approved:0,refused:1,unreachable:0,followup:0,completed:1}
   });
   clock=Date.parse('2026-10-22T01:00:00Z');
   await visits.save({address:where,businessIndex:1,result:'clear',deviceKey:key});
   clock=Date.parse('2026-10-22T15:10:00Z');
   const second=await visits.rollup();
   assert.equal(second.added,1);
-  assert.deepEqual((await visits.archive()).days['2026-10-22'],{refused:0,completed:0});
+  assert.deepEqual((await visits.archive()).days['2026-10-22'],{approved:0,refused:0,unreachable:0,followup:0,completed:0});
   assert.equal((await visits.rollup()).added,0);
   const workbook=[...ctx.box.entries.values()].find(entry=>entry.name==='방문결과_일별집계.xlsx');
   assert.equal(workbook.bytes.subarray(0,2).toString(),'PK');
@@ -209,7 +209,27 @@ test('a same-day trial result cancelled before midnight is absent from the next 
   clock=Date.parse('2026-10-24T15:10:00Z');
   const result=await visits.rollup();
   assert.equal(result.through,'2026-10-24');
-  assert.deepEqual((await visits.archive()).days['2026-10-24'],{refused:0,completed:0});
+  assert.deepEqual((await visits.archive()).days['2026-10-24'],{approved:0,refused:0,unreachable:0,followup:0,completed:0});
+});
+
+test('voucher outcomes remain distinct from legacy visit completion in daily archive',async()=>{
+  const ctx=fixture(),where=[...source().map].find(([,place])=>place.businessCount>=2)[0];
+  let clock=Date.parse('2026-10-24T06:00:00Z');
+  const visits=createVisitService(ctx.service,{now:()=>clock});
+  await visits.save({address:where,businessIndex:1,result:'approved',deviceKey:key});
+  await visits.save({address:where,businessIndex:2,result:'unreachable',deviceKey:other});
+  clock=Date.parse('2026-10-24T07:00:00Z');
+  await visits.save({address:where,businessIndex:2,result:'followup',deviceKey:other});
+  clock=Date.parse('2026-10-24T15:01:00Z');
+  await visits.rollup();
+  assert.deepEqual((await visits.archive()).days['2026-10-24'],
+    {approved:1,refused:0,unreachable:0,followup:1,completed:0});
+  const legacy={v:1,days:{'2026-10-23':{refused:2,completed:3}}};
+  const root=await ctx.service.folder('','현장방문_일별집계_v1',true);
+  await ctx.service.uploadBytes(root,'일별집계.json',Buffer.from(JSON.stringify(legacy)),true);
+  assert.deepEqual((await visits.archive()).days['2026-10-23'],{refused:2,completed:3});
+  await visits.rollup();
+  assert.equal((await visits.archive()).days['2026-10-23'].completed,3);
 });
 
 test('scheduled rollup accepts a short configured secret but refuses missing or incorrect credentials',async()=>{
